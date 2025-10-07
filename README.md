@@ -52,3 +52,16 @@ curl http://localhost:3000/db
 - Backend : Node.js / Express / PostgreSQL
 - Frontend : React / Vite
 - Containerisation : Docker / Docker Compose
+
+# Installer docker
+
+Lien de tééchargement : https://www.docker.com/products/docker-desktop/
+
+## 2/ Check docker
+
+docker --version
+docker compose version
+
+## 3/ Cloner projet
+
+git clone git@github.com:EpitechMscProPromo2027/T-DEV-700-project-PAR_8.git
