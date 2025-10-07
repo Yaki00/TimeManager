@@ -1,10 +1,12 @@
 import express from "express";
 import pg from "pg";
 import cors from "cors";
+import authRoutes from "./auth/routes.js";
 
 const app = express();
-
 app.use(cors({ origin: "*" }));
+app.use(express.json());
+
 const port = process.env.PORT || 3000;
 
 // Création du pool PostgreSQL
@@ -33,6 +35,9 @@ app.get("/db", async (req, res) => {
     res.status(500).json({ error: "Erreur DB" });
   }
 });
+
+// Routes d'authentification
+app.use("/auth", authRoutes);
 
 // Lancement du serveur
 app.listen(port, () => {
