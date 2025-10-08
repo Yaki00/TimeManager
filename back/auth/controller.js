@@ -42,6 +42,7 @@ export async function login(req, res) {
         last_name: user.last_name,
         first_name: user.first_name,
         phone_number: user.phone_number,
+        contract_type: user.contract_type,
       },
       tokens: { access, refresh },
     });
