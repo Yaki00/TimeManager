@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
-import "../index.css";
-import {
-  DashboardOutlined,
-  FieldTimeOutlined,
-  SettingOutlined,
-  FileSearchOutlined,
-  UserOutlined
-} from '@ant-design/icons';
-import { Breadcrumb, Layout, Menu, theme } from 'antd';
+import {UserOutlined} from '@ant-design/icons';
+import { Layout, Menu } from 'antd';
 import styled from 'styled-components';
 import { Link } from 'react-router';
+import { items } from '../utils/getItemLayout.jsx';
 
 const { Content, Sider } = Layout;
 
@@ -36,47 +30,43 @@ const Profile = styled(Link)`
   }
 `;
 
+const SiderStyle = styled(Sider)`
+	background-color: #fff;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	&.ant-layout-sider .ant-layout-sider-trigger {
+		background-color: #fff !important;
+		color: black !important;
+	}
+		li:hover {
+		background-color: #C0C0F6 !important;
+		color: white !important;
+		transition: none !important;
+		}
+	span,a {
+		transition: none !important;
+	}
+	.ant-layout-sider-children{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+`;
+
 const MenuStyle = styled(Menu)`
+	margin-top: 20px;
   .ant-menu-item-selected {
 	background-color: #C0C0F6 !important;
 	color: white !important;
   }
 `;
 
-
-
-
-function getItem(
-  label,
-  key,
-  icon,
-  children,
-  title,
-  url,
-){
-  return {
-	key,
-	icon,
-	children,
-	label : <Link to={url}>{label}</Link>,
-	title: "",
-	url
-  };
-}
-
-const items  = [
-  getItem('Dashboard', '1', <DashboardOutlined />, null, 'Dashboard', '/'),
-  getItem('Time', '2', <FieldTimeOutlined />, null, 'Time', '/time'),
-  getItem('Teams', '3', <SettingOutlined />, null, 'Teams', '/teams'),
-  getItem('Recherche', '4', <FileSearchOutlined />, null, 'Recherche', '/search-user'),
-];
-
-const LayoutComponent = ({ children }) => {
+export const LayoutComponent = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
-
 return (
 	<Layout style={{ minHeight: '100vh' }}>
-		<Sider
+		<SiderStyle
 		collapsible
 		collapsed={collapsed}
 		onCollapse={(value) => setCollapsed(value)}
@@ -93,20 +83,16 @@ return (
 				mode="inline"
 				items={items}
 				title=""
-				style={{ marginTop: '20px' }}
 			/>
 		</div>
 		<Profile to="/profile" $collapsed={collapsed}>
 			<UserOutlined />
-			{!collapsed && <p>Profil</p>}
+			{!collapsed && <p>Profile</p>}
 		</Profile>
-		</Sider>
-
+		</SiderStyle>
 		<Content style={{ margin: "30px 50px 30px 50px" }}>
 			{children}
 		</Content>
 	</Layout>
 );
 };
-
-export default LayoutComponent;

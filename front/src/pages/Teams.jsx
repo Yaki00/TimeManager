@@ -52,10 +52,6 @@ const columns = [
 const Action = () => {
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [isModalUpdateTeamOpen, setIsModalUpdateTeamOpen] = useState(false);
-
-
-
-
   const showModal = () => {
 	setIsModalOpen(true);
   };

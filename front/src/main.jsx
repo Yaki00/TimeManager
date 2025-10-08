@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Login } from './pages/Login.jsx'
-import LayoutComponent from './components/Layout.jsx';
+import {LayoutComponent} from './components/Layout.jsx';
 import { Dashboard } from './pages/Dashboard.jsx';
 import { Teams } from './pages/Teams.jsx';
 import { SearchUser } from './pages/SearchUser.jsx';

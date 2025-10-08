@@ -4,22 +4,3 @@
   box-sizing: border-box;
 }
 
-/* .ant-layout-sider .ant-layout-sider-trigger {
-  background-color: #fff !important;
-  color: black !important;
-}
-.ant-menu-item-selected {
-  background-color: #C0C0F6 !important;
-  color: white !important;
-}
-
-li:hover  {
-  background-color: #C0C0F6 !important;
-  color: white !important;
-  cursor: pointer;
-}
-.ant-layout-sider-children{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-} */
