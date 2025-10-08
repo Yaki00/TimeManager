@@ -7,7 +7,7 @@ import { items } from '../utils/getItemLayout.jsx';
 
 const { Content, Sider } = Layout;
 
-const Profile = styled(Link)`
+const Profile = styled(	Link)`
   text-align: center;
   display: flex;
   padding: ${props => (props.$collapsed ? 0 : "0px 16px 0 24px")};
@@ -79,7 +79,7 @@ return (
 	>
 		<div>
 			<MenuStyle
-				defaultSelectedKeys={['1']}
+				defaultSelectedKeys={[	'1']}
 				mode="inline"
 				items={items}
 				title=""

@@ -7,7 +7,7 @@ const getItem = (
 	children,
 	title,
 	url,
-  )=>{
+)=>{
 	return {
 	  key,
 	  icon,
@@ -16,11 +16,11 @@ const getItem = (
 	  title: "",
 	  url
 	};
-  }
+}
   
-  export const items  = [
+export const items  = [
 	getItem('Dashboard', '1', <DashboardOutlined />, null, 'Dashboard', '/'),
 	getItem('Time', '2', <FieldTimeOutlined />, null, 'Time', '/time'),
 	getItem('Teams', '3', <SettingOutlined />, null, 'Teams', '/teams'),
 	getItem('Recherche', '4', <FileSearchOutlined />, null, 'Recherche', '/search-user'),
-  ];
+];
