@@ -1,18 +1,13 @@
 import express from "express";
-import pg from "pg";
 import cors from "cors";
 import authRoutes from "./auth/routes.js";
+import { pool } from "./db.js";
 
 const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
-
-// Création du pool PostgreSQL
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 // Test de connexion à la base au démarrage
 try {

@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { pool } from "../server.js";
+import { pool } from "../db.js";
 
 export async function findUserByEmail(email) {
   const { rows } = await pool.query(
