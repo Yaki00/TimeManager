@@ -35,7 +35,14 @@ export async function login(req, res) {
     const access = signAccessToken({ sub: user.id, email: user.email });
     const refresh = signRefreshToken({ sub: user.id });
     res.json({
-      user: { id: user.id, email: user.email },
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        last_name: user.last_name,
+        first_name: user.first_name,
+        phone_number: user.phone_number,
+      },
       tokens: { access, refresh },
     });
   } catch (e) {
