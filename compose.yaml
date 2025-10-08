@@ -16,14 +16,12 @@ services:
       - backend
     command: >-
       sh -lc '
-        if [ -x node_modules/.bin/vite ]; then
-          echo "deps: OK ";
-        else
-          echo "deps: manquantes → npm ci ";
-          npm ci;
+        set -e;
+        if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
         exec npm run dev -- --host 0.0.0.0 --port 5173'
-
   backend:
     build:
       context: ./back
@@ -40,8 +38,13 @@ services:
     ports:
       - "3000:3000"
     command: >-
-      sh -lc '[ -x node_modules/.bin/nodemon ] || (npm ci || npm install);
-              exec npm run dev'
+      sh -lc '
+        set -e;
+        if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          sha256sum package-lock.json > node_modules/.npmci.sha;
+        fi;
+        exec npm run dev'
     healthcheck:
       test:
         [
