@@ -10,7 +10,7 @@ const { Content, Sider } = Layout;
 const Profile = styled(	Link)`
   text-align: center;
   display: flex;
-  padding: ${props => (props.$collapsed ? 0 : "0px 16px 0 24px")};
+  padding: ${props => (props.$collapsed ? 0 : '0px 16px 0 24px')};
   gap: 10px;
   align-items: center;
   justify-content: ${props => (props.$collapsed ? 'center' : 'flex-start')};
@@ -64,35 +64,34 @@ const MenuStyle = styled(Menu)`
 
 export const LayoutComponent = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
-return (
-	<Layout style={{ minHeight: '100vh' }}>
+  return (
+  	<Layout style={{ minHeight: '100vh' }}>
 		<SiderStyle
-		collapsible
-		collapsed={collapsed}
-		onCollapse={(value) => setCollapsed(value)}
-		style={{
-			backgroundColor: '#fff',
-			display: 'flex',
-			flexDirection: 'column',
-			justifyContent: 'space-between',
-		}}
-	>
-		<div>
-			<MenuStyle
-				defaultSelectedKeys={[	'1']}
-				mode="inline"
-				items={items}
-				title=""
-			/>
-		</div>
-		<Profile to="/profile" $collapsed={collapsed}>
-			<UserOutlined />
-			{!collapsed && <p>Profile</p>}
-		</Profile>
+			collapsible
+			collapsed={collapsed}
+			onCollapse={(value) => setCollapsed(value)}
+			style={{
+				backgroundColor: '#fff',
+				display: 'flex',
+				flexDirection: 'column',
+				justifyContent: 'space-between',
+			}}
+		>
+			<div>
+				<MenuStyle
+					defaultSelectedKeys={['1']}
+					mode="inline"
+					items={items}
+					title=""
+				/>
+			</div>
+			<Profile to="/profile" $collapsed={collapsed}>
+				<UserOutlined />
+				{!collapsed && <p>Profile</p>}
+			</Profile>
 		</SiderStyle>
-		<Content style={{ margin: "30px 50px 30px 50px" }}>
+		<Content style={{ margin: '30px 50px 30px 50px' }}>
 			{children}
 		</Content>
 	</Layout>
-);
-};
+)};
