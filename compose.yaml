@@ -34,7 +34,7 @@ services:
       - PORT=3000
     volumes:
       - ./back:/app
-      - node_modules:/app/node_modules
+      - ./back/node_modules:/app/node_modules
     ports:
       - "3000:3000"
     command: >-
