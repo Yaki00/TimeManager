@@ -103,8 +103,8 @@ CREATE TABLE "Clocking" (
     "clocking_date" DATE NOT NULL,
     "total_hours" DECIMAL(8,2) NOT NULL,
     "week_day" TEXT NOT NULL,
-    "work_day" INTEGER NOT NULL,
     "id_user" INTEGER NOT NULL,
+    "work_day" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
