@@ -8,7 +8,7 @@ import { LayoutComponent } from './components/Layout.jsx';
 createRoot(document.getElementById('root')).render(
 	<BrowserRouter>
 		<Routes>
-			<Route path="/"  			element={<LayoutComponent><App /></LayoutComponent>} />
+			<Route path="/"  element={<LayoutComponent><App /></LayoutComponent>} />
 		</Routes>
 	</BrowserRouter>
 )
