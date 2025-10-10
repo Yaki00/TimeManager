@@ -20,7 +20,7 @@ export const loginSchema = z.object({
 export function validate(schema, data) {
   const parsed = schema.safeParse(data);
   if (!parsed.success) {
-    const msg = parsed.error.errors
+    const msg = parsed.error.issues
       .map((e) => `${e.path.join(".")}: ${e.message}`)
       .join(", ");
     const err = new Error(msg);

@@ -29,7 +29,7 @@ export async function login(req, res) {
     const user = await findUserByEmail(email);
     if (!user) return res.status(401).json({ error: TEXT.INVALID_CREDENTIALS });
 
-    const ok = await verifyPassword(password, user.password_hash);
+    const ok = await verifyPassword(password, user.password);
     if (!ok) return res.status(401).json({ error: TEXT.INVALID_CREDENTIALS });
 
     const access = signAccessToken({ sub: user.id, email: user.email });
