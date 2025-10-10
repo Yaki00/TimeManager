@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { useAuth } from '../../service/useAuth';
-import { LoginForm } from '../../components/Form/LoginForm';
+import { LoginForm } from '../../components/form/LoginForm';
 import { useNavigate } from 'react-router';
 
 const Container = styled.div`

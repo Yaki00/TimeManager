@@ -1,6 +1,6 @@
 import { Form, Input, Button } from 'antd';
 import styled from 'styled-components';
-import { RegisterForm } from '../../components/Form/RegisterForm';
+import { RegisterForm } from '../../components/form/RegisterForm';
 import { useAuth } from '../../service/useAuth';
 import { useNavigate } from 'react-router';
 

@@ -7,7 +7,7 @@ import { Login } from './pages/auth/Login.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Register } from './pages/auth/Register.jsx';
 import { App } from './pages/App.jsx';
-import { LayoutComponent } from './components/Layout.jsx';
+import { LayoutComponent } from './components/layout/index.jsx';
 
   const queryClient = new QueryClient()
 
