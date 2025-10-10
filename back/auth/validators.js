@@ -10,6 +10,9 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, "at least one uppercase letter")
     .regex(/[0-9]/, "at least one number")
     .regex(/[^a-zA-Z0-9]/, "at least one special character"),
+  first_name: z.string().min(1).max(100),
+  last_name: z.string().min(1).max(100),
+  phone_number: z.string().min(10).max(15),
 });
 
 export const loginSchema = z.object({

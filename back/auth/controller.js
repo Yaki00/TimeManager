@@ -11,10 +11,19 @@ const TEXT = {
 
 export async function register(req, res) {
   try {
-    const { email, password } = validate(registerSchema, req.body);
+    const { email, password, first_name, last_name, phone_number } = validate(
+      registerSchema,
+      req.body
+    );
     const exists = await findUserByEmail(email);
     if (exists) return res.status(409).json({ error: TEXT.EMAIL_IN_USE });
-    const user = await createUser({ email, password });
+    const user = await createUser({
+      email,
+      password,
+      first_name,
+      last_name,
+      phone_number,
+    });
     const access = signAccessToken({ sub: user.id, email: user.email });
     const refresh = signRefreshToken({ sub: user.id });
     res.status(201).json({ user, tokens: { access, refresh } });
@@ -35,8 +44,16 @@ export async function login(req, res) {
     const access = signAccessToken({ sub: user.id, email: user.email });
     const refresh = signRefreshToken({ sub: user.id });
     res.json({
-      user: { id: user.id, email: user.email },
-      tokens: { access, refresh },
+      user: {
+        id: user.id_user,
+        email: user.email,
+        role: user.role,
+        last_name: user.last_name,
+        first_name: user.first_name,
+        phone_number: user.phone_number,
+        contract_type: user.contract_type,
+        tokens: { access, refresh },
+      },
     });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message || TEXT.ERROR_SERVER });
