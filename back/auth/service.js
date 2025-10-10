@@ -1,14 +1,20 @@
 import bcrypt from "bcrypt";
-import { pool } from "../db.js";
+import prisma from "../db.js";
 
 export async function findUserByEmail(email) {
-  const { rows } = await pool.query(
-    'SELECT "id_user", "email", "password" FROM "User" WHERE "email" = $1',
-    [email]
-  );
-  if (!rows[0]) return null;
-  const r = rows[0];
-  return { id: r.id_user, email: r.email, password: r.password };
+  return prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      role: true,
+      firstName: true,
+      lastName: true,
+      phoneNumber: true,
+      contratType: true,
+    },
+  });
 }
 
 export async function createUser({
@@ -20,16 +26,28 @@ export async function createUser({
   role = "Employer",
   contrat_type = "H35",
 }) {
-  const hash = await bcrypt.hash(password, 12);
-  const { rows } = await pool.query(
-    `INSERT INTO "User"
-     ("email","password","first_name","last_name","phone_number","role","contrat_type","updated_at")
-     VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
-     RETURNING "id_user","email","first_name","last_name","phone_number","role","contrat_type"`,
-    [email, hash, first_name, last_name, phone_number, role, contrat_type]
-  );
-  const r = rows[0];
-  return { id: r.id_user, email: r.email };
+  try {
+    const hash = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hash,
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: phone_number,
+        role,
+        contratType: contrat_type,
+      },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    return user;
+  } catch (err) {
+    if (err.code === "P2002") {
+      throw new Error("Cet email est déjà enregistré.");
+    }
+    throw err;
+  }
 }
 
 export async function verifyPassword(plain, hash) {

@@ -11,7 +11,7 @@ const TEXT = {
 
 export async function register(req, res) {
   try {
-    const { email, password, first_name, last_name, phone_number } = validate(
+    const { email, password, firstName, lastName, phoneNumber } = validate(
       registerSchema,
       req.body
     );
@@ -20,9 +20,9 @@ export async function register(req, res) {
     const user = await createUser({
       email,
       password,
-      first_name,
-      last_name,
-      phone_number,
+      firstName,
+      lastName,
+      phoneNumber,
     });
     const access = signAccessToken({ sub: user.id, email: user.email });
     const refresh = signRefreshToken({ sub: user.id });
@@ -45,13 +45,13 @@ export async function login(req, res) {
     const refresh = signRefreshToken({ sub: user.id });
     res.json({
       user: {
-        id: user.id_user,
+        id: user.id,
         email: user.email,
         role: user.role,
-        last_name: user.last_name,
-        first_name: user.first_name,
-        phone_number: user.phone_number,
-        contract_type: user.contract_type,
+        lastName: user.lastName,
+        firstName: user.firstName,
+        phoneNumber: user.phoneNumber,
+        contratType: user.contratType,
         tokens: { access, refresh },
       },
     });
@@ -62,9 +62,10 @@ export async function login(req, res) {
 
 export async function refresh(req, res) {
   try {
-    const { refresh } = req.body || {};
-    if (!refresh) return res.status(400).json({ error: TEXT.INVALID_REFRESH });
-    const payload = verifyRefresh(refresh);
+    const { refresh: refreshToken } = req.body || {};
+    if (!refreshToken)
+      return res.status(400).json({ error: TEXT.INVALID_REFRESH });
+    const payload = verifyRefresh(refreshToken);
     const access = signAccessToken({ sub: payload.sub });
     res.json({ access });
   } catch {
