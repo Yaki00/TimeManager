@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./auth/routes.js";
-import { pool } from "./db.js";
+import prisma from "./db.js";
 
 const app = express();
 app.use(cors({ origin: "*" }));
@@ -11,8 +11,8 @@ const port = process.env.PORT || 3000;
 
 // Test de connexion à la base au démarrage
 try {
-  const { rows } = await pool.query("SELECT NOW()");
-  console.log("Connecté à PostgreSQL :", rows[0].now);
+  const [{ now }] = await prisma.$queryRaw`SELECT NOW() AS now`;
+  console.log("Connecté à PostgreSQL :", now);
 } catch (err) {
   console.error("Erreur de connexion PostgreSQL :", err);
 }
@@ -21,10 +21,10 @@ try {
 app.get("/ping", (req, res) => res.json({ pong: true }));
 
 // Route pour tester la base
-app.get("/db", async (req, res) => {
+app.get("/db", async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT NOW()");
-    res.json({ db_time: rows[0].now });
+    const [{ now }] = await prisma.$queryRaw`SELECT NOW() AS now`;
+    res.json({ db_time: now });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur DB" });
@@ -37,4 +37,13 @@ app.use("/auth", authRoutes);
 // Lancement du serveur
 app.listen(port, () => {
   console.log(`Serveur lancé sur le port ${port}`);
+});
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
