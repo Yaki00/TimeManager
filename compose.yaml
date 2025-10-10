@@ -45,6 +45,8 @@ services:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
+        npx prisma generate;
+        npx prisma db push;
         exec npm run dev'
     healthcheck:
       test:
