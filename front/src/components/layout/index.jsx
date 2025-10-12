@@ -6,29 +6,6 @@ import { MenuLayout } from './Menu.jsx';
 
 const { Content, Sider } = Layout;
 
-const Profile = styled.div`
-  text-align: center;
-  display: flex;
-  /* padding: ${props => (props.$collapsed ? 0 : '0px 16px 0 24px')}; */
-  gap: 10px;
-  align-items: center;
-  /* justify-content: ${props => (props.$collapsed ? 'center' : 'flex-start')}; */
-  justify-content: center;
-  cursor: pointer;
-  margin: 10px;
-  height: 40px;
-  transition: all 0.3s;
-  border-radius: 6px;
-
-  /* &:hover {
-	background-color: #C0C0F6 !important;
-  color: white !important;
-  } */
-  &p {
-	margin: 0;
-  }
-`;
-
 const SiderStyle = styled(Sider)`
 	background-color: #fff;
 	display: flex;
@@ -57,9 +34,6 @@ const SiderStyle = styled(Sider)`
 
 }
 `;
-
-
-
 
 export const LayoutComponent = ({ children, title }) => {
   const [collapsed, setCollapsed] = useState(true);

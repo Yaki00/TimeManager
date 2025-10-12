@@ -29,7 +29,7 @@ let navigate = useNavigate();
 	  };
   return (
 	<Container>
-   <RegisterForm  onFinish={onFinish} loading={loadingRegister} />
+		<RegisterForm  onFinish={onFinish} loading={loadingRegister} />
 	</Container>
   );
 };
