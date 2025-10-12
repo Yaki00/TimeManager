@@ -2,6 +2,8 @@ import { Menu,Avatar, Popover, Button } from 'antd';
 import styled from 'styled-components';
 import { Link } from 'react-router';
 import { items } from '../../utils/GetItemLayout.jsx';
+import { useUserStore } from '../../zustand/store.js';
+import { useNavigate } from 'react-router';
 
 
 const MenuStyle = styled(Menu)`
@@ -32,6 +34,15 @@ const Profile = styled.div`
   }
 `;
 export const MenuLayout = ({ collapsed }) => {
+let navigate = useNavigate();
+
+
+	const handleLogout = () => {
+		useUserStore.getState().logout();
+		navigate("/login");
+	  }
+
+
 	return (
 		<div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
 			<MenuStyle
@@ -43,12 +54,13 @@ export const MenuLayout = ({ collapsed }) => {
 			<Profile>
 				<Popover
 					placement={collapsed ? "right" : "top"}
-					content={<Button type="primary" 
+					content={
+						<Button type="primary" 
 							style={{ backgroundColor: 'red', border: 'none' }}
-							href="/login">
-								Logout
-							</Button>
-						}
+							onClick={handleLogout}>
+							Logout
+						</Button>
+					}
 					>
 					<Link to="/profile">
 						<Avatar  size={30} src="https://api.dicebear.com/7.x/miniavs/svg?seed=1" />

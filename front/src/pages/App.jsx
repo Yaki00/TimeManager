@@ -51,13 +51,13 @@ export const App = () => {
 		<div >
 			<h1>Dashboard</h1>
 
-<div style={{ width: 400, height: 300, marginTop: '50px', backgroundColor: 'white', padding: '20px', borderRadius: '10px' }}>
+{/* <div style={{ width: 400, height: 300, marginTop: '50px', backgroundColor: 'white', padding: '20px', borderRadius: '10px' }}>
 <ResponsiveContainer width="100%" height="100%">
 			<BarChart width={150} height={40} data={data}>
 				<Bar dataKey="uv" fill="#8884d8" />
 			</BarChart>
 			</ResponsiveContainer>
-</div>
+</div> */}
 				
 		</div>
 

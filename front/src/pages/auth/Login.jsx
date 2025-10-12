@@ -9,6 +9,7 @@ const Container = styled.div`
   align-items: center;
   height: 100vh;
   margin: 0 auto;
+  background-color: #f5f6fa !important;
 `;
 
 export const Login = () => {

@@ -1,10 +1,12 @@
 import {useMutation} from '@tanstack/react-query'
 import { authApi } from '../api/auth'
 import { useUserStore } from '../zustand/store';
+import { AES } from 'crypto-js';
 
 export const useAuth = () => {
 
-
+	const secretKey = 'your-secret-key'; //placer en variable d'environnement
+ 
 
 	const setUser = useUserStore((state) => state.setUser);
 
@@ -20,7 +22,7 @@ export const useAuth = () => {
 				email: 'john.doe@example.com',
 				phoneNumber: '123-456-7890',
 				role: 'user',
-				token: 'abc123',
+				token: AES.encrypt(data.tokens.refresh, secretKey).toString(),
 			}
 			setUser(data);
 

@@ -1,4 +1,4 @@
-
+import  { useState } from 'react';
 import {
 	Button,
   Form,
@@ -10,19 +10,27 @@ import { InboxOutlined } from '@ant-design/icons';
 
 
 export const RegisterForm = ({ onFinish, loading }) => {
-	const normFile = e => {
-  console.log('Upload event:', e);
-  if (Array.isArray(e)) {
-    return e;
-  }
-  return e?.fileList;
-};
+// 	  const [fileList, setFileList] = useState([]);
+// 	 const handleBeforeUpload = (file) => {
+//     setFileList([file]);
+//     return false;
+//   };
+
+//   const fileName = (e) => {
+//     console.log('Upload event:', e);
+//     if (Array.isArray(e)) {
+//       return e;
+//     }
+//     return e?.fileList;
+//   };
+
 	return (
 		 <Form
       name="register"
       onFinish={onFinish}
       style={{ maxWidth: 600 }}
       scrollToFirstError
+	  layout="vertical"
     >
 		<Form.Item
 		name="firstName"
@@ -61,8 +69,14 @@ export const RegisterForm = ({ onFinish, loading }) => {
         rules={[
           {
             required: true,
-            message: 'Please input your password!',
+            message: "S'il vous plaît saisir votre mot de passe!",
+			min: 8
+			
           },
+		  {
+			pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_\-+=~`])(?=.*[a-zA-Z]).{8,}$/,
+			message: "Le mot de passe doit contenir au moins 8 caractères, un caractère spécial, un chiffre et une majuscule",
+		  }
         ]}
         hasFeedback
       >
@@ -77,14 +91,14 @@ export const RegisterForm = ({ onFinish, loading }) => {
         rules={[
           {
             required: true,
-            message: 'Please confirm your password!',
+            message: "S'il vous plaît confirmer votre mot de passe!",
           },
           ({ getFieldValue }) => ({
             validator(_, value) {
               if (!value || getFieldValue('password') === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error('The new password that you entered do not match!'));
+              return Promise.reject(new Error("Le nouveau mot de passe que vous avez saisi ne correspond pas !"));
             },
           }),
         ]}
@@ -94,28 +108,30 @@ export const RegisterForm = ({ onFinish, loading }) => {
       <Form.Item
         name="phone"
         label="Numéro de téléphone"
-        rules={[{ required: true, message: 'Please input your phone number!' }]}
+        rules={[{ required: true, message: "S'il vous plaît saisir votre numéro de téléphone!" }]}
       >
         <Input  style={{ width: '100%' }} />
       </Form.Item>
-	  <Form.Item label="Dragger">
-      <Form.Item name="dragger" valuePropName="fileList" getValueFromEvent={normFile} noStyle>
-        <Upload.Dragger name="files" action="#">
+	  {/* <Form.Item label="Avatar" name="avatar" valuePropName="fileList" getValueFromEvent={fileName}>
+        <Upload.Dragger
+          name="file"
+          beforeUpload={handleBeforeUpload} 
+          multiple={false}
+        >
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">Click or drag file to this area to upload</p>
-          <p className="ant-upload-hint">Support for a single or bulk upload.</p>
+          <p className="ant-upload-text">Cliquez ou glissez un fichier ici</p>
+          <p className="ant-upload-hint">Le fichier ne sera pas uploadé automatiquement</p>
         </Upload.Dragger>
-      </Form.Item>
-		</Form.Item>
+      </Form.Item> */}
 	  <Form.Item>
 				<Button type="primary" block htmlType="submit" loading={loading}>
-					Register
+					Inscription
 				</Button>
 			</Form.Item>
 	  <Form.Item style={{ marginBottom: 0 }}>
-		Already have an account? <a href="/login">Login now!</a>
+		Vous avez déjà un compte ? <a href="/login">Connectez-vous maintenant!</a>
 	  </Form.Item>
     </Form>
 	)

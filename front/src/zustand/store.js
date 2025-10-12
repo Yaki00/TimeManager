@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 const user = {
 	id: null,
@@ -8,11 +8,23 @@ const user = {
 	email: '',
 	phoneNumber: '',
 	role: '',
+	contractType: '',
 	token: '',
 }
 
-export const useUserStore = create(set => ({
-	user: user,
-	setUser: (userData) => set(state => ({ user: { ...state.user, ...userData } })),
-	logout: () => set({ user: user }),
-}));
+export const useUserStore = create(
+	persist(
+		(set) => ({
+			user: user,
+			setUser:  (newUser) => set({ user: newUser }),
+			logout: () => {
+				set({ user: user })
+				localStorage.removeItem('user-storage');
+			},
+		}),
+		{
+			name: 'user-storage',
+			storage: createJSONStorage(() => localStorage),
+		}
+	)
+);

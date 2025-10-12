@@ -14,18 +14,18 @@ const Container = styled.div`
 
 export const Register = () => {
 let navigate = useNavigate();
-	const {loadingRegister, mutateAsync: RegisterMutation} = useAuth();
+	const {loadingRegister,registerAsync: RegisterMutation} = useAuth();
 
 	const onFinish = async (values) => {
-	try{
 		console.log('Success:', values);
 		const response = await RegisterMutation(values);
-		navigate("/login");
-		
-		console.log("response register", response);
-	} catch (error) {
-		console.error("Error registering:", error);
-	}
+		console.log("response register", response.error);
+		if(response.status === 201){
+			alert("Registration successful! Please log in.");
+			navigate("/login");
+		}else{
+			alert(response.response.error || "Registration failed. Please try again.");
+		}
 	  };
   return (
 	<Container>

@@ -62,7 +62,7 @@ const SiderStyle = styled(Sider)`
 
 
 export const LayoutComponent = ({ children, title }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
   	<Layout style={{ minHeight: '100vh' }}>
