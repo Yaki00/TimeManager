@@ -1,5 +1,9 @@
 import bcrypt from "bcrypt";
-import prisma from "../db.js";
+import prisma from "../../db.js";
+import "dotenv/config";
+
+const ROUNDS = Number(process.env.BCRYPT_ROUNDS || 12);
+const DUMMY_FALLBACK = bcrypt.hashSync("fakepassword", ROUNDS);
 
 export async function findUserByEmail(email) {
   return prisma.user.findUnique({
@@ -17,6 +21,15 @@ export async function findUserByEmail(email) {
   });
 }
 
+export async function dummyVerifyPassword(password) {
+  const hash = process.env.DUMMY_HASH || DUMMY_FALLBACK;
+  try {
+    return await verifyPassword(password, hash);
+  } catch {
+    return false;
+  }
+}
+
 export async function createUser({
   email,
   password,
@@ -27,10 +40,10 @@ export async function createUser({
   contractType = "H35",
 }) {
   try {
-    const hash = await bcrypt.hash(password, 12);
+    const hash = await bcrypt.hash(password, ROUNDS);
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.trim().toLowerCase(),
         password: hash,
         firstName: firstName,
         lastName: lastName,
@@ -44,7 +57,10 @@ export async function createUser({
     return user;
   } catch (err) {
     if (err.code === "P2002") {
-      throw new Error("Cet email est déjà enregistré.");
+      const e = new Error("Cet email est déjà enregistré.");
+      e.status = 409;
+      e.code = "EMAIL_IN_USE";
+      throw e;
     }
     throw err;
   }

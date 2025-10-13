@@ -15,7 +15,7 @@ import {
   updateRoleUserById,
 } from "./controller.js";
 
-import { requireAuth } from "../../auth/middleware.js";
+import { requireAuth } from "../auth/middleware.js";
 import requireResponsable from "./middleware.js";
 
 const router = Router();

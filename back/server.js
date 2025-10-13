@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./auth/routes.js";
+import authRoutes from "./modules/auth/routes.js";
 import userRoutes from "./modules/user/routes.js";
 import prisma from "./db.js";
 
 import { errorHandler } from "./core/errorHandler.js";
-import asyncHandler from 'express-async-handler';
+import asyncHandler from "express-async-handler";
 import { requestId } from "./core/requestId.js";
 
 const app = express();
