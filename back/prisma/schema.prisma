@@ -16,7 +16,7 @@ enum Role {
   Responsable
 }
 
-enum ContratType {
+enum ContractType {
   H15
   H35
   H40
@@ -52,7 +52,7 @@ model User {
   phoneNumber String      @map("phone_number")
   password    String
   role        Role
-  contratType ContratType @map("contrat_type")
+  contractType ContractType @map("contract_type")
   avatarUrl   String?     @map("avatar_url")
 
   // timestamps

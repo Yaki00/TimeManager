@@ -7,12 +7,12 @@ export async function findUserByEmail(email) {
     select: {
       id: true,
       email: true,
-      password: true,
       role: true,
       firstName: true,
       lastName: true,
+      password: true,
       phoneNumber: true,
-      contratType: true,
+      contractType: true,
     },
   });
 }
@@ -20,11 +20,11 @@ export async function findUserByEmail(email) {
 export async function createUser({
   email,
   password,
-  first_name,
-  last_name,
-  phone_number,
+  firstName,
+  lastName,
+  phoneNumber,
   role = "Employer",
-  contrat_type = "H35",
+  contractType = "H35",
 }) {
   try {
     const hash = await bcrypt.hash(password, 12);
@@ -32,11 +32,11 @@ export async function createUser({
       data: {
         email,
         password: hash,
-        firstName: first_name,
-        lastName: last_name,
-        phoneNumber: phone_number,
+        firstName: firstName,
+        lastName: lastName,
+        phoneNumber: phoneNumber,
         role,
-        contratType: contrat_type,
+        contractType: contractType,
       },
       select: { id: true, email: true, firstName: true, lastName: true },
     });
