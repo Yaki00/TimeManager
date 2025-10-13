@@ -24,8 +24,8 @@ export async function register(req, res) {
       lastName,
       phoneNumber,
     });
-    const access = signAccessToken({ sub: user.id, email: user.email });
-    const refresh = signRefreshToken({ sub: user.id });
+    const access = signAccessToken(user);
+    const refresh = signRefreshToken(user);
     res.status(201).json({ user, tokens: { access, refresh } });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message || TEXT.ERROR_SERVER });
@@ -41,8 +41,8 @@ export async function login(req, res) {
     const ok = await verifyPassword(password, user.password);
     if (!ok) return res.status(401).json({ error: TEXT.INVALID_CREDENTIALS });
 
-    const access = signAccessToken({ sub: user.id, email: user.email });
-    const refresh = signRefreshToken({ sub: user.id });
+    const access = signAccessToken(user);
+    const refresh = signRefreshToken(user);
     res.json({
       user: {
         id: user.id,
@@ -51,7 +51,7 @@ export async function login(req, res) {
         lastName: user.lastName,
         firstName: user.firstName,
         phoneNumber: user.phoneNumber,
-        contratType: user.contratType,
+        contractType: user.contractType,
         tokens: { access, refresh },
       },
     });

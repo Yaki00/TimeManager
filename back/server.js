@@ -1,11 +1,17 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./auth/routes.js";
+import userRoutes from "./modules/user/routes.js";
 import prisma from "./db.js";
+
+import { errorHandler } from "./core/errorHandler.js";
+import asyncHandler from 'express-async-handler';
+import { requestId } from "./core/requestId.js";
 
 const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+app.use(requestId);
 
 const port = process.env.PORT || 3000;
 
@@ -21,18 +27,31 @@ try {
 app.get("/ping", (req, res) => res.json({ pong: true }));
 
 // Route pour tester la base
-app.get("/db", async (_req, res) => {
-  try {
+app.get(
+  "/db",
+  asyncHandler(async (_req, res) => {
     const [{ now }] = await prisma.$queryRaw`SELECT NOW() AS now`;
     res.json({ db_time: now });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur DB" });
-  }
-});
+  })
+);
 
 // Routes d'authentification
 app.use("/auth", authRoutes);
+
+// Routes d'user
+app.use("/users", userRoutes);
+
+// 404 pour toute route non trouvée
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    code: "NOT_FOUND",
+    message: "Route introuvable",
+  });
+});
+
+// Middleware d’erreurs global
+app.use(errorHandler);
 
 // Lancement du serveur
 app.listen(port, () => {

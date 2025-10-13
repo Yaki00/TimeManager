@@ -7,11 +7,23 @@ const {
   REFRESH_TTL = "7d",
 } = process.env;
 
-export function signAccessToken(payload) {
+if (!JWT_ACCESS_SECRET) throw new Error("JWT_ACCESS_SECRET manquant");
+if (!JWT_REFRESH_SECRET) throw new Error("JWT_REFRESH_SECRET manquant");
+
+export function signAccessToken(user) {
+  const payload = {
+    sub: String(user.id),
+    email: user.email,
+    role: user.role,
+  };
   return jwt.sign(payload, JWT_ACCESS_SECRET, { expiresIn: ACCESS_TTL });
 }
 
-export function signRefreshToken(payload) {
+export function signRefreshToken(user) {
+  const payload = {
+    sub: String(user.id),
+    tokenType: "refresh",
+  };
   return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL });
 }
 
