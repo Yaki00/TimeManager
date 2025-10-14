@@ -40,6 +40,12 @@ enum VacationStatus {
   Refuse
 }
 
+enum LeaveStatus{
+  EnAttente
+  Accepte
+  Refuse
+}
+
 /**
  * ───────── Tables ─────────
  */
@@ -109,13 +115,14 @@ model Warning {
   quantity    Int
 
   // FK
-  userId Int  @map("id_user")
+  userId Int  @map("id_user") 
   user   User @relation(fields: [userId], references: [id])
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("Warning")
 }
 
@@ -127,13 +134,14 @@ model Vacation {
   status    VacationStatus
 
   // FK
-  userId Int  @map("id_user")
+  userId Int  @map("id_user")  
   user   User @relation(fields: [userId], references: [id])
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("Vacation")
 }
 
@@ -142,7 +150,7 @@ model Leave {
   startDate     DateTime @map("start_date") @db.Date
   endDate       DateTime @map("end_date") @db.Date
   justification String
-  status        String
+  status        LeaveStatus @default(EnAttente)
   daysLeave     Int      @map("days_leave")
 
   // FK
@@ -153,15 +161,18 @@ model Leave {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([userId, startDate, endDate])
   @@map("Leave")
 }
 
 model Clocking {
   id            Int       @id @default(autoincrement()) @map("id_clocking")
-  arrivalTime   DateTime? @map("arrival_time") @db.Time
-  departureTime DateTime? @map("departure_time") @db.Time
+  firstArrival   DateTime? @map("first_arrival")   @db.Time
+  lastDeparture  DateTime? @map("last_departure")  @db.Time
+  workMinutes    Int       @default(0) @map("work_minutes")
+  breakMinutes   Int       @default(0) @map("break_minutes")
   clockingDate  DateTime  @map("clocking_date") @db.Date
-  totalHours    Decimal   @map("total_hours") @db.Decimal(8, 2)
+  totalHours    Decimal   @map("total_hours") @db.Decimal(8, 2) @default(0)
   weekDay       String    @map("week_day")
   workDay       Int       @map("work_day")
 
@@ -172,6 +183,10 @@ model Clocking {
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, clockingDate])
+  @@index([userId, clockingDate])
+
 
   @@map("Clocking")
 }
@@ -187,10 +202,12 @@ model Receive {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user         User         @relation(fields: [userId], references: [id])
-  notification Notification @relation(fields: [notificationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@id([userId, notificationId])
+  @@index([userId])
+  @@index([notificationId])
   @@map("Receive")
 }
 
@@ -202,9 +219,12 @@ model Belongs {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  team Team @relation(fields: [teamId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
 
   @@id([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
   @@map("Belongs")
 }
