@@ -9,7 +9,7 @@ import {
   findOverlappingLeave,
 } from "./service.js";
 
-import { LeaveSchema, validate } from "./validation.js";
+import { LeaveSchema, validate } from "./validators.js";
 import { asyncHandler } from "../../core/async.js";
 import {
   badRequest,
