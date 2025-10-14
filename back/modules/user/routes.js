@@ -16,7 +16,7 @@ import {
 } from "./controller.js";
 
 import { requireAuth } from "../auth/middleware.js";
-import requireResponsable from "./middleware.js";
+import { requireResponsable } from "./middleware.js";
 
 const router = Router();
 

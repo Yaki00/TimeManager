@@ -4,6 +4,7 @@ import authRoutes from "./modules/auth/routes.js";
 import userRoutes from "./modules/user/routes.js";
 import prisma from "./db.js";
 
+import leaveRoutes from "./modules/leave/routes.js";
 import { errorHandler } from "./core/errorHandler.js";
 import asyncHandler from "express-async-handler";
 import { requestId } from "./core/requestId.js";
@@ -40,6 +41,8 @@ app.use("/auth", authRoutes);
 
 // Routes d'user
 app.use("/users", userRoutes);
+
+app.use("/leaves", leaveRoutes);
 
 // 404 pour toute route non trouvée
 app.use((req, res) => {
