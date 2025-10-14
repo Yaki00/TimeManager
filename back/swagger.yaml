@@ -1,0 +1,773 @@
+openapi: 3.0.3
+info:
+  title: API Auth / Users / Leaves
+  version: "1.0.0"
+  description: |
+    Spécification OpenAPI générée à partir de vos routes Express.
+
+    **Base URL**: `http://localhost:3000`
+servers:
+  - url: http://localhost:3000
+    description: Développement local
+
+tags:
+  - name: Health
+    description: Vérifications basiques du serveur et de la base
+  - name: Auth
+    description: Authentification & jetons
+  - name: Users
+    description: Gestion des utilisateurs
+  - name: Leaves
+    description: Gestion des congés/demandes d'absence
+
+security:
+  - bearerAuth: []
+
+paths:
+  /ping:
+    get:
+      tags: [Health]
+      summary: Ping du serveur
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pong:
+                    type: boolean
+                example: { pong: true }
+  /db:
+    get:
+      tags: [Health]
+      summary: Vérifie l'accès à la base PostgreSQL
+      description: Retourne l'heure côté base (`SELECT NOW()`).
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  db_time:
+                    type: string
+                    format: date-time
+                example:
+                  db_time: "2025-10-14T13:12:00.123Z"
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Créer un utilisateur
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter et obtenir les jetons
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rafraîchir le jeton d'accès
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: Nouveau jeton d'accès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Profil de l'utilisateur courant
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Lister tous les utilisateurs
+      responses:
+        "200":
+          description: Liste d'utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/me/info:
+    get:
+      tags: [Users]
+      summary: Obtenir les infos du user courant
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/count:
+    get:
+      tags: [Users]
+      summary: Compter le nombre total d'utilisateurs
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/count/role/{role}:
+    get:
+      tags: [Users]
+      summary: Compter les utilisateurs par rôle
+      parameters:
+        - $ref: "#/components/parameters/RoleParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/count/contract/{contractType}:
+    get:
+      tags: [Users]
+      summary: Compter les utilisateurs par type de contrat
+      parameters:
+        - $ref: "#/components/parameters/ContractTypeParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/role/{role}:
+    get:
+      tags: [Users]
+      summary: Lister les utilisateurs par rôle
+      parameters:
+        - $ref: "#/components/parameters/RoleParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/name/{name}:
+    get:
+      tags: [Users]
+      summary: Rechercher par nom
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/phone/{phoneNumber}:
+    get:
+      tags: [Users]
+      summary: Rechercher par téléphone
+      parameters:
+        - in: path
+          name: phoneNumber
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/contract/{contractType}:
+    get:
+      tags: [Users]
+      summary: Lister par type de contrat
+      parameters:
+        - $ref: "#/components/parameters/ContractTypeParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Obtenir un utilisateur par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Users]
+      summary: Mettre à jour un utilisateur (remplacement)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Users]
+      summary: Supprimer un utilisateur
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /users/{id}/role:
+    patch:
+      tags: [Users]
+      summary: Mettre à jour le rôle d'un utilisateur
+      description: Nécessite des privilèges de **Responsable**.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: "#/components/schemas/Role"
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /leaves:
+    post:
+      tags: [Leaves]
+      summary: Créer une demande d'absence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveCreate"
+      responses:
+        "201":
+          description: Créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    get:
+      tags: [Leaves]
+      summary: Lister toutes les demandes (restreint)
+      description: Réservé aux **Responsable**/**Manager**.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /leaves/{id}:
+    get:
+      tags: [Leaves]
+      summary: Obtenir une demande
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Leaves]
+      summary: Mettre à jour une demande (partiel)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveUpdate"
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Leaves]
+      summary: Supprimer une demande
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /leaves/{id}/status:
+    patch:
+      tags: [Leaves]
+      summary: Changer le statut d'une demande (restreint)
+      description: Réservé aux **Responsable**/**Manager**.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: "#/components/schemas/LeaveStatus"
+                decidedBy:
+                  type: string
+                  description: ID de l'utilisateur validateur
+                decisionComment:
+                  type: string
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /leaves/users/{userId}:
+    get:
+      tags: [Leaves]
+      summary: Lister les demandes d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /leaves/teams/{teamId}:
+    get:
+      tags: [Leaves]
+      summary: Lister les demandes d'une équipe (restreint)
+      description: Réservé aux **Responsable**/**Manager**.
+      parameters:
+        - in: path
+          name: teamId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    RoleParam:
+      in: path
+      name: role
+      required: true
+      schema:
+        $ref: "#/components/schemas/Role"
+    ContractTypeParam:
+      in: path
+      name: contractType
+      required: true
+      schema:
+        $ref: "#/components/schemas/ContractType"
+
+  responses:
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Accès refusé (rôle insuffisant)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        contractType:
+          $ref: "#/components/schemas/ContractType"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, email, role]
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        contractType:
+          $ref: "#/components/schemas/ContractType"
+    Role:
+      type: string
+      description: Rôle applicatif
+      enum: [USER, MANAGER, RESPONSABLE, ADMIN]
+    ContractType:
+      type: string
+      enum: [CDI, CDD, STAGE, APPRENTISSAGE, FREELANCE, AUTRE]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        name:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    Leave:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        teamId:
+          type: string
+          nullable: true
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        status:
+          $ref: "#/components/schemas/LeaveStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+        decidedBy:
+          type: string
+          nullable: true
+        decisionComment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, type, status, startDate, endDate]
+    LeaveCreate:
+      type: object
+      required: [type, startDate, endDate]
+      properties:
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+        teamId:
+          type: string
+          nullable: true
+    LeaveUpdate:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+        teamId:
+          type: string
+          nullable: true
+    LeaveType:
+      type: string
+      enum: [PAID, UNPAID, SICK, RTT, OTHER]
+    LeaveStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+
+    CountResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int32
+      example: { count: 42 }
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        code:
+          type: string
+          example: NOT_FOUND
+        message:
+          type: string
+        requestId:
+          type: string
+          description: Identifiant de requête (middleware requestId)
