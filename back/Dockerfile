@@ -10,8 +10,9 @@ ENV NPM_CONFIG_PRODUCTION=false
 
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npx prisma generate
+
 RUN npm ci
+
 COPY . .
 EXPOSE 3000
 CMD ["npm","run","dev"]

@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "predev": "prisma generate --schema=prisma/schema.prisma",
     "postinstall": "prisma generate --schema=prisma/schema.prisma",
     "studio": "prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0"
   },
