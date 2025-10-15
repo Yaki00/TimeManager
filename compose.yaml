@@ -44,8 +44,7 @@ services:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
-        npx prisma generate;
-        npx prisma db push;
+        npx prisma db push --schema=prisma/schema.prisma;
         exec npm run dev'
     healthcheck:
       test:
@@ -58,6 +57,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
   db:
     image: postgres:16
     environment:
@@ -75,6 +75,7 @@ services:
       retries: 10
       start_period: 5s
     restart: unless-stopped
+
   prisma-studio:
     build:
       context: ./back
@@ -97,7 +98,8 @@ services:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
-        exec npm run studio'
+        npx prisma generate --schema=prisma/schema.prisma;
+        exec npx prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0'
     # → Prisma Studio: http://localhost:5555
 
   pgadmin:
