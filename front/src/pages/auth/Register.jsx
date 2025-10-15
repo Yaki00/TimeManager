@@ -62,15 +62,15 @@ export const Register = () => {
 	<Container>
 			{contextHolder}
 		<Wrapper>
-				<Header>
+			<Header>
 				<div style={{ height: '50px', width: '50px', marginBottom: '10px' }}>
 					<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
 						<path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="#9191fa"></path>
 					</svg>
 				</div>
 				<h1>Time Master</h1>
-				</Header>
-		<RegisterForm  onFinish={onFinish} loading={loadingRegister} />
+			</Header>
+			<RegisterForm  onFinish={onFinish} loading={loadingRegister} />
 		</Wrapper>
  	</Container>
   );

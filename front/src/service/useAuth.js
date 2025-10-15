@@ -16,13 +16,13 @@ export const useAuth = () => {
 		onSuccess: (data) => {
 			console.log("Login successful:", data);
 			data = {
-				id: 1,
-				firstName: 'John',
-				lastName: 'Doe',
-				email: 'john.doe@example.com',
-				phoneNumber: '123-456-7890',
-				role: 'user',
-				token: AES.encrypt(data.tokens.refresh, secretKey).toString(),
+				id: data.user.id,
+				firstName: data.user.firstName,
+				lastName: data.user.lastName,
+				email: data.user.email,
+				phoneNumber: data.user.phoneNumber,
+				role: data.user.role,
+				token: AES.encrypt(data.user.tokens.refresh, secretKey).toString(),
 			}
 			setUser(data);
 
