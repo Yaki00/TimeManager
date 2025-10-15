@@ -7,6 +7,7 @@ import {
 } from 'antd';
 
 import { InboxOutlined } from '@ant-design/icons';
+import { Link } from 'react-router';
 
 
 export const RegisterForm = ({ onFinish, loading }) => {
@@ -28,7 +29,7 @@ export const RegisterForm = ({ onFinish, loading }) => {
 		 <Form
       name="register"
       onFinish={onFinish}
-      style={{ maxWidth: 600 }}
+      style={{ maxWidth: 300 }}
       scrollToFirstError
 	  layout="vertical"
     >
@@ -106,7 +107,7 @@ export const RegisterForm = ({ onFinish, loading }) => {
         <Input.Password />
       </Form.Item>
       <Form.Item
-        name="phone"
+        name="phoneNumber"
         label="Numéro de téléphone"
         rules={[{ required: true, message: "S'il vous plaît saisir votre numéro de téléphone!" }]}
       >
@@ -126,12 +127,12 @@ export const RegisterForm = ({ onFinish, loading }) => {
         </Upload.Dragger>
       </Form.Item> */}
 	  <Form.Item>
-				<Button type="primary" block htmlType="submit" loading={loading}>
+				<Button type="primary" block htmlType="submit" loading={loading} style={{ backgroundColor: '#9191fa', borderColor: '#9191fa' }}>
 					Inscription
 				</Button>
 			</Form.Item>
 	  <Form.Item style={{ marginBottom: 0 }}>
-		Vous avez déjà un compte ? <a href="/login">Connectez-vous maintenant!</a>
+		Vous avez déjà un compte ? <Link to="/login" style={{ color: '#9191fa' }}>Connectez-vous maintenant!</Link>
 	  </Form.Item>
     </Form>
 	)
