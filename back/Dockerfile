@@ -5,13 +5,14 @@ RUN apt-get update -y \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-ENV NODE_ENV=development
-ENV NPM_CONFIG_PRODUCTION=false
 
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npx prisma generate
+
 RUN npm ci
+
 COPY . .
-EXPOSE 3000
-CMD ["npm","run","dev"]
+
+EXPOSE 5555
+
+CMD ["npm", "run", "studio"]

@@ -42,8 +42,8 @@ export const Register = () => {
 	const onFinish = async (values) => {
 		console.log('Success:', values);
 		const response = await RegisterMutation(values);
-		console.log("response register", response.error);
-		if(response.status === 201){
+		console.log("response register", response);
+		if(response.user){
 			messageApi.open({
 				type: 'success',
 				content: 'Registration successful! Please log in.',
