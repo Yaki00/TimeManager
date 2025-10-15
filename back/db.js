@@ -1,18 +1,10 @@
-// db.js
-import pkg from "pg";
-const { Pool } = pkg;
+import { PrismaClient } from "@prisma/client";
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV !== "production"
+      ? ["query", "error", "warn"]
+      : ["error"],
+});
 
-// --- LOG SQL ---
-const _query = pool.query.bind(pool);
-pool.query = async (...args) => {
-  const [text, params] = args;
-  console.log("SQL =>", text, "PARAMS =>", params);
-  try {
-    return await _query(...args);
-  } catch (e) {
-    console.error("SQL ERROR =>", e.message);
-    throw e;
-  }
-};
+export default prisma;

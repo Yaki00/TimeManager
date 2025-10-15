@@ -2,7 +2,7 @@
 CREATE TYPE "Role" AS ENUM ('Employer', 'Manager', 'Responsable');
 
 -- CreateEnum
-CREATE TYPE "ContratType" AS ENUM ('H15', 'H35', 'H40');
+CREATE TYPE "ContractType" AS ENUM ('H15', 'H35', 'H40');
 
 -- CreateEnum
 CREATE TYPE "NotificationStatus" AS ENUM ('Presence', 'Retard', 'Avertissement');
@@ -13,6 +13,9 @@ CREATE TYPE "WarningStatus" AS ENUM ('Alert', 'Retard', 'AbsenceNonJustifiee');
 -- CreateEnum
 CREATE TYPE "VacationStatus" AS ENUM ('EnAttente', 'Accepte', 'Refuse');
 
+-- CreateEnum
+CREATE TYPE "LeaveStatus" AS ENUM ('EnAttente', 'Accepte', 'Refuse');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id_user" SERIAL NOT NULL,
@@ -22,7 +25,8 @@ CREATE TABLE "User" (
     "phone_number" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "role" "Role" NOT NULL,
-    "contrat_type" "ContratType" NOT NULL,
+    "contract_type" "ContractType" NOT NULL,
+    "avatar_url" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -86,7 +90,7 @@ CREATE TABLE "Leave" (
     "start_date" DATE NOT NULL,
     "end_date" DATE NOT NULL,
     "justification" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" "LeaveStatus" NOT NULL,
     "days_leave" INTEGER NOT NULL,
     "id_user" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,13 +102,15 @@ CREATE TABLE "Leave" (
 -- CreateTable
 CREATE TABLE "Clocking" (
     "id_clocking" SERIAL NOT NULL,
-    "arrival_time" TIME,
-    "departure_time" TIME,
+    "first_arrival" TIME,
+    "last_departure" TIME,
+    "work_minutes" INTEGER NOT NULL DEFAULT 0,
+    "break_minutes" INTEGER NOT NULL DEFAULT 0,
     "clocking_date" DATE NOT NULL,
-    "total_hours" DECIMAL(8,2) NOT NULL,
+    "total_hours" DECIMAL(8,2) NOT NULL DEFAULT 0,
     "week_day" TEXT NOT NULL,
-    "id_user" INTEGER NOT NULL,
     "work_day" INTEGER NOT NULL,
+    "id_user" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -134,6 +140,33 @@ CREATE TABLE "Belongs" (
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
+-- CreateIndex
+CREATE INDEX "Warning_id_user_idx" ON "Warning"("id_user");
+
+-- CreateIndex
+CREATE INDEX "Vacation_id_user_idx" ON "Vacation"("id_user");
+
+-- CreateIndex
+CREATE INDEX "Leave_id_user_idx" ON "Leave"("id_user");
+
+-- CreateIndex
+CREATE INDEX "Clocking_id_user_clocking_date_idx" ON "Clocking"("id_user", "clocking_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Clocking_id_user_clocking_date_key" ON "Clocking"("id_user", "clocking_date");
+
+-- CreateIndex
+CREATE INDEX "Receive_id_user_idx" ON "Receive"("id_user");
+
+-- CreateIndex
+CREATE INDEX "Receive_id_notification_idx" ON "Receive"("id_notification");
+
+-- CreateIndex
+CREATE INDEX "Belongs_id_team_idx" ON "Belongs"("id_team");
+
+-- CreateIndex
+CREATE INDEX "Belongs_id_user_idx" ON "Belongs"("id_user");
+
 -- AddForeignKey
 ALTER TABLE "Warning" ADD CONSTRAINT "Warning_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -147,13 +180,13 @@ ALTER TABLE "Leave" ADD CONSTRAINT "Leave_id_user_fkey" FOREIGN KEY ("id_user") 
 ALTER TABLE "Clocking" ADD CONSTRAINT "Clocking_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Receive" ADD CONSTRAINT "Receive_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Receive" ADD CONSTRAINT "Receive_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Receive" ADD CONSTRAINT "Receive_id_notification_fkey" FOREIGN KEY ("id_notification") REFERENCES "Notification"("id_notification") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Receive" ADD CONSTRAINT "Receive_id_notification_fkey" FOREIGN KEY ("id_notification") REFERENCES "Notification"("id_notification") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Belongs" ADD CONSTRAINT "Belongs_id_team_fkey" FOREIGN KEY ("id_team") REFERENCES "Team"("id_team") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Belongs" ADD CONSTRAINT "Belongs_id_team_fkey" FOREIGN KEY ("id_team") REFERENCES "Team"("id_team") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Belongs" ADD CONSTRAINT "Belongs_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Belongs" ADD CONSTRAINT "Belongs_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User"("id_user") ON DELETE CASCADE ON UPDATE CASCADE;
