@@ -9,6 +9,10 @@ services:
       - CHOKIDAR_USEPOLLING=1
       - CHOKIDAR_INTERVAL=100
       - WATCHPACK_POLLING=true
+      - NODE_ENV=development
+      - NPM_CONFIG_PRODUCTION=false
+      - NPM_CONFIG_AUDIT=false
+      - NPM_CONFIG_FUND=false
     volumes:
       - ./front:/app
       - node_modules_front:/app/node_modules
@@ -25,6 +29,7 @@ services:
   backend:
     build:
       context: ./back
+      target: dev
     depends_on:
       db:
         condition: service_healthy
@@ -32,9 +37,13 @@ services:
       - ./back/.env.docker
     environment:
       - PORT=3000
+      - NODE_ENV=development
+      - NPM_CONFIG_PRODUCTION=false
+      - NPM_CONFIG_AUDIT=false
+      - NPM_CONFIG_FUND=false
     volumes:
       - ./back:/app
-      - node_modules_back:/app/node_modules
+      - node_modules_back_backend:/app/node_modules
     ports:
       - "3000:3000"
     command: >-
@@ -44,8 +53,8 @@ services:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
-        npx prisma generate;
-        npx prisma db push;
+        npx prisma db push --schema=prisma/schema.prisma;
+        npx prisma generate --schema=prisma/schema.prisma;
         exec npm run dev'
     healthcheck:
       test:
@@ -58,6 +67,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
   db:
     image: postgres:16
     environment:
@@ -75,9 +85,11 @@ services:
       retries: 10
       start_period: 5s
     restart: unless-stopped
+
   prisma-studio:
     build:
       context: ./back
+      target: dev
     depends_on:
       db:
         condition: service_healthy
@@ -85,9 +97,14 @@ services:
         condition: service_started
     env_file:
       - ./back/.env.docker
+    environment:
+      - NODE_ENV=development
+      - NPM_CONFIG_PRODUCTION=false
+      - NPM_CONFIG_AUDIT=false
+      - NPM_CONFIG_FUND=false
     volumes:
       - ./back:/app
-      - node_modules_back:/app/node_modules
+      - node_modules_back_studio:/app/node_modules
     ports:
       - "5555:5555"
     command: >-
@@ -97,7 +114,8 @@ services:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
-        exec npm run studio'
+        npx prisma generate --schema=prisma/schema.prisma;
+        exec npx prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0'
     # → Prisma Studio: http://localhost:5555
 
   pgadmin:
@@ -115,9 +133,39 @@ services:
     restart: unless-stopped
     # → PostgreSQL: http://localhost:5050
 
+  backend-tests:
+    build:
+      context: ./back
+      target: test
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./back/.env.docker
+    environment:
+      - NODE_ENV=test
+      - NPM_CONFIG_PRODUCTION=false
+      - NPM_CONFIG_AUDIT=false
+      - NPM_CONFIG_FUND=false
+      - DATABASE_URL=postgresql://app:app@db:5432/app?schema=test
+    volumes:
+      - ./back:/app
+      - node_modules_back_tests:/app/node_modules
+    command: >-
+      sh -lc '
+        set -e;
+        if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          sha256sum package-lock.json > node_modules/.npmci.sha;
+        fi;
+        npx prisma db push --schema=prisma/schema.prisma --skip-generate;
+        npm run test'
+
 volumes:
   pgdata:
   node_modules:
   node_modules_front:
-  node_modules_back:
+  node_modules_back_backend:
+  node_modules_back_studio:
+  node_modules_back_tests:
   pgadmin_data:

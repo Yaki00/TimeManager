@@ -28,6 +28,8 @@ export function validate(schema, data) {
       .join(", ");
     const err = new Error(msg);
     err.status = 400;
+    err.statusCode = 400;
+    err.code = "BAD_REQUEST";
     throw err;
   }
   return parsed.data;
