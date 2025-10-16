@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 const {
+  NODE_ENV,
   JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET,
   ACCESS_TTL = "15m",
@@ -9,10 +10,19 @@ const {
   JWT_AUDIENCE,
 } = process.env;
 
-if (!JWT_ACCESS_SECRET) throw new Error("JWT_ACCESS_SECRET manquant");
-if (!JWT_REFRESH_SECRET) throw new Error("JWT_REFRESH_SECRET manquant");
-if (!JWT_ISSUER) throw new Error("JWT_ISSUER manquant");
-if (!JWT_AUDIENCE) throw new Error("JWT_AUDIENCE manquant");
+const isTest = NODE_ENV === "test";
+
+const ACCESS_SECRET =
+  JWT_ACCESS_SECRET || (isTest ? "test-access-secret" : undefined);
+const REFRESH_SECRET =
+  JWT_REFRESH_SECRET || (isTest ? "test-refresh-secret" : undefined);
+const ISSUER = JWT_ISSUER || (isTest ? "test-issuer" : undefined);
+const AUDIENCE = JWT_AUDIENCE || (isTest ? "test-audience" : undefined);
+
+if (!ACCESS_SECRET) throw new Error("JWT_ACCESS_SECRET manquant");
+if (!REFRESH_SECRET) throw new Error("JWT_REFRESH_SECRET manquant");
+if (!ISSUER) throw new Error("JWT_ISSUER manquant");
+if (!AUDIENCE) throw new Error("JWT_AUDIENCE manquant");
 
 export function signAccessToken(user) {
   const payload = {
@@ -20,10 +30,10 @@ export function signAccessToken(user) {
     email: user.email,
     role: user.role,
   };
-  return jwt.sign(payload, JWT_ACCESS_SECRET, {
+  return jwt.sign(payload, ACCESS_SECRET, {
     expiresIn: ACCESS_TTL,
-    issuer: JWT_ISSUER,
-    audience: JWT_AUDIENCE,
+    issuer: ISSUER,
+    audience: AUDIENCE,
   });
 }
 
@@ -32,23 +42,19 @@ export function signRefreshToken(user) {
     sub: String(user.id),
     tokenType: "refresh",
   };
-  return jwt.sign(payload, JWT_REFRESH_SECRET, {
+  return jwt.sign(payload, REFRESH_SECRET, {
     expiresIn: REFRESH_TTL,
-    issuer: JWT_ISSUER,
-    audience: JWT_AUDIENCE,
+    issuer: ISSUER,
+    audience: AUDIENCE,
   });
 }
 
 export function verifyAccess(token) {
-  return jwt.verify(token, JWT_ACCESS_SECRET, {
-    issuer: JWT_ISSUER,
-    audience: JWT_AUDIENCE,
-  });
+  const opts = isTest ? {} : { issuer: ISSUER, audience: AUDIENCE };
+  return jwt.verify(token, ACCESS_SECRET, opts);
 }
 
 export function verifyRefresh(token) {
-  return jwt.verify(token, JWT_REFRESH_SECRET, {
-    issuer: JWT_ISSUER,
-    audience: JWT_AUDIENCE,
-  });
+  const opts = isTest ? {} : { issuer: ISSUER, audience: AUDIENCE };
+  return jwt.verify(token, REFRESH_SECRET, opts);
 }

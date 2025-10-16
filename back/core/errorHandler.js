@@ -38,6 +38,12 @@ export function errorHandler(err, req, res, _next) {
 }
 
 function normalizeError(err) {
+  const statusFromErr = Number.isInteger(err.statusCode)
+    ? err.statusCode
+    : Number.isInteger(err.status)
+    ? err.status
+    : undefined;
+
   // Cas AppError
   if (err instanceof AppError) {
     return {
@@ -90,9 +96,10 @@ function normalizeError(err) {
   }
 
   // Fallback
+  const status = statusFromErr ?? (err.name === "ZodError" ? 400 : 500);
   return {
-    statusCode: err.statusCode || 500,
-    code: err.code || "INTERNAL_ERROR",
+    statusCode: status,
+    code: err.code || (status < 500 ? "BAD_REQUEST" : "INTERNAL_ERROR"),
     message: err.message || "Erreur interne du serveur",
     stack: err.stack,
   };
@@ -101,4 +108,3 @@ function normalizeError(err) {
 function generateTraceId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
-

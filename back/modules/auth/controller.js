@@ -1,4 +1,9 @@
-import { createUser, findUserByEmail, verifyPassword } from "./service.js";
+import {
+  createUser,
+  findUserByEmail,
+  verifyPassword,
+  dummyVerifyPassword,
+} from "./service.js";
 import { signAccessToken, signRefreshToken, verifyRefresh } from "./jwt.js";
 import { validate, registerSchema, loginSchema } from "./validators.js";
 
@@ -29,13 +34,29 @@ export const register = asyncHandler(async (req, res) => {
   });
   const access = signAccessToken(user);
   const refresh = signRefreshToken(user);
-  res.status(201).json({ user, tokens: { access, refresh } });
+  res.status(201).json({
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      lastName: user.lastName,
+      firstName: user.firstName,
+      phoneNumber: user.phoneNumber,
+      contractType: user.contractType,
+      tokens: { access, refresh },
+    },
+  });
 });
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = validate(loginSchema, req.body);
-  const user = await findUserByEmail(email);
+  const user = await findUserByEmail(email.trim().toLowerCase());
   if (!user) {
+    await dummyVerifyPassword(password);
+    throw unauthorized(TEXT.INVALID_CREDENTIALS, "INVALID_CREDENTIALS");
+  }
+
+  if (typeof user.password !== "string" || !user.password) {
     await dummyVerifyPassword(password);
     throw unauthorized(TEXT.INVALID_CREDENTIALS, "INVALID_CREDENTIALS");
   }

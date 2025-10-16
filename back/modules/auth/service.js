@@ -51,7 +51,15 @@ export async function createUser({
         role,
         contractType: contractType,
       },
-      select: { id: true, email: true, firstName: true, lastName: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        contractType: true,
+      },
     });
 
     return user;
