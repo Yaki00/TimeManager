@@ -40,7 +40,7 @@ enum VacationStatus {
   Refuse
 }
 
-enum LeaveStatus{
+enum LeaveStatus {
   EnAttente
   Accepte
   Refuse
@@ -51,19 +51,21 @@ enum LeaveStatus{
  */
 
 model User {
-  id          Int         @id @default(autoincrement()) @map("id_user")
-  firstName   String      @map("first_name")
-  lastName    String      @map("last_name")
-  email       String      @unique
-  phoneNumber String      @map("phone_number")
-  password    String
-  role        Role
+  id           Int          @id @default(autoincrement()) @map("id_user")
+  firstName    String       @map("first_name")
+  lastName     String       @map("last_name")
+  email        String       @unique
+  phoneNumber  String       @map("phone_number")
+  password     String
+  role         Role
   contractType ContractType @map("contract_type")
-  avatarUrl   String?     @map("avatar_url")
+  avatarUrl    String?      @map("avatar_url")
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  deletedAt DateTime? @map("deleted_at")
 
   // relations
   warnings  Warning[]
@@ -73,13 +75,18 @@ model User {
   receives  Receive[]
   leaves    Leave[]
 
+  ownedTeams Team[] // back-relation de Team.owner
+
   @@map("User")
+  @@index([deletedAt])
 }
 
 model Team {
   id          Int    @id @default(autoincrement()) @map("id_team")
   teamName    String @map("team_name")
   description String
+  ownerId     Int    @map("id_owner")
+  owner       User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -88,6 +95,7 @@ model Team {
   // relations
   members Belongs[]
 
+  @@index([ownerId])
   @@map("Team")
 }
 
@@ -115,14 +123,15 @@ model Warning {
   quantity    Int
 
   // FK
-  userId Int  @map("id_user") 
-  user   User @relation(fields: [userId], references: [id])
+  userId Int  @map("id_user")
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([userId, date])
   @@map("Warning")
 }
 
@@ -134,28 +143,30 @@ model Vacation {
   status    VacationStatus
 
   // FK
-  userId Int  @map("id_user")  
-  user   User @relation(fields: [userId], references: [id])
+  userId Int  @map("id_user")
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([userId, status])
+  @@index([startDate, endDate])
   @@map("Vacation")
 }
 
 model Leave {
-  id            Int      @id @default(autoincrement()) @map("id_leave")
-  startDate     DateTime @map("start_date") @db.Date
-  endDate       DateTime @map("end_date") @db.Date
+  id            Int         @id @default(autoincrement()) @map("id_leave")
+  startDate     DateTime    @map("start_date") @db.Date
+  endDate       DateTime    @map("end_date") @db.Date
   justification String
   status        LeaveStatus @default(EnAttente)
-  daysLeave     Int      @map("days_leave")
+  daysLeave     Int         @map("days_leave")
 
   // FK
   userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -167,27 +178,26 @@ model Leave {
 
 model Clocking {
   id            Int       @id @default(autoincrement()) @map("id_clocking")
-  firstArrival   DateTime? @map("first_arrival")   @db.Time
-  lastDeparture  DateTime? @map("last_departure")  @db.Time
-  workMinutes    Int       @default(0) @map("work_minutes")
-  breakMinutes   Int       @default(0) @map("break_minutes")
+  firstArrival  DateTime? @map("first_arrival") @db.Time
+  lastDeparture DateTime? @map("last_departure") @db.Time
+  workMinutes   Int       @default(0) @map("work_minutes")
+  breakMinutes  Int       @default(0) @map("break_minutes")
   clockingDate  DateTime  @map("clocking_date") @db.Date
-  totalHours    Decimal   @map("total_hours") @db.Decimal(8, 2) @default(0)
-  weekDay       String    @map("week_day")
-  workDay       Int       @map("work_day")
+  totalHours    Decimal   @default(0) @map("total_hours") @db.Decimal(8, 2)
+  weekDay       String    @default("") @map("week_day")
+  workDay       Int       @default(0) @map("work_day")
 
   // FK
   userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([userId, clockingDate])
+  // Permet plusieurs pointages par jour (pas de contrainte unique)
   @@index([userId, clockingDate])
-
-
+  @@index([userId])
   @@map("Clocking")
 }
 
@@ -212,8 +222,10 @@ model Receive {
 }
 
 model Belongs {
-  teamId Int @map("id_team")
-  userId Int @map("id_user")
+  teamId   Int      @map("id_team")
+  userId   Int      @map("id_user")
+  joinedAt DateTime @default(now())
+  isLead   Boolean  @default(false)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -222,9 +234,8 @@ model Belongs {
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-
   @@id([teamId, userId])
-  @@index([teamId])
+  @@index([teamId, isLead])
   @@index([userId])
   @@map("Belongs")
 }

@@ -65,7 +65,7 @@ export const login = asyncHandler(async (req, res) => {
   if (!ok) throw unauthorized(TEXT.INVALID_CREDENTIALS, "INVALID_CREDENTIALS");
   const access = signAccessToken(user);
   const refresh = signRefreshToken(user);
-  res.json({
+  res.status(200).json({
     user: {
       id: user.id,
       email: user.email,
@@ -86,9 +86,9 @@ export const refresh = asyncHandler(async (req, res) => {
   }
   const payload = verifyRefresh(refreshToken);
   const access = signAccessToken({ sub: payload.sub });
-  res.json({ access });
+  res.status(200).json({ access });
 });
 
 export const me = asyncHandler(async (req, res) => {
-  res.json({ user: req.user });
+  res.status(200).json({ user: req.user });
 });
