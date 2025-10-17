@@ -5,6 +5,8 @@ import asyncHandler from "express-async-handler";
 import authRoutes from "./modules/auth/routes.js";
 import userRoutes from "./modules/user/routes.js";
 import leaveRoutes from "./modules/leave/routes.js";
+import teamRoutes from "./modules/team/routes.js";
+import clockingRoutes from "./modules/clocking/routes.js";
 import prisma from "./db.js";
 import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
@@ -16,7 +18,7 @@ export function createApp() {
   app.use(express.json());
   app.use(requestId());
 
-  app.get("/ping", (_req, res) => res.json({ pong: true }));
+  app.get("/ping", (_req, res) => res.status(200).json({ pong: true }));
 
   app.get(
     "/db",
@@ -36,12 +38,14 @@ export function createApp() {
         value = "2025-01-01T00:00:00Z";
       }
 
-      res.json({ db_time: value });
+      res.status(200).json({ db_time: value });
     })
   );
   app.use("/auth", authRoutes);
   app.use("/users", userRoutes);
   app.use("/leaves", leaveRoutes);
+  app.use("/teams", teamRoutes);
+  app.use("/clockings", clockingRoutes);
 
   if (process.env.NODE_ENV === "test") {
     app.get("/__crash", () => {

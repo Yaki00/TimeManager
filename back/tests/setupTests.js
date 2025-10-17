@@ -25,8 +25,35 @@ beforeAll(async () => {
       phoneNumber: "0123456789",
     },
   });
-});
 
+  await prisma.user.upsert({
+    where: { email: "manager@doe.com" },
+    update: { password: passwordHash },
+    create: {
+      email: "manager@doe.com",
+      password: passwordHash,
+      firstName: "Mike",
+      lastName: "Manager",
+      role: "Manager",
+      contractType: "H35",
+      phoneNumber: "0600000001",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "responsable@doe.com" },
+    update: { password: passwordHash },
+    create: {
+      email: "responsable@doe.com",
+      password: passwordHash,
+      firstName: "Rita",
+      lastName: "Boss",
+      role: "Responsable",
+      contractType: "H35",
+      phoneNumber: "0600000002",
+    },
+  });
+});
 afterAll(async () => {
   await prisma.$disconnect();
 });
