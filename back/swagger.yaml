@@ -1,11 +1,20 @@
 openapi: 3.0.3
 info:
-  title: API Auth / Users / Leaves
+  title: Time Manager API
   version: "1.0.0"
   description: |
-    Spécification OpenAPI générée à partir de vos routes Express.
+    API complète pour la gestion du temps, des équipes et des congés.
 
     **Base URL**: `http://localhost:3000`
+
+    ## Authentification
+    La plupart des endpoints nécessitent un token JWT dans le header `Authorization: Bearer <token>`.
+
+    ## Rôles
+    - **Employer**: Utilisateur standard
+    - **Manager**: Gestionnaire d'équipe
+    - **Responsable**: Administrateur avec tous les droits
+
 servers:
   - url: http://localhost:3000
     description: Développement local
@@ -17,6 +26,10 @@ tags:
     description: Authentification & jetons
   - name: Users
     description: Gestion des utilisateurs
+  - name: Teams
+    description: Gestion des équipes
+  - name: Clocking
+    description: Gestion des pointages
   - name: Leaves
     description: Gestion des congés/demandes d'absence
 
@@ -24,6 +37,9 @@ security:
   - bearerAuth: []
 
 paths:
+  # ═══════════════════════════════════════════════════════
+  #  HEALTH
+  # ═══════════════════════════════════════════════════════
   /ping:
     get:
       tags: [Health]
@@ -40,6 +56,7 @@ paths:
                   pong:
                     type: boolean
                 example: { pong: true }
+
   /db:
     get:
       tags: [Health]
@@ -58,12 +75,15 @@ paths:
                     type: string
                     format: date-time
                 example:
-                  db_time: "2025-10-14T13:12:00.123Z"
+                  db_time: "2025-10-17T13:12:00.123Z"
 
+  # ═══════════════════════════════════════════════════════
+  #  AUTH
+  # ═══════════════════════════════════════════════════════
   /auth/register:
     post:
       tags: [Auth]
-      summary: Créer un utilisateur
+      summary: Créer un nouvel utilisateur
       security: []
       requestBody:
         required: true
@@ -73,13 +93,20 @@ paths:
               $ref: "#/components/schemas/RegisterRequest"
       responses:
         "201":
-          description: Utilisateur créé
+          description: Utilisateur créé avec succès
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /auth/login:
     post:
       tags: [Auth]
@@ -93,13 +120,14 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: OK
+          description: Connexion réussie
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /auth/refresh:
     post:
       tags: [Auth]
@@ -111,10 +139,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [refreshToken]
+              required: [refresh]
               properties:
-                refreshToken:
+                refresh:
                   type: string
+                  description: Refresh token
       responses:
         "200":
           description: Nouveau jeton d'accès
@@ -123,28 +152,54 @@ paths:
               schema:
                 type: object
                 properties:
-                  accessToken:
+                  access:
                     type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /auth/me:
     get:
       tags: [Auth]
-      summary: Profil de l'utilisateur courant
+      summary: Profil de l'utilisateur courant (basique)
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      role:
+                        $ref: "#/components/schemas/Role"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  # ═══════════════════════════════════════════════════════
+  #  USERS
+  # ═══════════════════════════════════════════════════════
   /users:
     get:
       tags: [Users]
-      summary: Lister tous les utilisateurs
+      summary: Lister tous les utilisateurs (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
       responses:
         "200":
           description: Liste d'utilisateurs
@@ -156,10 +211,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/me/info:
     get:
       tags: [Users]
-      summary: Obtenir les infos du user courant
+      summary: Obtenir les informations complètes du user courant
       responses:
         "200":
           description: OK
@@ -169,6 +225,7 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count:
     get:
       tags: [Users]
@@ -182,6 +239,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count/role/{role}:
     get:
       tags: [Users]
@@ -197,6 +255,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count/contract/{contractType}:
     get:
       tags: [Users]
@@ -212,6 +271,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/role/{role}:
     get:
       tags: [Users]
@@ -229,10 +289,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/name/{name}:
     get:
       tags: [Users]
-      summary: Rechercher par nom
+      summary: Rechercher des utilisateurs par nom (prénom ou nom)
       parameters:
         - in: path
           name: name
@@ -250,10 +311,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/phone/{phoneNumber}:
     get:
       tags: [Users]
-      summary: Rechercher par téléphone
+      summary: Rechercher un utilisateur par numéro de téléphone
       parameters:
         - in: path
           name: phoneNumber
@@ -271,10 +333,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/contract/{contractType}:
     get:
       tags: [Users]
-      summary: Lister par type de contrat
+      summary: Lister les utilisateurs par type de contrat
       parameters:
         - $ref: "#/components/parameters/ContractTypeParam"
       responses:
@@ -288,6 +351,7 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/{id}:
     get:
       tags: [Users]
@@ -305,9 +369,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     put:
       tags: [Users]
-      summary: Mettre à jour un utilisateur (remplacement)
+      summary: Mettre à jour un utilisateur
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -327,9 +392,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     delete:
       tags: [Users]
-      summary: Supprimer un utilisateur
+      summary: Supprimer un utilisateur (soft delete)
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
@@ -339,11 +405,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /users/{id}/role:
     patch:
       tags: [Users]
-      summary: Mettre à jour le rôle d'un utilisateur
-      description: Nécessite des privilèges de **Responsable**.
+      summary: Mettre à jour le rôle d'un utilisateur (Responsable uniquement)
+      description: Nécessite des privilèges de **Responsable**. Impossible de modifier son propre rôle.
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -358,11 +425,17 @@ paths:
                   $ref: "#/components/schemas/Role"
       responses:
         "200":
-          description: Mis à jour
+          description: Rôle mis à jour
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "400":
+          description: Impossible de modifier son propre rôle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -370,6 +443,372 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  # ═══════════════════════════════════════════════════════
+  #  TEAMS
+  # ═══════════════════════════════════════════════════════
+  /teams:
+    get:
+      tags: [Teams]
+      summary: Lister toutes les équipes (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Liste des équipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Teams]
+      summary: Créer une nouvelle équipe (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des équipes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamCreate"
+      responses:
+        "201":
+          description: Équipe créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /teams/owner/{ownerId}:
+    get:
+      tags: [Teams]
+      summary: Lister les équipes d'un propriétaire (Manager)
+      parameters:
+        - in: path
+          name: ownerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Liste des équipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /teams/{id}:
+    get:
+      tags: [Teams]
+      summary: Obtenir une équipe par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Teams]
+      summary: Mettre à jour une équipe (Owner ou Responsable)
+      description: Seul le propriétaire (Manager) ou un Responsable peut modifier l'équipe.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Équipe mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Teams]
+      summary: Supprimer une équipe (Owner ou Responsable)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Équipe supprimée
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  CLOCKING (Pointages)
+  # ═══════════════════════════════════════════════════════
+  /clockings:
+    post:
+      tags: [Clocking]
+      summary: Créer un pointage
+      description: Tous les utilisateurs peuvent créer un pointage. Manager/Responsable peuvent créer pour leur équipe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingCreate"
+      responses:
+        "201":
+          description: Pointage créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Clocking]
+      summary: Lister tous les pointages (paginé, avec filtres)
+      description: Responsable uniquement. Filtres disponibles par userId, date, etc.
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: userId
+          schema:
+            type: integer
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Liste des pointages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /clockings/user/{userId}:
+    get:
+      tags: [Clocking]
+      summary: Lister les pointages d'un utilisateur
+      description: Un utilisateur peut voir ses propres pointages. Manager peut voir ceux de son équipe. Responsable peut tout voir.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Liste des pointages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/user/{userId}/stats:
+    get:
+      tags: [Clocking]
+      summary: Obtenir les statistiques de pointage d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Statistiques calculées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClockingStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/user/{userId}/date/{date}:
+    get:
+      tags: [Clocking]
+      summary: Lister les pointages d'un utilisateur pour une date spécifique
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Format YYYY-MM-DD
+      responses:
+        "200":
+          description: Liste des pointages pour cette date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/{id}:
+    get:
+      tags: [Clocking]
+      summary: Obtenir un pointage par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Clocking]
+      summary: Mettre à jour un pointage
+      description: |
+        - **Employer** : peut uniquement modifier `lastDeparture` de ses propres pointages
+        - **Manager** : peut modifier les pointages de son équipe
+        - **Responsable** : peut tout modifier
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingUpdate"
+      responses:
+        "200":
+          description: Pointage mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Champs non autorisés pour Employer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Clocking]
+      summary: Supprimer un pointage (Manager/Responsable)
+      description: Employer ne peut pas supprimer de pointages.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Pointage supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Employer ne peut pas supprimer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  LEAVES (Congés)
+  # ═══════════════════════════════════════════════════════
   /leaves:
     post:
       tags: [Leaves]
@@ -382,7 +821,7 @@ paths:
               $ref: "#/components/schemas/LeaveCreate"
       responses:
         "201":
-          description: Créé
+          description: Demande créée
           content:
             application/json:
               schema:
@@ -391,10 +830,11 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
     get:
       tags: [Leaves]
-      summary: Lister toutes les demandes (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      summary: Lister toutes les demandes (Responsable/Manager)
+      description: Réservé aux **Responsable** et **Manager**.
       responses:
         "200":
           description: OK
@@ -408,10 +848,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
   /leaves/{id}:
     get:
       tags: [Leaves]
-      summary: Obtenir une demande
+      summary: Obtenir une demande par ID
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
@@ -425,9 +866,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     patch:
       tags: [Leaves]
-      summary: Mettre à jour une demande (partiel)
+      summary: Mettre à jour une demande
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -447,6 +889,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     delete:
       tags: [Leaves]
       summary: Supprimer une demande
@@ -459,11 +902,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /leaves/{id}/status:
     patch:
       tags: [Leaves]
-      summary: Changer le statut d'une demande (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      summary: Changer le statut d'une demande (Manager/Responsable)
+      description: Réservé aux **Responsable** et **Manager**.
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -476,14 +920,9 @@ paths:
               properties:
                 status:
                   $ref: "#/components/schemas/LeaveStatus"
-                decidedBy:
-                  type: string
-                  description: ID de l'utilisateur validateur
-                decisionComment:
-                  type: string
       responses:
         "200":
-          description: Mis à jour
+          description: Statut mis à jour
           content:
             application/json:
               schema:
@@ -494,6 +933,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /leaves/users/{userId}:
     get:
       tags: [Leaves]
@@ -503,7 +943,7 @@ paths:
           name: userId
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: OK
@@ -515,17 +955,18 @@ paths:
                   $ref: "#/components/schemas/Leave"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /leaves/teams/{teamId}:
     get:
       tags: [Leaves]
-      summary: Lister les demandes d'une équipe (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      summary: Lister les demandes d'une équipe (Manager/Responsable)
+      description: Réservé aux **Responsable** et **Manager**.
       parameters:
         - in: path
           name: teamId
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: OK
@@ -540,6 +981,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+# ═══════════════════════════════════════════════════════
+#  COMPONENTS
+# ═══════════════════════════════════════════════════════
 components:
   securitySchemes:
     bearerAuth:
@@ -553,13 +997,16 @@ components:
       name: id
       required: true
       schema:
-        type: string
+        type: integer
+      description: ID de la ressource
+
     RoleParam:
       in: path
       name: role
       required: true
       schema:
         $ref: "#/components/schemas/Role"
+
     ContractTypeParam:
       in: path
       name: contractType
@@ -569,205 +1016,522 @@ components:
 
   responses:
     Unauthorized:
-      description: Non authentifié
+      description: Non authentifié ou token invalide
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: "error"
+            code: "UNAUTHORIZED"
+            message: "Token manquant ou invalide"
+
     Forbidden:
       description: Accès refusé (rôle insuffisant)
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: "error"
+            code: "FORBIDDEN"
+            message: "Accès refusé : rôle insuffisant"
+
     NotFound:
       description: Ressource non trouvée
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: "error"
+            code: "NOT_FOUND"
+            message: "Ressource introuvable"
+
     BadRequest:
       description: Requête invalide
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: "error"
+            code: "BAD_REQUEST"
+            message: "Données invalides"
 
   schemas:
+    # ─────────────────────────────────────────────────────
+    #  ENUMS
+    # ─────────────────────────────────────────────────────
+    Role:
+      type: string
+      description: Rôle de l'utilisateur
+      enum:
+        - Employer
+        - Manager
+        - Responsable
+
+    ContractType:
+      type: string
+      description: Type de contrat horaire
+      enum:
+        - H15
+        - H35
+        - H40
+
+    LeaveStatus:
+      type: string
+      description: Statut de la demande de congé
+      enum:
+        - EnAttente
+        - Accepte
+        - Refuse
+
+    # ─────────────────────────────────────────────────────
+    #  AUTH
+    # ─────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+        - phoneNumber
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "Secret123!"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        phoneNumber:
+          type: string
+          example: "0123456789"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          example: "Secret123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            email:
+              type: string
+              example: "john.doe@example.com"
+            role:
+              $ref: "#/components/schemas/Role"
+            lastName:
+              type: string
+              example: "Doe"
+            firstName:
+              type: string
+              example: "John"
+            phoneNumber:
+              type: string
+              example: "0123456789"
+            contractType:
+              $ref: "#/components/schemas/ContractType"
+            tokens:
+              type: object
+              properties:
+                access:
+                  type: string
+                  description: Access token JWT
+                refresh:
+                  type: string
+                  description: Refresh token JWT
+
+    # ─────────────────────────────────────────────────────
+    #  USER
+    # ─────────────────────────────────────────────────────
     User:
       type: object
       properties:
         id:
+          type: integer
+          example: 1
+        firstName:
           type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
         email:
           type: string
           format: email
-        name:
-          type: string
+          example: "john.doe@example.com"
         phoneNumber:
           type: string
+          example: "0123456789"
         role:
           $ref: "#/components/schemas/Role"
         contractType:
           $ref: "#/components/schemas/ContractType"
+        avatarUrl:
+          type: string
+          nullable: true
+          example: null
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, email, role]
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - phoneNumber
+        - role
+        - contractType
+
     UserUpdate:
       type: object
       properties:
         email:
           type: string
           format: email
-        name:
+        firstName:
+          type: string
+        lastName:
           type: string
         phoneNumber:
           type: string
-        role:
-          $ref: "#/components/schemas/Role"
         contractType:
           $ref: "#/components/schemas/ContractType"
-    Role:
-      type: string
-      description: Rôle applicatif
-      enum: [USER, MANAGER, RESPONSABLE, ADMIN]
-    ContractType:
-      type: string
-      enum: [CDI, CDD, STAGE, APPRENTISSAGE, FREELANCE, AUTRE]
 
-    RegisterRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-        name:
-          type: string
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-    AuthResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-        user:
-          $ref: "#/components/schemas/User"
-
-    Leave:
+    # ─────────────────────────────────────────────────────
+    #  TEAM
+    # ─────────────────────────────────────────────────────
+    Team:
       type: object
       properties:
         id:
+          type: integer
+          example: 1
+        teamName:
           type: string
-        userId:
+          example: "Équipe Dev Frontend"
+        description:
           type: string
-        teamId:
-          type: string
-          nullable: true
-        type:
-          $ref: "#/components/schemas/LeaveType"
-        status:
-          $ref: "#/components/schemas/LeaveStatus"
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-        reason:
-          type: string
-          nullable: true
-        decidedBy:
-          type: string
-          nullable: true
-        decisionComment:
-          type: string
-          nullable: true
+          example: "Équipe de développement frontend React"
+        ownerId:
+          type: integer
+          example: 2
+        owner:
+          $ref: "#/components/schemas/User"
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                $ref: "#/components/schemas/User"
+              joinedAt:
+                type: string
+                format: date-time
+              isLead:
+                type: boolean
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, userId, type, status, startDate, endDate]
-    LeaveCreate:
+      required:
+        - id
+        - teamName
+        - description
+        - ownerId
+
+    TeamCreate:
       type: object
-      required: [type, startDate, endDate]
+      required:
+        - teamName
+        - description
+        - memberIds
       properties:
-        type:
-          $ref: "#/components/schemas/LeaveType"
+        teamName:
+          type: string
+          example: "Équipe Backend"
+        description:
+          type: string
+          example: "Équipe de développement backend"
+        memberIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 3, 5]
+
+    TeamUpdate:
+      type: object
+      properties:
+        teamName:
+          type: string
+        description:
+          type: string
+
+    # ─────────────────────────────────────────────────────
+    #  CLOCKING
+    # ─────────────────────────────────────────────────────
+    Clocking:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        firstArrival:
+          type: string
+          format: time
+          nullable: true
+          example: "08:30:00"
+        lastDeparture:
+          type: string
+          format: time
+          nullable: true
+          example: "17:30:00"
+        workMinutes:
+          type: integer
+          default: 0
+          example: 480
+        breakMinutes:
+          type: integer
+          default: 0
+          example: 60
+        clockingDate:
+          type: string
+          format: date
+          example: "2025-10-17"
+        totalHours:
+          type: number
+          format: decimal
+          example: 8.0
+        weekDay:
+          type: string
+          example: "Mercredi"
+        workDay:
+          type: integer
+          example: 3
+        userId:
+          type: integer
+          example: 1
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clockingDate
+        - userId
+
+    ClockingCreate:
+      type: object
+      required:
+        - userId
+        - clockingDate
+      properties:
+        userId:
+          type: integer
+          example: 1
+        clockingDate:
+          type: string
+          format: date
+          example: "2025-10-17"
+        firstArrival:
+          type: string
+          format: time
+          example: "08:30:00"
+        lastDeparture:
+          type: string
+          format: time
+          nullable: true
+          example: null
+        workMinutes:
+          type: integer
+          default: 0
+        breakMinutes:
+          type: integer
+          default: 0
+
+    ClockingUpdate:
+      type: object
+      properties:
+        firstArrival:
+          type: string
+          format: time
+        lastDeparture:
+          type: string
+          format: time
+        workMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+      description: |
+        **Employer** peut uniquement modifier `lastDeparture`.
+        **Manager/Responsable** peuvent modifier tous les champs.
+
+    ClockingStats:
+      type: object
+      properties:
+        totalWorkMinutes:
+          type: integer
+          example: 9600
+        totalBreakMinutes:
+          type: integer
+          example: 600
+        averageWorkMinutes:
+          type: number
+          example: 480.0
+        averageTotalHours:
+          type: number
+          example: 8.0
+        totalClockings:
+          type: integer
+          example: 20
+
+    # ─────────────────────────────────────────────────────
+    #  LEAVE
+    # ─────────────────────────────────────────────────────
+    Leave:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
         startDate:
           type: string
           format: date
+          example: "2025-11-01"
         endDate:
           type: string
           format: date
-        reason:
+          example: "2025-11-05"
+        justification:
           type: string
-          nullable: true
-        teamId:
+          example: "Congés annuels"
+        status:
+          $ref: "#/components/schemas/LeaveStatus"
+        daysLeave:
+          type: integer
+          example: 5
+        userId:
+          type: integer
+          example: 1
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
           type: string
-          nullable: true
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - startDate
+        - endDate
+        - justification
+        - status
+        - daysLeave
+        - userId
+
+    LeaveCreate:
+      type: object
+      required:
+        - startDate
+        - endDate
+        - justification
+        - daysLeave
+      properties:
+        startDate:
+          type: string
+          format: date
+          example: "2025-11-01"
+        endDate:
+          type: string
+          format: date
+          example: "2025-11-05"
+        justification:
+          type: string
+          example: "Congés annuels"
+        daysLeave:
+          type: integer
+          example: 5
+
     LeaveUpdate:
       type: object
       properties:
-        type:
-          $ref: "#/components/schemas/LeaveType"
         startDate:
           type: string
           format: date
         endDate:
           type: string
           format: date
-        reason:
+        justification:
           type: string
-          nullable: true
-        teamId:
-          type: string
-          nullable: true
-    LeaveType:
-      type: string
-      enum: [PAID, UNPAID, SICK, RTT, OTHER]
-    LeaveStatus:
-      type: string
-      enum: [PENDING, APPROVED, REJECTED]
+        daysLeave:
+          type: integer
 
+    # ─────────────────────────────────────────────────────
+    #  UTILS
+    # ─────────────────────────────────────────────────────
     CountResponse:
       type: object
       properties:
         count:
           type: integer
           format: int32
-      example: { count: 42 }
+      example:
+        count: 42
 
     ErrorResponse:
       type: object
       properties:
         status:
           type: string
-          example: error
+          example: "error"
         code:
           type: string
-          example: NOT_FOUND
+          example: "NOT_FOUND"
         message:
           type: string
-        requestId:
+          example: "Ressource introuvable"
+        traceId:
           type: string
-          description: Identifiant de requête (middleware requestId)
+          description: Identifiant de requête pour le débogage
+          example: "76f70655-437e-4ec5-af19-3716e8743850"
