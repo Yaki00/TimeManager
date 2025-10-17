@@ -1281,7 +1281,7 @@ components:
       required:
         - teamName
         - description
-        - memberIds
+        - ownerId
       properties:
         teamName:
           type: string
@@ -1289,11 +1289,30 @@ components:
         description:
           type: string
           example: "Équipe de développement backend"
-        memberIds:
+        ownerId:
+          type: integer
+          description: ID du propriétaire de l'équipe (Manager/Responsable)
+          example: 2
+        members:
           type: array
+          description: Liste optionnelle des membres à ajouter (le owner sera automatiquement ajouté comme lead)
           items:
-            type: integer
-          example: [1, 3, 5]
+            type: object
+            required:
+              - userId
+            properties:
+              userId:
+                type: integer
+                example: 3
+              isLead:
+                type: boolean
+                default: false
+                example: false
+          example:
+            - userId: 3
+              isLead: false
+            - userId: 5
+              isLead: true
 
     TeamUpdate:
       type: object
