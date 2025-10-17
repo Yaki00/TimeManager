@@ -99,8 +99,8 @@ export const removeClocking = asyncHandler(async (req, res) => {
     throw badRequest("ID invalide", "ID_INVALID");
   }
 
-  const deleted = await deleteClockingById(id);
-  res.json(deleted);
+  await deleteClockingById(id);
+  res.status(204).send();
 });
 
 export const getUserClockingStats = asyncHandler(async (req, res) => {

@@ -8,8 +8,8 @@ describe("Teams routes", () => {
   let app;
 
   let employerJohn;
-  let managerMike; 
-  let responsableRita; 
+  let managerMike;
+  let responsableRita;
 
   // tokens
   let tokenEmployer;
@@ -116,9 +116,52 @@ describe("Teams routes", () => {
       ownerId: managerMike.id,
     });
 
+    // Vérifier qu'il y a bien plusieurs membres
+    expect(res.body.members).toBeDefined();
+    expect(Array.isArray(res.body.members)).toBe(true);
+    expect(res.body.members.length).toBeGreaterThanOrEqual(2); // Au moins owner + 1 membre
+
     // le manager (owner) doit être membre et lead
     const lead = res.body.members.find((m) => m.isLead === true);
     expect(lead?.user?.id).toBe(managerMike.id);
+
+    // John (employerJohn) doit être membre mais pas lead
+    const memberJohn = res.body.members.find(
+      (m) => m.user?.id === employerJohn.id
+    );
+    expect(memberJohn).toBeDefined();
+    expect(memberJohn.isLead).toBe(false);
+    console.log("Membres créés:", res.body.members);
+  });
+
+  it("POST /teams -> 201 avec plusieurs membres", async () => {
+    const res = await request(app)
+      .post("/teams")
+      .set("Authorization", `Bearer ${tokenResponsable}`)
+      .send({
+        teamName: "Team Multi-Membres",
+        description: "Équipe avec plusieurs membres",
+        ownerId: managerMike.id,
+        members: [
+          { userId: employerJohn.id, isLead: false },
+          { userId: responsableRita.id, isLead: true },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.members).toBeDefined();
+    expect(res.body.members.length).toBeGreaterThanOrEqual(3); // owner + 2 membres
+
+    // Vérifier que tous les membres sont présents
+    const memberIds = res.body.members.map((m) => m.user?.id);
+    expect(memberIds).toContain(managerMike.id); // owner
+    expect(memberIds).toContain(employerJohn.id); // membre 1
+    expect(memberIds).toContain(responsableRita.id); // membre 2
+
+    // Vérifier les rôles de lead
+    const leads = res.body.members.filter((m) => m.isLead === true);
+    expect(leads.length).toBeGreaterThanOrEqual(2); // owner + Rita
+    console.log("Membres créés:", res.body.members);
   });
 
   it("GET /teams -> 200 et contient au moins une team", async () => {

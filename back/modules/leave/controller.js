@@ -258,6 +258,6 @@ export const removeLeave = asyncHandler(async (req, res) => {
     );
   }
 
-  const deleted = await deleteLeaveById(id);
-  res.json(deleted);
+  await deleteLeaveById(id);
+  res.status(204).send();
 });
