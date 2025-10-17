@@ -3,10 +3,15 @@ import { verifyAccess } from "./jwt.js";
 export function requireAuth(req, res, next) {
   try {
     const auth = req.headers.authorization || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : null;
     if (!token) return res.status(401).json({ error: "Token manquant" });
     const payload = verifyAccess(token);
-    req.user = { id: payload.sub, email: payload.email };
+    const id = Number(payload.sub);
+    if (!Number.isFinite(id)) {
+      return res.status(401).json({ error: "Token invalide" });
+    }
+
+    req.user = { id, email: payload.email, role: payload.role };
     next();
   } catch (e) {
     return res.status(401).json({ error: "Token invalide" });

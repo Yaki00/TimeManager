@@ -5,17 +5,34 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema=prisma/schema.prisma",
+    "studio": "prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0",
+    "test": "NODE_ENV=test vitest run --reporter=default",
+    "test:watch": "NODE_ENV=test vitest",
+    "test:ci": "vitest run --coverage --reporter=junit"
   },
   "dependencies": {
+    "@prisma/client": "^6.17.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "4.19.2",
+    "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.17.1",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4",
+    "wait-on": "^9.0.1"
+  },
+  "vitest": {
+    "setupFiles": [
+      "tests/setupTests.js"
+    ]
   }
 }
