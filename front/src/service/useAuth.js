@@ -22,7 +22,10 @@ export const useAuth = () => {
 				email: data.user.email,
 				phoneNumber: data.user.phoneNumber,
 				role: data.user.role,
-				token: AES.encrypt(data.user.tokens.refresh, secretKey).toString(),
+				token: AES.encrypt(data.user.tokens.access, secretKey).toString(),
+				preferences: {
+					filterTeams: "card",
+				}
 			}
 			setUser(data);
 

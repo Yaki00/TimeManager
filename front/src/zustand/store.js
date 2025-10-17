@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+
+const preferences = {
+	filterTeams: "card",
+}
+
 const user = {
 	id: null,
 	firstName: '',
@@ -10,15 +15,28 @@ const user = {
 	role: '',
 	contractType: '',
 	token: '',
+	preferences: preferences,
 }
+
+
 
 export const useUserStore = create(
 	persist(
-		(set) => ({
+		(set, get) => ({
 			user: user,
-			setUser:  (newUser) => set({ user: newUser }),
+			setUser: (newUser) => set({ user: newUser }),
+			setPreferences: (newPreferences) =>
+				set({
+					user: {
+						...get().user,
+						preferences: {
+							...get().user.preferences,
+							...newPreferences,
+						},
+					},
+				}),
 			logout: () => {
-				set({ user: user })
+				set({ user: user });
 				localStorage.removeItem('user-storage');
 			},
 		}),

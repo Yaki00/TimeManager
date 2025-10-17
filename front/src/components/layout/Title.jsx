@@ -4,12 +4,17 @@ const TitleSideStyle = styled.div`
   display: flex;
   align-items: center;
   justify-content: ${props => (props.$collapsed ? 'center' : 'flex-start')};
-  margin: 50px 20px;
-  width: ${props => (props.$collapsed ? 'auto' : '180px')};
-  & h2 {
-	margin: 0;
-	/* color: #9191fa; */
-	color: black;
+  padding: 50px 20px; 
+  width: 100%;
+  /* min-height: 60px;  */
+  transition: all 0.3s ease;
+
+  h2 {
+    margin: 0;
+    color: black;
+    white-space: nowrap;
+    opacity: ${props => (props.$collapsed ? 0 : 1)};
+    transition: opacity 0.3s ease;
   }
 `;
 
