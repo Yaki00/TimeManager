@@ -38,7 +38,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
   });
 
   const users = await findAllUsers({ skip, take });
-  res.json(users);
+  res.status(200).json(users);
 });
 
 export const getUserById = asyncHandler(async (req, res) => {
@@ -48,7 +48,7 @@ export const getUserById = asyncHandler(async (req, res) => {
   const user = await findUserById(id);
   if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
 
-  res.json(user);
+  res.status(200).json(user);
 });
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
@@ -58,7 +58,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await findUserById(req.user.id);
   if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
 
-  res.json(user);
+  res.status(200).json(user);
 });
 
 export const getUserByRole = asyncHandler(async (req, res) => {
@@ -66,7 +66,7 @@ export const getUserByRole = asyncHandler(async (req, res) => {
   if (!role) throw badRequest(TEXTS.ROLE_REQUIRED, "ROLE_REQUIRED");
 
   const users = await findByRole(role);
-  res.json(users);
+  res.status(200).json(users);
 });
 
 export const getUserByName = asyncHandler(async (req, res) => {
@@ -74,7 +74,7 @@ export const getUserByName = asyncHandler(async (req, res) => {
   if (!search?.trim()) throw badRequest(TEXTS.NAME_MISSING, "NAME_MISSING");
 
   const users = await findByName(search);
-  res.json(users);
+  res.status(200).json(users);
 });
 
 export const getUserByPhoneNumber = asyncHandler(async (req, res) => {
@@ -83,7 +83,7 @@ export const getUserByPhoneNumber = asyncHandler(async (req, res) => {
     throw badRequest(TEXTS.PHONE_MISSING, "PHONE_MISSING");
 
   const users = await findByPhoneNumber(phoneNumber);
-  res.json(users);
+  res.status(200).json(users);
 });
 
 export const getUserByContractType = asyncHandler(async (req, res) => {
@@ -92,7 +92,7 @@ export const getUserByContractType = asyncHandler(async (req, res) => {
     throw badRequest(TEXTS.CONTRACT_TYPE_MISSING, "CONTRACT_TYPE_MISSING");
 
   const users = await findByContractType(contractType);
-  res.json(users);
+  res.status(200).json(users);
 });
 
 export const updateUserById = asyncHandler(async (req, res) => {
@@ -103,7 +103,7 @@ export const updateUserById = asyncHandler(async (req, res) => {
   const data = { firstName, lastName, phoneNumber, contractType, email };
 
   const user = await updateUser(id, data);
-  res.json(user);
+  res.status(200).json(user);
 });
 
 export const updateRoleUserById = asyncHandler(async (req, res) => {
@@ -122,7 +122,7 @@ export const updateRoleUserById = asyncHandler(async (req, res) => {
     throw badRequest(TEXTS.INVALID_ROLE, "INVALID_ROLE");
   }
   const user = await updateRoleSvc(id, role);
-  res.json(user);
+  res.status(200).json(user);
 });
 
 export const deleteUserById = asyncHandler(async (req, res) => {
@@ -134,7 +134,7 @@ export const deleteUserById = asyncHandler(async (req, res) => {
 
 export const getCountUsers = asyncHandler(async (_req, res) => {
   const sumUsers = await countUsers();
-  res.json({ count: sumUsers });
+  res.status(200).json({ count: sumUsers });
 });
 
 export const getCountUsersByRole = asyncHandler(async (req, res) => {
@@ -142,7 +142,7 @@ export const getCountUsersByRole = asyncHandler(async (req, res) => {
   if (!role) throw badRequest(TEXTS.ROLE_REQUIRED, "ROLE_REQUIRED");
 
   const sumUsers = await countUsersByRole(role);
-  res.json({ count: sumUsers });
+  res.status(200).json({ count: sumUsers });
 });
 
 export const getCountUsersByContractType = asyncHandler(async (req, res) => {
@@ -151,5 +151,5 @@ export const getCountUsersByContractType = asyncHandler(async (req, res) => {
     throw badRequest(TEXTS.CONTRACT_TYPE_MISSING, "CONTRACT_TYPE_MISSING");
 
   const sumUsers = await countUsersByContractType(contractType);
-  res.json({ count: sumUsers });
+  res.status(200).json({ count: sumUsers });
 });
