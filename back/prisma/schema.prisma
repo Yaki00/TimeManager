@@ -161,7 +161,7 @@ model Leave {
   startDate     DateTime    @map("start_date") @db.Date
   endDate       DateTime    @map("end_date") @db.Date
   justification String
-  status        LeaveStatus @default(EnAttente)
+  status        LeaveStatus @default(Pending)
   daysLeave     Int         @map("days_leave")
 
   // FK
