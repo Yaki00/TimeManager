@@ -1278,10 +1278,7 @@ components:
 
     TeamCreate:
       type: object
-      required:
-        - teamName
-        - description
-        - ownerId
+      required:`n        - teamName`n        - ownerId
       properties:
         teamName:
           type: string
