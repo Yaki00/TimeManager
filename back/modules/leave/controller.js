@@ -18,33 +18,17 @@ import {
   forbidden,
 } from "../../core/httpErrors.js";
 import { parsePagination } from "../../core/pagination.js";
+import {
+  toUTCDateOnly,
+  computeBusinessDays,
+  validateLeaveDates,
+  isManagerOrResponsable,
+} from "./utils.js";
 
 const TEXTS = {
   PERMISSION_DENIED: "Permission refusée",
   LEAVE_NOT_FOUND: "Demande de congé non trouvée",
 };
-
-function toUTCDateOnly(d) {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  );
-}
-
-function computeBusinessDays(start, end) {
-  const s = toUTCDateOnly(start);
-  const e = toUTCDateOnly(end);
-  if (s > e) return 0;
-  let count = 0;
-  for (let d = new Date(s); d <= e; d.setUTCDate(d.getUTCDate() + 1)) {
-    const day = d.getUTCDay(); // 0=dim, 6=sam
-    if (day !== 0 && day !== 6) count++;
-  }
-  return count;
-}
-
-function isManagerOrResponsable(user) {
-  return user?.role === "Manager" || user?.role === "Responsable";
-}
 
 /**
  * POST /leaves

@@ -253,7 +253,7 @@ describe("Teams routes", () => {
     expect(res.body.description).toBe("MAJ par Responsable");
   });
 
-  it("DELETE /teams/:id -> 200 pour Responsable", async () => {
+  it("DELETE /teams/:id -> 204 pour Responsable", async () => {
     // créer une team à supprimer
     const created = await request(app)
       .post("/teams")
@@ -271,8 +271,7 @@ describe("Teams routes", () => {
       .delete(`/teams/${teamId}`)
       .set("Authorization", `Bearer ${tokenResponsable}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.id).toBe(teamId);
+    expect(res.status).toBe(204);
   });
 
   it("GET /teams/:id -> 404 si n’existe pas", async () => {
