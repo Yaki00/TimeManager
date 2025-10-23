@@ -24,8 +24,8 @@ enum ContractType {
 
 enum NotificationStatus {
   Presence
-  Retard
-  Avertissement
+  Late
+  Warning
 }
 
 enum WarningStatus {
@@ -35,15 +35,15 @@ enum WarningStatus {
 }
 
 enum VacationStatus {
-  EnAttente
-  Accepte
-  Refuse
+  Pending
+  Approved
+  Refused
 }
 
 enum LeaveStatus {
-  EnAttente
-  Accepte
-  Refuse
+  Pending
+  Approved
+  Refused
 }
 
 /**
