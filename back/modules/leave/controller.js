@@ -158,7 +158,7 @@ export const updateLeave = asyncHandler(async (req, res) => {
   if (!isOwner && !isManagerOrResponsable(req.user)) {
     throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   }
-  if (isOwner && current.status !== "EnAttente") {
+  if (isOwner && current.status !== "Pending") {
     throw badRequest(
       "Impossible de modifier une demande non 'EnAttente'.",
       "INVALID_STATE"
@@ -216,7 +216,7 @@ export const setLeaveStatus = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { status } = req.body;
 
-  if (!status || !["Accepte", "Refuse"].includes(status)) {
+  if (!status || !["Approved", "Refused"].includes(status)) {
     throw badRequest(
       "Statut invalide (Accepte ou Refuse attendu).",
       "INVALID_STATUS"
@@ -225,7 +225,7 @@ export const setLeaveStatus = asyncHandler(async (req, res) => {
 
   const current = await findLeaveById(id);
   if (!current) throw notFound(TEXTS.LEAVE_NOT_FOUND, "LEAVE_NOT_FOUND");
-  if (current.status !== "EnAttente") {
+  if (current.status !== "Pending") {
     throw badRequest(
       "Seules les demandes 'EnAttente' peuvent être traitées.",
       "INVALID_STATE"
@@ -251,7 +251,7 @@ export const removeLeave = asyncHandler(async (req, res) => {
   if (!isOwner && !isManagerOrResponsable(req.user)) {
     throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   }
-  if (isOwner && current.status !== "EnAttente") {
+  if (isOwner && current.status !== "Pending") {
     throw badRequest(
       "Impossible de supprimer une demande non 'EnAttente'.",
       "INVALID_STATE"
