@@ -81,9 +81,8 @@ describe("Clocking routes", () => {
           clockingDate: "2025-01-15",
           firstArrival: "08:00:00",
           lastDeparture: "17:00:00",
-          workMinutes: 480,
+          workTime: 480,
           weekDay: "Monday",
-          workDay: 1,
         });
 
       expect(res.status).toBe(201);
@@ -99,18 +98,17 @@ describe("Clocking routes", () => {
           clockingDate: "2025-01-15",
           firstArrival: "09:00:00",
           lastDeparture: "18:00:00",
-          workMinutes: 480,
-          breakMinutes: 60,
+          workTime: 480,
+          breakTime: 60,
           totalHours: 8,
           weekDay: "Monday",
-          workDay: 1,
         });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({
         userId: managerMike.id,
-        workMinutes: 480,
-        breakMinutes: 60,
+        workTime: 480,
+        breakTime: 60,
       });
       expect(res.body.id).toBeTruthy();
     });
@@ -124,9 +122,8 @@ describe("Clocking routes", () => {
           userId: managerMike.id,
           clockingDate: "2025-01-15",
           firstArrival: "14:00:00", // Retour après pause déjeuner
-          workMinutes: 240,
+          workTime: 240,
           weekDay: "Monday",
-          workDay: 1,
         });
 
       expect(res.status).toBe(201);
@@ -142,9 +139,8 @@ describe("Clocking routes", () => {
           clockingDate: "2025-01-16",
           firstArrival: "08:30:00",
           lastDeparture: "17:30:00",
-          workMinutes: 510,
+          workTime: 510,
           weekDay: "Tuesday",
-          workDay: 2,
         });
 
       expect(res.status).toBe(201);
@@ -247,9 +243,8 @@ describe("Clocking routes", () => {
           userId: managerMike.id,
           clockingDate: new Date("2025-01-20"),
           firstArrival: timeToDateTime("09:00:00"),
-          workMinutes: 480,
+          workTime: 480,
           weekDay: "Friday",
-          workDay: 5,
         },
       });
       clockingId = clocking.id;
@@ -261,12 +256,12 @@ describe("Clocking routes", () => {
         .set("Authorization", `Bearer ${tokenManager}`)
         .send({
           lastDeparture: "18:30:00",
-          workMinutes: 510,
+          workTime: 510,
         });
 
       expect(res.status).toBe(200);
       expect(res.body.lastDeparture).toBeTruthy(); // Prisma renvoie un DateTime ISO
-      expect(res.body.workMinutes).toBe(510);
+      expect(res.body.workTime).toBe(510);
     });
 
     it("200 pour Responsable", async () => {
@@ -274,11 +269,11 @@ describe("Clocking routes", () => {
         .patch(`/clockings/${clockingId}`)
         .set("Authorization", `Bearer ${tokenResponsable}`)
         .send({
-          breakMinutes: 45,
+          breakTime: 45,
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.breakMinutes).toBe(45);
+      expect(res.body.breakTime).toBe(45);
     });
 
     it("200 pour Employer modifiant uniquement lastDeparture", async () => {
@@ -290,9 +285,8 @@ describe("Clocking routes", () => {
           userId: employerJohn.id,
           clockingDate: "2025-01-17",
           firstArrival: "08:00:00",
-          workMinutes: 0,
+          workTime: 0,
           weekDay: "Wednesday",
-          workDay: 3,
         });
 
       expect(createRes.status).toBe(201);
@@ -319,20 +313,19 @@ describe("Clocking routes", () => {
           userId: employerJohn.id,
           clockingDate: "2025-01-18",
           firstArrival: "08:00:00",
-          workMinutes: 480,
+          workTime: 480,
           weekDay: "Thursday",
-          workDay: 4,
         });
 
       expect(createRes.status).toBe(201);
       const employerClockingId = createRes.body.id;
 
-      // Tenter de modifier workMinutes (non autorisé)
+      // Tenter de modifier workTime (non autorisé)
       const res = await request(app)
         .patch(`/clockings/${employerClockingId}`)
         .set("Authorization", `Bearer ${tokenEmployer}`)
         .send({
-          workMinutes: 500,
+          workTime: 500,
         });
 
       expect(res.status).toBe(403);
@@ -356,9 +349,8 @@ describe("Clocking routes", () => {
           userId: responsableRita.id,
           clockingDate: new Date("2025-01-25"),
           firstArrival: timeToDateTime("08:00:00"),
-          workMinutes: 480,
+          workTime: 480,
           weekDay: "Wednesday",
-          workDay: 3,
         },
       });
     });
@@ -381,9 +373,8 @@ describe("Clocking routes", () => {
           userId: employerJohn.id,
           clockingDate: "2025-01-19",
           firstArrival: "08:00:00",
-          workMinutes: 480,
+          workTime: 480,
           weekDay: "Friday",
-          workDay: 5,
         });
 
       expect(createRes.status).toBe(201);

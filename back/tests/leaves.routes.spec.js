@@ -74,7 +74,7 @@ describe("POST /leaves", () => {
     expect(payload).toMatchObject({
       userId,
       justification: "vacances",
-      status: "EnAttente",
+      status: "Pending",
     });
     expect(payload.daysLeave).toBeGreaterThan(0);
     expect(new Date(payload.startDate).toISOString()).toBe(

@@ -7,6 +7,7 @@ const leaveSelect = {
   justification: true,
   status: true,
   daysLeave: true,
+  type: true,
   userId: true,
   user: {
     select: {

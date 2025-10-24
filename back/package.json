@@ -11,7 +11,8 @@
     "studio": "prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0",
     "test": "NODE_ENV=test vitest run --reporter=default",
     "test:watch": "NODE_ENV=test vitest",
-    "test:ci": "vitest run --coverage --reporter=junit"
+    "test:ci": "vitest run --coverage --reporter=junit",
+    "monthly-leaves": "node scripts/monthlyLeaveGain.js"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",

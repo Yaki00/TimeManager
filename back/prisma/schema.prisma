@@ -7,9 +7,155 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * ───────── Enums ─────────
- */
+model User {
+  id                 Int          @id @default(autoincrement()) @map("id_user")
+  firstName          String       @map("first_name")
+  lastName           String       @map("last_name")
+  email              String       @unique @db.VarChar(255)
+  phoneNumber        String       @db.VarChar(20)
+  password           String
+  role               Role
+  contractType       ContractType @map("contract_type")
+  avatarUrl          String?      @map("avatar_url")
+  totalWarningPoints Int          @default(0) @map("total_warning_points")
+  totalPayeLeave     Decimal      @default(10) @map("total_paye_leave") @db.Decimal(8, 1)
+  totalRemote        Int          @default(2) @map("total_remote")
+  weeklyLeaveLimit   Int          @default(2) @map("weekly_leave_limit")
+  lastWeekReset      DateTime?    @map("last_week_reset")
+  monthlyLeaveGain   Decimal      @default(2.2) @map("monthly_leave_gain") @db.Decimal(3, 1)
+  lastMonthlyReset   DateTime?    @map("last_monthly_reset")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  deletedAt          DateTime?    @map("deleted_at")
+  belongs            Belongs[]
+  clockings          Clocking[]
+  leaves             Leave[]
+  receives           Receive[]
+  ownedTeams         Team[]
+  createdWarnings    Warning[]    @relation("WarningCreatedBy")
+  warnings           Warning[]
+
+  @@index([deletedAt])
+  @@index([email])
+  @@index([role])
+  @@map("User")
+}
+
+model Team {
+  id          Int       @id @default(autoincrement()) @map("id_team")
+  teamName    String    @map("team_name")
+  description String
+  ownerId     Int       @map("id_owner")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  members     Belongs[]
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@map("Team")
+}
+
+model Notification {
+  id        Int                @id @default(autoincrement()) @map("id_notification")
+  message   String
+  title     String
+  status    NotificationStatus
+  date      DateTime           @db.Date
+  isRead    Boolean            @default(false)
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  receivers Receive[]
+
+  @@map("Notification")
+}
+
+model Warning {
+  id          Int           @id @default(autoincrement()) @map("id_warning")
+  status      WarningStatus
+  description String
+  date        DateTime      @db.Date
+  createdById Int?          @map("created_by_id")
+  userId      Int           @map("id_user")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  createdBy   User?         @relation("WarningCreatedBy", fields: [createdById], references: [id])
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, date])
+  @@map("Warning")
+}
+
+model Leave {
+  id            Int         @id @default(autoincrement()) @map("id_leave")
+  startDate     DateTime    @map("start_date") @db.Date
+  endDate       DateTime    @map("end_date") @db.Date
+  justification String
+  status        LeaveStatus @default(Pending)
+  daysLeave     Int         @map("days_leave")
+  type          LeaveType
+  userId        Int         @map("id_user")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate, endDate])
+  @@map("Leave")
+}
+
+model Clocking {
+  id            Int       @id @default(autoincrement()) @map("id_clocking")
+  firstArrival  DateTime? @map("first_arrival") @db.Time(6)
+  lastDeparture DateTime? @map("last_departure") @db.Time(6)
+  workTime      Int       @default(0) @map("work_time")
+  breakTime     Int       @default(0) @map("break_time")
+  clockingDate  DateTime  @map("clocking_date") @db.Date
+  totalHours    Decimal   @default(0) @map("total_hours") @db.Decimal(8, 2)
+  weekDay       WeekDay
+  userId        Int       @map("id_user")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, clockingDate])
+  @@index([userId])
+  @@map("Clocking")
+}
+
+/// *
+///  * tables de jointure avec PK composite
+model Receive {
+  userId         Int          @map("id_user")
+  notificationId Int          @map("id_notification")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, notificationId])
+  @@index([userId])
+  @@index([notificationId])
+  @@map("Receive")
+}
+
+model Belongs {
+  teamId    Int      @map("id_team")
+  userId    Int      @map("id_user")
+  joinedAt  DateTime @default(now())
+  isLead    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([teamId, isLead])
+  @@index([userId])
+  @@map("Belongs")
+}
+
+/// *
+///  * ───────── Enums ─────────
 enum Role {
   Employer
   Manager
@@ -55,183 +201,4 @@ enum WeekDay {
   Friday
   Saturday
   Sunday
-}
-
-/**
- * ───────── Tables ─────────
- */
-
-model User {
-  id           Int          @id @default(autoincrement()) @map("id_user")
-  firstName    String       @map("first_name")
-  lastName     String       @map("last_name")
-  email        String       @unique @db.VarChar(255)
-  phoneNumber  String       @db.VarChar(20)
-  password     String
-  role         Role
-  contractType ContractType @map("contract_type")
-  avatarUrl    String?      @map("avatar_url")
-  totalWarningPoints Int @default(0) @map("total_warning_points")
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  deletedAt DateTime? @map("deleted_at")
-
-  // relations
-  warnings  Warning[]
-  clockings Clocking[]
-  belongs   Belongs[]
-  receives  Receive[]
-  leaves    Leave[]
-
-  ownedTeams Team[] // back-relation de Team.owner
-  createdWarnings Warning[] @relation("WarningCreatedBy")
-
-  @@map("User")
-
-  @@index([deletedAt])
-  @@index([email])
-  @@index([role])
-}
-
-model Team {
-  id          Int    @id @default(autoincrement()) @map("id_team")
-  teamName    String @map("team_name")
-  description String
-  ownerId     Int    @map("id_owner")
-  owner       User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // relations
-  members Belongs[]
-
-  @@index([ownerId])
-  @@map("Team")
-}
-
-model Notification {
-  id      Int                @id @default(autoincrement()) @map("id_notification")
-  message String
-  title   String 
-  status  NotificationStatus
-  date    DateTime           @db.Date
-  isRead      Boolean @default(false)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // relations
-  receivers Receive[]
-
-  @@map("Notification")
-}
-
-model Warning {
-  id          Int           @id @default(autoincrement()) @map("id_warning")
-  status      WarningStatus
-  description String
-  date        DateTime      @db.Date
-  createdById Int? @map("created_by_id")
-  createdBy   User? @relation("WarningCreatedBy", fields: [createdById], references: [id])
-
-  // FK
-  userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([userId, date])
-  @@map("Warning")
-}
-
-model Leave {
-  id            Int         @id @default(autoincrement()) @map("id_leave")
-  startDate     DateTime    @map("start_date") @db.Date
-  endDate       DateTime    @map("end_date") @db.Date
-  justification String
-  status        LeaveStatus @default(Pending)
-  daysLeave     Int         @map("days_leave")
-  type          LeaveType    
-
-  // FK
-  userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId, startDate, endDate])
-  @@map("Leave")
-}
-
-model Clocking {
-  id            Int       @id @default(autoincrement()) @map("id_clocking")
-  firstArrival  DateTime? @map("first_arrival") @db.Time
-  lastDeparture DateTime? @map("last_departure") @db.Time
-  workTime   Int       @default(0) @map("work_time") 
-  breakTime  Int       @default(0) @map("break_time") 
-  clockingDate  DateTime  @map("clocking_date") @db.Date
-  totalHours    Decimal   @default(0) @map("total_hours") @db.Decimal(8, 2)
-  weekDay       WeekDay
-
-  // FK
-  userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId, clockingDate])
-  @@index([userId])
-  @@map("Clocking")
-}
-
-/**
- * tables de jointure avec PK composite
- */
-model Receive {
-  userId         Int @map("id_user")
-  notificationId Int @map("id_notification")
-
-  // timestamps (utile pour tracer la réception)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-
-  @@id([userId, notificationId])
-  @@index([userId])
-  @@index([notificationId])
-  @@map("Receive")
-}
-
-model Belongs {
-  teamId   Int      @map("id_team")
-  userId   Int      @map("id_user")
-  joinedAt DateTime @default(now())
-  isLead   Boolean  @default(false)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([teamId, userId])
-  @@index([teamId, isLead])
-  @@index([userId])
-  @@map("Belongs")
 }

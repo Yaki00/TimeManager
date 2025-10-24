@@ -16,6 +16,7 @@ export function requireManager(req, _res, next) {
 }
 
 export function requireResponsableOrManager(req, _res, next) {
+
   if (
     req.user?.role !== ROLES.RESPONSABLE &&
     req.user?.role !== ROLES.MANAGER

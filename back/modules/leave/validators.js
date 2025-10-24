@@ -8,6 +8,10 @@ export const LeaveSchema = z.object({
     message: "Invalid date format",
   }),
   justification: z.string().min(1).max(500),
+  type: z
+    .enum(["Absence", "PaidLeave", "Training", "Remote"])
+    .optional()
+    .default("PaidLeave"),
 });
 
 export function validate(schema, data) {

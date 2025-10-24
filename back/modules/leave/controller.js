@@ -53,7 +53,10 @@ export const createNewLeave = asyncHandler(async (req, res) => {
   if (!req.user?.id)
     throw unauthorized(TEXTS.PERMISSION_DENIED, "PERMISSION_DENIED");
 
-  const { startDate, endDate, justification } = validate(LeaveSchema, req.body);
+  const { startDate, endDate, justification, type } = validate(
+    LeaveSchema,
+    req.body
+  );
 
   const start = toUTCDateOnly(new Date(startDate));
   const end = toUTCDateOnly(new Date(endDate));
@@ -85,6 +88,7 @@ export const createNewLeave = asyncHandler(async (req, res) => {
     justification: justification.trim(),
     daysLeave,
     userId: req.user.id,
+    type,
   });
 
   res.status(201).json(leave);
@@ -136,8 +140,6 @@ export const listLeavesByUser = asyncHandler(async (req, res) => {
  * GET /leaves/teams/:teamId
  */
 export const listLeavesByTeam = asyncHandler(async (req, res) => {
-  if (!isManagerOrResponsable(req.user))
-    throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   const teamId = Number(req.params.teamId);
   const leaves = await findLeavesByTeamId(teamId);
   res.json(leaves);
