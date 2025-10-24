@@ -25,8 +25,9 @@ export function computeBusinessDays(start, end) {
 
   let count = 0;
   const current = new Date(startDate);
+  const endTime = endDate.getTime();
 
-  while (current <= endDate) {
+  while (current.getTime() <= endTime) {
     const dayOfWeek = current.getUTCDay();
     // Lundi = 1, Mardi = 2, ..., Vendredi = 5
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {

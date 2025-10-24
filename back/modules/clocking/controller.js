@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 
 import { asyncHandler } from "../../core/async.js";
-import { badRequest, notFound, conflict } from "../../core/httpErrors.js";
+import { badRequest, notFound } from "../../core/httpErrors.js";
 import { parsePagination } from "../../core/pagination.js";
 
 export const createClocking = asyncHandler(async (req, res) => {

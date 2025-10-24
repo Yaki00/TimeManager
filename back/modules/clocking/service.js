@@ -32,7 +32,12 @@ function timeStringToDateTime(timeStr) {
   if (!timeStr) return null;
   const [hours, minutes, seconds = "00"] = timeStr.split(":");
   const date = new Date();
-  date.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds), 0);
+  date.setHours(
+    Number.parseInt(hours),
+    Number.parseInt(minutes),
+    Number.parseInt(seconds),
+    0
+  );
   return date;
 }
 

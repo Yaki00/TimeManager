@@ -131,7 +131,6 @@ describe("Teams routes", () => {
     );
     expect(memberJohn).toBeDefined();
     expect(memberJohn.isLead).toBe(false);
-    console.log("Membres créés:", res.body.members);
   });
 
   it("POST /teams -> 201 avec plusieurs membres", async () => {
@@ -161,7 +160,6 @@ describe("Teams routes", () => {
     // Vérifier les rôles de lead
     const leads = res.body.members.filter((m) => m.isLead === true);
     expect(leads.length).toBeGreaterThanOrEqual(2); // owner + Rita
-    console.log("Membres créés:", res.body.members);
   });
 
   it("GET /teams -> 200 et contient au moins une team", async () => {

@@ -7,13 +7,13 @@ function isPositiveInt(n) {
 function isValidTime(timeStr) {
   if (!timeStr) return true;
   // Format HH:MM:SS ou HH:MM
-  return /^([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(timeStr);
+  return /^([0-1]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(timeStr);
 }
 
 function isValidDate(dateStr) {
   if (!dateStr) return false;
   const date = new Date(dateStr);
-  return date instanceof Date && !isNaN(date);
+  return date instanceof Date && !Number.isNaN(date);
 }
 
 export function validateCreateClocking(req, _res, next) {
@@ -51,23 +51,44 @@ export function validateCreateClocking(req, _res, next) {
     );
   }
 
-  if (workMinutes != null && (!Number.isInteger(Number(workMinutes)) || Number(workMinutes) < 0)) {
-    throw badRequest("workMinutes doit être un entier positif", "WORK_MINUTES_INVALID");
+  if (
+    workMinutes != null &&
+    (!Number.isInteger(Number(workMinutes)) || Number(workMinutes) < 0)
+  ) {
+    throw badRequest(
+      "workMinutes doit être un entier positif",
+      "WORK_MINUTES_INVALID"
+    );
   }
 
-  if (breakMinutes != null && (!Number.isInteger(Number(breakMinutes)) || Number(breakMinutes) < 0)) {
-    throw badRequest("breakMinutes doit être un entier positif", "BREAK_MINUTES_INVALID");
+  if (
+    breakMinutes != null &&
+    (!Number.isInteger(Number(breakMinutes)) || Number(breakMinutes) < 0)
+  ) {
+    throw badRequest(
+      "breakMinutes doit être un entier positif",
+      "BREAK_MINUTES_INVALID"
+    );
   }
 
-  if (totalHours != null && (isNaN(Number(totalHours)) || Number(totalHours) < 0)) {
-    throw badRequest("totalHours doit être un nombre positif", "TOTAL_HOURS_INVALID");
+  if (
+    totalHours != null &&
+    (Number.isNaN(Number(totalHours)) || Number(totalHours) < 0)
+  ) {
+    throw badRequest(
+      "totalHours doit être un nombre positif",
+      "TOTAL_HOURS_INVALID"
+    );
   }
 
   if (weekDay != null && typeof weekDay !== "string") {
     throw badRequest("weekDay doit être une chaîne", "WEEK_DAY_INVALID");
   }
 
-  if (workDay != null && (!Number.isInteger(Number(workDay)) || Number(workDay) < 0)) {
+  if (
+    workDay != null &&
+    (!Number.isInteger(Number(workDay)) || Number(workDay) < 0)
+  ) {
     throw badRequest("workDay doit être un entier positif", "WORK_DAY_INVALID");
   }
 
@@ -76,11 +97,11 @@ export function validateCreateClocking(req, _res, next) {
     clockingDate,
     firstArrival: firstArrival || null,
     lastDeparture: lastDeparture || null,
-    workMinutes: workMinutes != null ? Number(workMinutes) : 0,
-    breakMinutes: breakMinutes != null ? Number(breakMinutes) : 0,
-    totalHours: totalHours != null ? Number(totalHours) : 0,
+    workMinutes: workMinutes === null ? 0 : Number(workMinutes),
+    breakMinutes: breakMinutes === null ? 0 : Number(breakMinutes),
+    totalHours: totalHours === null ? 0 : Number(totalHours),
     weekDay: weekDay || "",
-    workDay: workDay != null ? Number(workDay) : 0,
+    workDay: workDay === null ? 0 : Number(workDay),
   };
 
   next();
@@ -121,21 +142,30 @@ export function validateUpdateClocking(req, _res, next) {
 
   if (workMinutes !== undefined) {
     if (!Number.isInteger(Number(workMinutes)) || Number(workMinutes) < 0) {
-      throw badRequest("workMinutes doit être un entier positif", "WORK_MINUTES_INVALID");
+      throw badRequest(
+        "workMinutes doit être un entier positif",
+        "WORK_MINUTES_INVALID"
+      );
     }
     patch.workMinutes = Number(workMinutes);
   }
 
   if (breakMinutes !== undefined) {
     if (!Number.isInteger(Number(breakMinutes)) || Number(breakMinutes) < 0) {
-      throw badRequest("breakMinutes doit être un entier positif", "BREAK_MINUTES_INVALID");
+      throw badRequest(
+        "breakMinutes doit être un entier positif",
+        "BREAK_MINUTES_INVALID"
+      );
     }
     patch.breakMinutes = Number(breakMinutes);
   }
 
   if (totalHours !== undefined) {
-    if (isNaN(Number(totalHours)) || Number(totalHours) < 0) {
-      throw badRequest("totalHours doit être un nombre positif", "TOTAL_HOURS_INVALID");
+    if (Number.isNaN(Number(totalHours)) || Number(totalHours) < 0) {
+      throw badRequest(
+        "totalHours doit être un nombre positif",
+        "TOTAL_HOURS_INVALID"
+      );
     }
     patch.totalHours = Number(totalHours);
   }
@@ -149,7 +179,10 @@ export function validateUpdateClocking(req, _res, next) {
 
   if (workDay !== undefined) {
     if (!Number.isInteger(Number(workDay)) || Number(workDay) < 0) {
-      throw badRequest("workDay doit être un entier positif", "WORK_DAY_INVALID");
+      throw badRequest(
+        "workDay doit être un entier positif",
+        "WORK_DAY_INVALID"
+      );
     }
     patch.workDay = Number(workDay);
   }
@@ -157,5 +190,3 @@ export function validateUpdateClocking(req, _res, next) {
   req.body = patch;
   next();
 }
-
-

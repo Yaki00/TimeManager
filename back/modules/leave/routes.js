@@ -17,7 +17,12 @@ import { validateCreate } from "./validators.js";
 const router = Router();
 
 router.get("/users/:userId", requireAuth, listLeavesByUser);
-router.get("/teams/:teamId", requireResponsableOrManager, listLeavesByTeam);
+router.get(
+  "/teams/:teamId",
+  requireAuth,
+  requireResponsableOrManager,
+  listLeavesByTeam
+);
 
 router.post("/", validateCreate, requireAuth, createNewLeave);
 router.get("/", requireAuth, requireResponsableOrManager, listLeaves);

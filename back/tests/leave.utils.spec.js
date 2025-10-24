@@ -4,7 +4,7 @@ import {
   computeBusinessDays,
   validateLeaveDates,
   isManagerOrResponsable,
-} from "../leave/utils.js";
+} from "../modules/leave/utils.js";
 
 describe("Leave Utils", () => {
   describe("toUTCDateOnly", () => {

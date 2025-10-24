@@ -12,17 +12,24 @@ const {
 
 const isTest = NODE_ENV === "test";
 
-const ACCESS_SECRET =
-  JWT_ACCESS_SECRET || (isTest ? "test-access-secret" : undefined);
-const REFRESH_SECRET =
-  JWT_REFRESH_SECRET || (isTest ? "test-refresh-secret" : undefined);
-const ISSUER = JWT_ISSUER || (isTest ? "test-issuer" : undefined);
-const AUDIENCE = JWT_AUDIENCE || (isTest ? "test-audience" : undefined);
+const ACCESS_SECRET = JWT_ACCESS_SECRET;
+const REFRESH_SECRET = JWT_REFRESH_SECRET;
+const ISSUER = JWT_ISSUER;
+const AUDIENCE = JWT_AUDIENCE;
 
-if (!ACCESS_SECRET) throw new Error("JWT_ACCESS_SECRET manquant");
-if (!REFRESH_SECRET) throw new Error("JWT_REFRESH_SECRET manquant");
-if (!ISSUER) throw new Error("JWT_ISSUER manquant");
-if (!AUDIENCE) throw new Error("JWT_AUDIENCE manquant");
+// Validation des secrets requis
+if (!ACCESS_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET manquant");
+}
+if (!REFRESH_SECRET) {
+  throw new Error("JWT_REFRESH_SECRET manquant");
+}
+if (!ISSUER) {
+  throw new Error("JWT_ISSUER manquant");
+}
+if (!AUDIENCE) {
+  throw new Error("JWT_AUDIENCE manquant");
+}
 
 export function signAccessToken(user) {
   const payload = {

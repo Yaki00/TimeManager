@@ -22,12 +22,9 @@ export async function findUserByEmail(email) {
 }
 
 export async function dummyVerifyPassword(password) {
-  const hash = process.env.DUMMY_HASH || DUMMY_FALLBACK;
-  try {
-    return await verifyPassword(password, hash);
-  } catch {
-    return false;
-  }
+  // Hash le mot de passe pour éviter les attaques par timing
+  await bcrypt.hash(password, 10);
+  return false;
 }
 
 export async function createUser({

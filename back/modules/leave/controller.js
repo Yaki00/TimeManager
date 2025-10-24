@@ -21,7 +21,6 @@ import { parsePagination } from "../../core/pagination.js";
 import {
   toUTCDateOnly,
   computeBusinessDays,
-  validateLeaveDates,
   isManagerOrResponsable,
 } from "./utils.js";
 

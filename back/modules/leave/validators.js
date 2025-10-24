@@ -27,7 +27,7 @@ export function validateCreate(req, _res, next) {
   try {
     req.body = validate(LeaveSchema, req.body);
     next();
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 }
