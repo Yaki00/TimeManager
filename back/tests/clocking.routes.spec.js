@@ -355,13 +355,12 @@ describe("Clocking routes", () => {
       });
     });
 
-    it("200 pour supprimer (Responsable)", async () => {
+    it("204 pour supprimer (Responsable)", async () => {
       const res = await request(app)
         .delete(`/clockings/${clockingToDelete.id}`)
         .set("Authorization", `Bearer ${tokenResponsable}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.id).toBe(clockingToDelete.id);
+      expect(res.status).toBe(204);
     });
 
     it("403 pour Employer essayant de supprimer", async () => {

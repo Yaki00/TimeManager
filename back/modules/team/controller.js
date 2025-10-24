@@ -58,6 +58,6 @@ export const removeTeam = asyncHandler(async (req, res) => {
   if (!Number.isInteger(id) || id <= 0) {
     throw badRequest("ID invalide", "ID_INVALID");
   }
-  const deleted = await deleteTeamById(id);
-  res.json(deleted);
+  await deleteTeamById(id);
+  res.status(204).send();
 });

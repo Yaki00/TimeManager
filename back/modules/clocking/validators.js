@@ -7,13 +7,13 @@ function isPositiveInt(n) {
 function isValidTime(timeStr) {
   if (!timeStr) return true;
   // Format HH:MM:SS ou HH:MM
-  return /^([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(timeStr);
+  return /^([0-1]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(timeStr);
 }
 
 function isValidDate(dateStr) {
   if (!dateStr) return false;
   const date = new Date(dateStr);
-  return date instanceof Date && !isNaN(date);
+  return date instanceof Date && !Number.isNaN(date);
 }
 
 export function validateCreateClocking(req, _res, next) {

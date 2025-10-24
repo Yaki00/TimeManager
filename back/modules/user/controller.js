@@ -42,7 +42,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 });
 
 export const getUserById = asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "ID_INVALID");
 
   const user = await findUserById(id);
@@ -96,7 +96,7 @@ export const getUserByContractType = asyncHandler(async (req, res) => {
 });
 
 export const updateUserById = asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "INVALID_ID");
 
   const { firstName, lastName, phoneNumber, contractType, email } = req.body;
@@ -107,7 +107,7 @@ export const updateUserById = asyncHandler(async (req, res) => {
 });
 
 export const updateRoleUserById = asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "INVALID_ID");
   if (!req.user?.id)
     throw unauthorized(TEXTS.NOT_AUTHENTICATED, "NOT_AUTHENTICATED");
@@ -126,7 +126,7 @@ export const updateRoleUserById = asyncHandler(async (req, res) => {
 });
 
 export const deleteUserById = asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "INVALID_ID");
   await deleteUser(id);
   res.status(204).send();
