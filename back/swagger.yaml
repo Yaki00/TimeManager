@@ -30,6 +30,8 @@ tags:
     description: Gestion des pointages
   - name: Leaves
     description: Gestion des congés/demandes d'absence
+  - name: Warnings
+    description: Gestion des avertissements
 
 security:
   - bearerAuth: []
@@ -671,6 +673,215 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+<<<<<<< Updated upstream
+=======
+  # ═══════════════════════════════════════════════════════
+  #  WARNINGS (Avertissements)
+  # ═══════════════════════════════════════════════════════
+  /warnings:
+    post:
+      tags: [Warnings]
+      summary: Créer un avertissement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningCreate"
+      responses:
+        "201":
+          description: Avertissement créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warning:
+                    $ref: "#/components/schemas/Warning"
+                  message:
+                    type: string
+                    example: "Avertissement créé avec succès"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Warnings]
+      summary: Liste des avertissements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - name: userId
+          in: query
+          schema:
+            type: integer
+            format: int32
+          description: Filtrer par utilisateur
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Alert, Late, UnjustifiedAbsence]
+          description: Filtrer par statut
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Date de début (avec endDate)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Date de fin (avec startDate)
+        - name: createdBy
+          in: query
+          schema:
+            type: integer
+            format: int32
+          description: Filtrer par créateur
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Warning"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /warnings/{id}:
+    get:
+      tags: [Warnings]
+      summary: Détails d'un avertissement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Avertissement trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warning:
+                    $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [Warnings]
+      summary: Modifier un avertissement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningUpdate"
+      responses:
+        "200":
+          description: Avertissement modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warning:
+                    $ref: "#/components/schemas/Warning"
+                  message:
+                    type: string
+                    example: "Avertissement mis à jour avec succès"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Warnings]
+      summary: Supprimer un avertissement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Avertissement supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Avertissement supprimé avec succès"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /warnings/user/{userId}/stats:
+    get:
+      tags: [Warnings]
+      summary: Statistiques d'avertissement d'un utilisateur
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+          description: ID de l'utilisateur
+      responses:
+        "200":
+          description: Statistiques d'avertissement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarningStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ═══════════════════════════════════════════════════════
+  #  LEAVES (Congés)
+  # ═══════════════════════════════════════════════════════
+>>>>>>> Stashed changes
   /leaves:
     post:
       tags: [Leaves]
@@ -1189,6 +1400,119 @@ components:
               type: string
               format: date
 
+<<<<<<< Updated upstream
+=======
+    # ─────────────────────────────────────────────────────
+    #  WARNINGS
+    # ─────────────────────────────────────────────────────
+    Warning:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+          example: "Alert"
+        description:
+          type: string
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        createdById:
+          type: integer
+          format: int32
+          example: 1
+        userId:
+          type: integer
+          format: int32
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        createdBy:
+          $ref: "#/components/schemas/UserBasic"
+        user:
+          $ref: "#/components/schemas/UserBasic"
+
+    WarningCreate:
+      type: object
+      required:
+        - status
+        - description
+        - date
+        - userId
+      properties:
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+          example: "Alert"
+        description:
+          type: string
+          maxLength: 500
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        userId:
+          type: integer
+          format: int32
+          example: 2
+
+    WarningUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+        description:
+          type: string
+          maxLength: 500
+        date:
+          type: string
+          format: date
+
+    WarningStats:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int32
+          example: 2
+        totalWarningPoints:
+          type: integer
+          format: int32
+          example: 5
+        warningsByStatus:
+          type: object
+          properties:
+            alert:
+              type: integer
+              format: int32
+              example: 2
+            late:
+              type: integer
+              format: int32
+              example: 1
+            unjustifiedAbsence:
+              type: integer
+              format: int32
+              example: 1
+
+    # ─────────────────────────────────────────────────────
+    #  UTILS
+    # ─────────────────────────────────────────────────────
+>>>>>>> Stashed changes
     CountResponse:
       type: object
       properties:
