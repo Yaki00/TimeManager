@@ -23,27 +23,38 @@ enum ContractType {
 }
 
 enum NotificationStatus {
-  Presence
-  Retard
-  Avertissement
+  Present
+  Late
+  Warning
 }
 
 enum WarningStatus {
   Alert
-  Retard
-  AbsenceNonJustifiee
-}
-
-enum VacationStatus {
-  EnAttente
-  Accepte
-  Refuse
+  Late
+  UnjustifiedAbsence
 }
 
 enum LeaveStatus {
-  EnAttente
-  Accepte
-  Refuse
+  Pending
+  Approved
+  Refused
+}
+
+enum LeaveType {
+  Absence
+  PaidLeave
+  Training
+  Remote
+}
+
+enum WeekDay {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
 }
 
 /**
@@ -54,12 +65,13 @@ model User {
   id           Int          @id @default(autoincrement()) @map("id_user")
   firstName    String       @map("first_name")
   lastName     String       @map("last_name")
-  email        String       @unique
-  phoneNumber  String       @map("phone_number")
+  email        String       @unique @db.VarChar(255)
+  phoneNumber  String       @db.VarChar(20)
   password     String
   role         Role
   contractType ContractType @map("contract_type")
   avatarUrl    String?      @map("avatar_url")
+  totalWarningPoints Int @default(0) @map("total_warning_points")
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -69,16 +81,19 @@ model User {
 
   // relations
   warnings  Warning[]
-  vacations Vacation[]
   clockings Clocking[]
   belongs   Belongs[]
   receives  Receive[]
   leaves    Leave[]
 
   ownedTeams Team[] // back-relation de Team.owner
+  createdWarnings Warning[] @relation("WarningCreatedBy")
 
   @@map("User")
+
   @@index([deletedAt])
+  @@index([email])
+  @@index([role])
 }
 
 model Team {
@@ -102,8 +117,10 @@ model Team {
 model Notification {
   id      Int                @id @default(autoincrement()) @map("id_notification")
   message String
+  title   String 
   status  NotificationStatus
   date    DateTime           @db.Date
+  isRead      Boolean @default(false)
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -120,7 +137,8 @@ model Warning {
   status      WarningStatus
   description String
   date        DateTime      @db.Date
-  quantity    Int
+  createdById Int? @map("created_by_id")
+  createdBy   User? @relation("WarningCreatedBy", fields: [createdById], references: [id])
 
   // FK
   userId Int  @map("id_user")
@@ -135,34 +153,14 @@ model Warning {
   @@map("Warning")
 }
 
-model Vacation {
-  id        Int            @id @default(autoincrement()) @map("id_vacation")
-  number    Int            @map("number_vacation")
-  startDate DateTime       @map("start_date") @db.Date
-  endDate   DateTime       @map("end_date") @db.Date
-  status    VacationStatus
-
-  // FK
-  userId Int  @map("id_user")
-  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([userId, status])
-  @@index([startDate, endDate])
-  @@map("Vacation")
-}
-
 model Leave {
   id            Int         @id @default(autoincrement()) @map("id_leave")
   startDate     DateTime    @map("start_date") @db.Date
   endDate       DateTime    @map("end_date") @db.Date
   justification String
-  status        LeaveStatus @default(EnAttente)
+  status        LeaveStatus @default(Pending)
   daysLeave     Int         @map("days_leave")
+  type          LeaveType    
 
   // FK
   userId Int  @map("id_user")
@@ -180,12 +178,11 @@ model Clocking {
   id            Int       @id @default(autoincrement()) @map("id_clocking")
   firstArrival  DateTime? @map("first_arrival") @db.Time
   lastDeparture DateTime? @map("last_departure") @db.Time
-  workMinutes   Int       @default(0) @map("work_minutes")
-  breakMinutes  Int       @default(0) @map("break_minutes")
+  workTime   Int       @default(0) @map("work_time") 
+  breakTime  Int       @default(0) @map("break_time") 
   clockingDate  DateTime  @map("clocking_date") @db.Date
   totalHours    Decimal   @default(0) @map("total_hours") @db.Decimal(8, 2)
-  weekDay       String    @default("") @map("week_day")
-  workDay       Int       @default(0) @map("work_day")
+  weekDay       WeekDay
 
   // FK
   userId Int  @map("id_user")
@@ -195,7 +192,6 @@ model Clocking {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Permet plusieurs pointages par jour (pas de contrainte unique)
   @@index([userId, clockingDate])
   @@index([userId])
   @@map("Clocking")
