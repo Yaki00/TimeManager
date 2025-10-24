@@ -1,11 +1,18 @@
 openapi: 3.0.3
 info:
-  title: API Auth / Users / Leaves
+  title: API Auth / Users / Teams / Clocking / Leaves
   version: "1.0.0"
   description: |
     Spécification OpenAPI générée à partir de vos routes Express.
 
     **Base URL**: `http://localhost:3000`
+
+    Cette API gère :
+    - **Authentification** : Inscription, connexion, gestion des jetons JWT
+    - **Utilisateurs** : CRUD complet avec gestion des rôles et types de contrat
+    - **Équipes** : Gestion des équipes avec propriétaires et permissions
+    - **Pointages** : Système de pointage avec statistiques et gestion des pauses
+    - **Congés** : Demandes d'absence avec workflow d'approbation
 servers:
   - url: http://localhost:3000
     description: Développement local
@@ -17,6 +24,10 @@ tags:
     description: Authentification & jetons
   - name: Users
     description: Gestion des utilisateurs
+  - name: Teams
+    description: Gestion des équipes
+  - name: Clocking
+    description: Gestion des pointages
   - name: Leaves
     description: Gestion des congés/demandes d'absence
 
@@ -363,6 +374,296 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /teams:
+    post:
+      tags: [Teams]
+      summary: Créer une équipe
+      description: Nécessite des privilèges de **Responsable** ou **Manager**.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamCreate"
+      responses:
+        "201":
+          description: Équipe créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    get:
+      tags: [Teams]
+      summary: Lister toutes les équipes
+      responses:
+        "200":
+          description: Liste des équipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /teams/owner/{ownerId}:
+    get:
+      tags: [Teams]
+      summary: Lister les équipes d'un propriétaire
+      parameters:
+        - in: path
+          name: ownerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Liste des équipes du propriétaire
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /teams/{id}:
+    get:
+      tags: [Teams]
+      summary: Obtenir une équipe par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Teams]
+      summary: Mettre à jour une équipe
+      description: Seuls les propriétaires ou managers de l'équipe peuvent la modifier.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Teams]
+      summary: Supprimer une équipe
+      description: Seuls les propriétaires ou managers de l'équipe peuvent la supprimer.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /clocking:
+    post:
+      tags: [Clocking]
+      summary: Créer un pointage
+      description: Les utilisateurs peuvent créer des pointages pour eux-mêmes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingCreate"
+      responses:
+        "201":
+          description: Pointage créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    get:
+      tags: [Clocking]
+      summary: Lister tous les pointages
+      description: Réservé aux **Responsable** avec filtres possibles.
+      responses:
+        "200":
+          description: Liste des pointages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /clocking/user/{userId}:
+    get:
+      tags: [Clocking]
+      summary: Lister les pointages d'un utilisateur
+      description: Les utilisateurs peuvent voir leurs propres pointages, les responsables peuvent voir tous les pointages.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Liste des pointages de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /clocking/user/{userId}/stats:
+    get:
+      tags: [Clocking]
+      summary: Obtenir les statistiques de pointage d'un utilisateur
+      description: Les utilisateurs peuvent voir leurs propres statistiques, les responsables peuvent voir toutes les statistiques.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Statistiques de pointage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClockingStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /clocking/user/{userId}/date/{date}:
+    get:
+      tags: [Clocking]
+      summary: Obtenir les pointages d'un utilisateur pour une date
+      description: Les utilisateurs peuvent voir leurs propres pointages, les responsables peuvent voir tous les pointages.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Pointages de l'utilisateur pour la date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /clocking/{id}:
+    get:
+      tags: [Clocking]
+      summary: Obtenir un pointage par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Clocking]
+      summary: Mettre à jour un pointage
+      description: Les utilisateurs peuvent modifier leurs propres pointages, les responsables peuvent modifier tous les pointages.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingUpdate"
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Clocking]
+      summary: Supprimer un pointage
+      description: Les utilisateurs peuvent supprimer leurs propres pointages, les responsables peuvent supprimer tous les pointages.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Supprimé
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -748,6 +1049,145 @@ components:
     LeaveStatus:
       type: string
       enum: [PENDING, APPROVED, REJECTED]
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        ownerId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, ownerId]
+    TeamCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+    TeamUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    Clocking:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        clockIn:
+          type: string
+          format: date-time
+        clockOut:
+          type: string
+          format: date-time
+          nullable: true
+        breakStart:
+          type: string
+          format: date-time
+          nullable: true
+        breakEnd:
+          type: string
+          format: date-time
+          nullable: true
+        totalHours:
+          type: number
+          format: float
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, clockIn]
+    ClockingCreate:
+      type: object
+      required: [clockIn]
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+        clockOut:
+          type: string
+          format: date-time
+          nullable: true
+        breakStart:
+          type: string
+          format: date-time
+          nullable: true
+        breakEnd:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    ClockingUpdate:
+      type: object
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+        clockOut:
+          type: string
+          format: date-time
+          nullable: true
+        breakStart:
+          type: string
+          format: date-time
+          nullable: true
+        breakEnd:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    ClockingStats:
+      type: object
+      properties:
+        userId:
+          type: string
+        totalDays:
+          type: integer
+        totalHours:
+          type: number
+          format: float
+        averageHoursPerDay:
+          type: number
+          format: float
+        period:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              type: string
+              format: date
 
     CountResponse:
       type: object
