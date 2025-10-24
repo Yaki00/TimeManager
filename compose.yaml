@@ -22,7 +22,14 @@ services:
       sh -lc '
         set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          echo "🔍 Vérification des dépendances frontend...";
+          if [ -f package-lock.json ]; then 
+            echo "📦 Tentative avec npm ci...";
+            npm ci || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install);
+          else 
+            echo "📦 Installation avec npm install...";
+            npm install;
+          fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
         exec npm run dev -- --host 0.0.0.0 --port 5173'
@@ -50,7 +57,14 @@ services:
       sh -lc '
         set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          echo "🔍 Vérification des dépendances...";
+          if [ -f package-lock.json ]; then 
+            echo "📦 Tentative avec npm ci...";
+            npm ci || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install);
+          else 
+            echo "📦 Installation avec npm install...";
+            npm install;
+          fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
         npx prisma db push --schema=prisma/schema.prisma;

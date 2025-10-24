@@ -10,8 +10,10 @@ ENV NPM_CONFIG_PRODUCTION=false
 
 COPY package*.json ./
 COPY prisma ./prisma
+COPY scripts/install-deps.sh ./scripts/
 
-RUN npm ci
+# Rendre le script exécutable et l'exécuter
+RUN chmod +x ./scripts/install-deps.sh && ./scripts/install-deps.sh
 
 COPY . .
 
