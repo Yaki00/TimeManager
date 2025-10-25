@@ -15,7 +15,7 @@ export const useAuth = () => {
 		mutationFn: authApi.login,
 		onSuccess: (data) => {
 			console.log("Login successful:", data);
-			data = {
+			const userData = {
 				id: data.user.id,
 				firstName: data.user.firstName,
 				lastName: data.user.lastName,
@@ -23,11 +23,12 @@ export const useAuth = () => {
 				phoneNumber: data.user.phoneNumber,
 				role: data.user.role,
 				token: AES.encrypt(data.user.tokens.access, secretKey).toString(),
+				refreshToken: AES.encrypt(data.user.tokens.refresh, secretKey).toString(),
 				preferences: {
 					filterTeams: "card",
 				}
 			}
-			setUser(data);
+			setUser(userData);
 
 		},
 		onError: (error) => {

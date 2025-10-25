@@ -1,7 +1,7 @@
 import { Menu,Avatar, Popover, Button } from 'antd';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { items } from '../../utils/GetItemLayout.jsx';
+import { items } from '../../utils/getItemLayout.jsx';
 import { useUserStore } from '../../zustand/store.js';
 import { useNavigate,useLocation } from 'react-router';
 

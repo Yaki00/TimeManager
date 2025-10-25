@@ -16,11 +16,8 @@ export function requireManager(req, _res, next) {
 }
 
 export function requireResponsableOrManager(req, _res, next) {
-  if (
-    req.user?.role !== ROLES.RESPONSABLE &&
-    req.user?.role !== ROLES.MANAGER
-  ) {
-    throw forbidden("Accès refusé : rôle insuffisant", "FORBIDDEN_ROLE");
+  if (req.user?.role !== ROLES.RESPONSABLE && req.user?.role !== ROLES.MANAGER) {
+    throw forbidden(`Accès refusé : rôle insuffisant ${req.user?.role}`, "FORBIDDEN_ROLE");
   }
   next();
 }

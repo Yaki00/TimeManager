@@ -15,6 +15,7 @@ const user = {
 	role: '',
 	contractType: '',
 	token: '',
+	refreshToken: '',
 	preferences: preferences,
 }
 
@@ -25,6 +26,14 @@ export const useUserStore = create(
 		(set, get) => ({
 			user: user,
 			setUser: (newUser) => set({ user: newUser }),
+			updateTokens: (accessToken, refreshToken) =>
+				set({
+					user: {
+						...get().user,
+						token: accessToken,
+						refreshToken: refreshToken,
+					},
+				}),
 			setPreferences: (newPreferences) =>
 				set({
 					user: {

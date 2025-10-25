@@ -7,6 +7,7 @@ export const useUsers = () => {
 	const usersQuery = useQuery({
 		queryKey: ['users'],
 		queryFn: userApi.getAllUsers,
+		staleTime: 5 * 60 * 1000,
 		onSuccess: (data) => {
 			console.log("Fetched users:", data);
 		},
@@ -18,11 +19,12 @@ export const useUsers = () => {
 	return { 
 		users: usersQuery.data, 
 		loadingUsers: usersQuery.isLoading, 
-		refetchUsers: usersQuery.refetch 
+		errorUsers: usersQuery.error,
+		refetchUsers: usersQuery.refetch
 	};
 };
 
-export const useUpdateUser = (onSuccessCallback, onErrorCallback) => {
+export const useUpdateUser = () => {
 	const queryClient = useQueryClient();
 	const setUser = useUserStore((state) => state.setUser);
 	const currentUser = useUserStore((state) => state.user);
@@ -30,29 +32,19 @@ export const useUpdateUser = (onSuccessCallback, onErrorCallback) => {
 	const updateUserMutation = useMutation({
 		mutationFn: (data) => userApi.updateUser(data),
 		onSuccess: (updatedUser) => {
-			console.log("User updated:", updatedUser);
-			
 			setUser({
 				...currentUser,
 				...updatedUser,
 			});
-			
 			queryClient.invalidateQueries({ queryKey: ['users'] });
-			
-			if (onSuccessCallback) {
-				onSuccessCallback(updatedUser);
-			}
 		},
 		onError: (error) => {
 			console.error("Failed to update user:", error);
-			if (onErrorCallback) {
-				onErrorCallback(error);
-			}
 		},
 	});
 
 	return {
-		updateUser: updateUserMutation.mutate,
+		updateUserAsync: updateUserMutation.mutateAsync,
 		loadingUpdateUser: updateUserMutation.isLoading,
 		isSuccess: updateUserMutation.isSuccess,
 		isError: updateUserMutation.isError,

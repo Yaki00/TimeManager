@@ -10,22 +10,22 @@ export const Profile = () => {
   const data = useUserStore((state) => state.user);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const { updateUser, loadingUpdateUser } = useUpdateUser(
-    (updatedUser) => {
+  const { updateUserAsync, loadingUpdateUser } = useUpdateUser();
+
+  const onFinish = async (values) => {
+    try {
+      const newUser = {
+        id: data.id,
+        ...values
+      }
+      const response = await updateUserAsync(newUser);
+      console.log('Response from updateUser:', response);
       messageApi.success('Profile updated successfully!');
       setEdited(false);
-    },
-    (error) => {
-      messageApi.error('Profile update failed. Please try again.');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      messageApi.error('Failed to update profile. Please try again.');
     }
-  );
-
-  const onFinish = (values) => {
-    const newUser = {
-      id: data.id,
-      ...values
-    }
-    updateUser(newUser);
   }
 
   if (!data)

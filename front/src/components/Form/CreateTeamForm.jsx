@@ -1,21 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Select } from 'antd';
 import styled from 'styled-components';
 
 import { ButtonStyle } from '../../utils/ButtonStyle';
+import { useUsers } from '../../service/useUser';
+import { useUserStore } from '../../zustand/store';
 
 
-export const CreateTeamForm = ({onFinish, onFinishFailed, teams, initialValues}) => {
+export const CreateTeamForm = ({form, onFinish, initialValues}) => {
+	const {users, loadingUsers} = useUsers();
+	const [userlist, setUserlist] = useState([]);
+	const userStore = useUserStore((state) => state.user);
+
+
+	useEffect(() => {
+		if (users && users.length > 0) {
+			setUserlist(users.filter(u => u.id !== userStore.id));
+		}
+	}, [users, userStore.id]);
+
+	if (loadingUsers || !users) return <div>Loading users...</div>;
+console.log("User list for team creation:", initialValues);
+	const formInitialValues = initialValues
+		? {
+				...initialValues,
+				members: Array.isArray(initialValues.members)
+					? initialValues.members.map(m => (m && typeof m === 'object' ? m.id : m))
+					: [],
+		  }
+		: undefined;
+
 	return (
 		<Form
+			form={form}
 			name="basic"
 			labelCol={{ span: 24 }}
 			wrapperCol={{ span: 24 }}
 			onFinish={onFinish}
-			onFinishFailed={onFinishFailed}
-			initialValues={initialValues}
 			autoComplete="off"
 			layout="vertical"
+			initialValues={formInitialValues}
 			style={{
 				width: "100%",
 				background: "#fff",
@@ -31,20 +55,22 @@ export const CreateTeamForm = ({onFinish, onFinishFailed, teams, initialValues})
 				rules={[{ required: true, message: 'Please input the team name!' }]}
 				style={{ flex: 1 }}
 			>
-				<Input size="large" placeholder="Nom de la team" />
+				<Input size="large" placeholder="Nom de la team" name="teamName" />
 			</Form.Item>
 			<Form.Item
-			label={<span style={{ fontWeight: 500 }}>Membres</span>}
-			name="members"
-			rules={[{ required: true, message: 'Please input at least one member!' }]}
-			style={{ flex: 1 }}
-			>
+				label={<span style={{ fontWeight: 500 }}>Membres</span>}
+				name="members"
+				rules={[{ required: true, message: 'Please input at least one member!' }]}
+				style={{ flex: 1 }}
+				>
 			<Select
 				mode="multiple"
 				placeholder="Select members"
-				options={ teams.teams.flatMap(team => {
-					return team.members.map(member => ({ value: member.id, label: member.name }));
-				})}
+				options={ userlist?.filter(user => user.id !== "Manager").map(user => ({
+					label: `${user.firstName} ${user.lastName}`,
+					value: user.id,
+				}))}
+				loading={loadingUsers}
 				size="large"
 				style={{ width: "100%" }}
 			/>

@@ -62,7 +62,7 @@ export const LayoutComponent = ({ children }) => {
           </div>
         </div>
       </SiderStyle>
-      <Content style={{ margin: location.pathname !== "/profile" ? '50px 50px 0 50px' : '0', overflow: location.pathname === "/profile" ? "scroll" : "hidden" }}>{children}</Content>
+      <Content style={{ margin: location.pathname !== "/profile" ? '50px 50px 0 50px' : '0', overflow: location.pathname === "/profile" ? "scroll" : "auto" }}>{children}</Content>
     </Layout>
   );
 };
