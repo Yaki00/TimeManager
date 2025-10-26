@@ -61,7 +61,7 @@ export async function findByName(search) {
 }
 
 export async function findByPhoneNumber(phoneNumber) {
-  const norm = phoneNumber.replace(/[^\d]/g, "");
+  const norm = phoneNumber.replaceAll(/[^\d]/g, "");
   return prisma.user.findMany({
     where: {
       phoneNumber: { contains: norm, mode: "insensitive" },

@@ -12,6 +12,7 @@ import warningRoutes from "./modules/warning/routes.js";
 import prisma from "./db.js";
 import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
+import { logger } from "./core/logger.js";
 
 export function createApp() {
   const app = express();
@@ -73,18 +74,22 @@ export async function startServer(port = process.env.PORT || 3000) {
   if (process.env.NODE_ENV !== "test") {
     const rows = await prisma.$queryRaw`SELECT NOW() AS db_time`;
     const first = Array.isArray(rows) ? rows[0] : rows;
-    console.log("Connecté à PostgreSQL :", first?.db_time);
+    logger.info("Connecté à PostgreSQL :", first?.db_time);
   }
 
   const app = createApp();
   const server = app.listen(port, () => {
-    console.log(`Serveur lancé sur le port ${port}`);
+    logger.info(`Serveur lancé sur le port ${port}`);
   });
 
   const shutdown = async () => {
-    server.close(() => console.log("Serveur arrêté"));
+    logger.info("Arrêt du serveur en cours...");
+    server.close(() => {
+      logger.info("Serveur arrêté");
+    });
     await prisma.$disconnect();
-    process.exit(0);
+    logger.info("Base de données déconnectée");
+    // Ne pas utiliser process.exit() - laisser le processus se terminer naturellement
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
@@ -94,5 +99,5 @@ export async function startServer(port = process.env.PORT || 3000) {
 
 // Démarrage si lancé directement
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startServer();
+  await startServer();
 }

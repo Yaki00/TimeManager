@@ -18,6 +18,19 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage",
       reporter: ["text", "lcov"],
+      // Force Unix paths in coverage reports
+      all: true,
+      include: ["**/*.js"],
+      exclude: [
+        "node_modules/**",
+        "tests/**",
+        "coverage/**",
+        "prisma/migrations/**",
+        "**/*.spec.js",
+        "**/*.test.js",
+        "vitest.config.js",
+        "html/assets/**",
+      ],
     },
   },
 });

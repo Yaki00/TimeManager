@@ -22,7 +22,14 @@ services:
       sh -lc '
         set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          echo "🔍 Vérification des dépendances frontend...";
+          if [ -f package-lock.json ]; then 
+            echo "📦 Tentative avec npm ci...";
+            npm ci || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install);
+          else 
+            echo "📦 Installation avec npm install...";
+            npm install;
+          fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
         exec npm run dev -- --host 0.0.0.0 --port 5173'
@@ -50,7 +57,14 @@ services:
       sh -lc '
         set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          echo "🔍 Vérification des dépendances...";
+          if [ -f package-lock.json ]; then 
+            echo "📦 Tentative avec npm ci...";
+            npm ci || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install);
+          else 
+            echo "📦 Installation avec npm install...";
+            npm install;
+          fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
         npx prisma db push --schema=prisma/schema.prisma;
@@ -161,6 +175,64 @@ services:
         npx prisma db push --schema=prisma/schema.prisma --skip-generate;
         npm run test'
 
+  sonarqube-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonarqube
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U sonar -d sonarqube -h localhost || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  sonarqube:
+    image: sonarqube:community
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      #réduire l’empreinte mémoire
+      SONAR_WEB_JAVAOPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # Lance l'analyse SonarQube en montant ton code (monorepo front/back)
+  # Utilisation: docker compose run --rm sonar-scanner
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli:latest
+    depends_on:
+      sonarqube:
+        condition: service_healthy
+    working_dir: /workspace
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      # Token à générer dans l'UI SonarQube: http://localhost:9000/admin/security
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+    volumes:
+      - ./:/workspace
+    profiles:
+      - tools
+    # La configuration est dans sonar-project.properties
+
 volumes:
   pgdata:
   node_modules:
@@ -169,3 +241,8 @@ volumes:
   node_modules_back_studio:
   node_modules_back_tests:
   pgadmin_data:
+
+  sonarqube_db_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

@@ -22,12 +22,7 @@ describe("GET /users", () => {
       .set("Authorization", `Bearer ${token}`)
       .set("Accept", "application/json");
 
-    console.log("📦 /users RESPONSE", {
-      status: res.status,
-      headers: res.headers,
-      body: res.body,
-      text: res.text,
-    });
+    // Debug info removed for production
 
     expect(res.status).toBe(200);
 
