@@ -1,4 +1,9 @@
 import prisma from "../../db.js";
+import {
+  notifyLeaveRequest,
+  notifyLeaveApproved,
+  notifyLeaveRefused,
+} from "../notification/utils.js";
 
 const leaveSelect = {
   id: true,
@@ -25,10 +30,21 @@ const leaveSelect = {
 };
 
 export async function createLeave(data) {
-  return prisma.leave.create({
+  const leave = await prisma.leave.create({
     data,
     select: leaveSelect,
   });
+
+  // Envoyer une notification automatique aux managers et responsables
+  // On le fait de manière asynchrone pour ne pas bloquer la création
+  notifyLeaveRequest(leave).catch((error) => {
+    console.error(
+      "Erreur lors de l'envoi de la notification de demande de congé:",
+      error
+    );
+  });
+
+  return leave;
 }
 
 export async function findLeaveById(id) {
@@ -64,11 +80,37 @@ export async function findLeavesByTeamId(teamId) {
 }
 
 export async function updateLeaveById(id, data) {
-  return prisma.leave.update({
+  const oldLeave = await prisma.leave.findUnique({
+    where: { id },
+    select: leaveSelect,
+  });
+
+  const updatedLeave = await prisma.leave.update({
     where: { id },
     data,
     select: leaveSelect,
   });
+
+  // Envoyer une notification si le statut a changé
+  if (data.status && oldLeave.status !== data.status) {
+    if (data.status === "Approved") {
+      notifyLeaveApproved(updatedLeave).catch((error) => {
+        console.error(
+          "Erreur lors de l'envoi de la notification d'approbation:",
+          error
+        );
+      });
+    } else if (data.status === "Refused") {
+      notifyLeaveRefused(updatedLeave).catch((error) => {
+        console.error(
+          "Erreur lors de l'envoi de la notification de refus:",
+          error
+        );
+      });
+    }
+  }
+
+  return updatedLeave;
 }
 
 export async function deleteLeaveById(id) {

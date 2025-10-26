@@ -1,4 +1,5 @@
 import prisma from "../../db.js";
+import { notifyWarningCreated } from "../notification/utils.js";
 
 const warningSelect = {
   id: true,
@@ -58,10 +59,20 @@ export async function createWarning(data) {
       },
     });
 
-    return tx.warning.findUnique({
+    const fullWarning = await tx.warning.findUnique({
       where: { id: warning.id },
       select: warningSelect,
     });
+
+    // Envoyer une notification automatique à l'utilisateur concerné
+    notifyWarningCreated(fullWarning).catch((error) => {
+      console.error(
+        "Erreur lors de l'envoi de la notification d'avertissement:",
+        error
+      );
+    });
+
+    return fullWarning;
   });
 }
 

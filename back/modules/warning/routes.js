@@ -30,7 +30,7 @@ import {
 
 const router = Router();
 
-// Routes pour la création et gestion des warnings
+// Routes pour la création
 router.post(
   "/",
   requireAuth,
@@ -42,7 +42,7 @@ router.post(
 // Routes pour récupérer les warnings
 router.get("/", requireAuth, getAllWarnings);
 
-// Routes de comptage (doivent être avant les routes avec paramètres)
+// Routes de comptage
 router.get("/count", requireAuth, getCountWarnings);
 router.get(
   "/count/user/:userId",

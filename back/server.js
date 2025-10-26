@@ -9,6 +9,7 @@ import leaveRoutes from "./modules/leave/routes.js";
 import teamRoutes from "./modules/team/routes.js";
 import clockingRoutes from "./modules/clocking/routes.js";
 import warningRoutes from "./modules/warning/routes.js";
+import notificationRoutes from "./modules/notification/routes.js";
 import prisma from "./db.js";
 import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
@@ -50,6 +51,7 @@ export function createApp() {
   app.use("/teams", teamRoutes);
   app.use("/clockings", clockingRoutes);
   app.use("/warnings", warningRoutes);
+  app.use("/notifications", notificationRoutes);
 
   if (process.env.NODE_ENV === "test") {
     app.get("/__crash", () => {
