@@ -6,7 +6,7 @@ const getItem = (
 	label,
 	icon,
 	url,
-	roles = ['employee', 'Manager', 'responsable'],
+	roles = ['Employer', 'Manager', 'responsable'],
 ) => {
 	return {
 		key: url,
@@ -26,7 +26,7 @@ const allItems = [
 
 export const getFilteredItems = () => {
 	const userRole = getRoles();
-	if (!userRole) return allItems.filter(item => item.roles.includes('employee'));
+	if (!userRole) return allItems.filter(item => item.roles.includes('Employer'));
 
 	return allItems.filter(item => item.roles.includes(userRole));
 };
