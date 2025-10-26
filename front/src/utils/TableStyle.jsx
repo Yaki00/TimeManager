@@ -37,4 +37,15 @@ export const TableStyle = styled(Table)`
     border-radius: 0 0 12px 12px;
     box-shadow: 0 -2px 10px rgba(145, 145, 250, 0.15);
   }
+
+  .ant-table-body::-webkit-scrollbar,
+  .ant-table-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ant-table-body,
+  .ant-table-content {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 `;

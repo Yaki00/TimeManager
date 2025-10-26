@@ -1,6 +1,7 @@
-import { Button, Input , Modal, Form, Divider, message } from "antd";
-import { AntDesignOutlined } from '@ant-design/icons';
+import { Button, Input , Modal, Form, message } from "antd";
+import { SearchOutlined, AppstoreOutlined, UnorderedListOutlined, PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useState, useMemo } from "react";
+import styled from 'styled-components';
 import { Breadcrumbs } from "../utils/Breadcrumb";
 import { CreateTeamForm } from "../components/form/CreateTeamForm";
 import { ButtonStyle } from "../utils/ButtonStyle";
@@ -9,8 +10,95 @@ import { useCreateTeam, useDeleteTeam, useGetTeams } from "../service/useTeam";
 import { TeamCard } from "../components/TeamCard";
 import { columnsTeam } from "../components/column/ColumnsTeam";
 import { TableStyle } from "../utils/TableStyle";
+import { Header, PageWrapper, ScrollableContent } from "../utils/layoutStyle";
+
+const ToolbarContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+`;
+
+const LeftActions = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 4px 4px 4px 4px;
+  border-radius: 10px;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .ant-input-affix-wrapper {
+    border: none;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    min-width: 280px;
+    height: 40px;
+    
+    &:hover, &:focus, &.ant-input-affix-wrapper-focused {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    input {
+      font-weight: 500;
+      font-size: 14px;
+    }
+  }
+`;
+
+const ViewToggleGroup = styled.div`
+  display: flex;
+  gap: 4px;
+  background: white;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const ViewButton = styled(Button)`
+  border: none !important;
+  border-radius: 6px !important;
+  background: ${props => props.$active ? '#f1f5f9' : 'transparent'} !important;
+  color: ${props => props.$active ? '#9191fa' : '#64748b'} !important;
+  transition: all 0.3s ease !important;
+  box-shadow: ${props => props.$active ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none'} !important;
+  &:hover {
+    color: ${props => props.$active ? '#9191fa' : '#1e293b'} !important;
+    background: ${props => props.$active ? '#f1f5f9' : '#f8fafc'} !important;
+  }
+`;
+
+const CardsGrid = styled.div`
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  margin-top: 24px;
+  padding-bottom: 24px;
+`;
 
 
+const StatItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+
+  span {
+    color: #9191fa;
+    font-weight: 700;
+    font-size: 16px;
+  }
+`;
 
 export const Teams = () => {
 	const preference = useUserStore((state) => state.user.preferences.filterTeams);
@@ -80,9 +168,11 @@ export const Teams = () => {
 	}
 
 	const Footer = () => {
-		return (<div style={{ textAlign: 'right' }}>
-			<p style={{marginRight:20}}>Total: {filteredTeams.length}</p>
-		</div>);
+		return (
+				<StatItem>
+					Total des équipes : <span>{filteredTeams.length}</span>
+				</StatItem>
+		);
 	}
 
 	const handleDelete = async (record) => {
@@ -98,56 +188,98 @@ export const Teams = () => {
 	const columnsTeams = columnsTeam(handleDelete, isDeleting);
 
 	return (
-		<>
-		<Breadcrumbs
-			items={[
-			{ label: "Dashboard", path: "/" },
-			{ label: "Teams" },
-			]}
-		/>
-		<h1>Teams</h1>
-		<div style={{ marginTop: 40, }}>
-			<div style={{display: 'flex', justifyContent: "space-between", padding: "10px 20px", background: "white",borderRadius: "8px"}}>
-				<div>
-					<Input placeholder="Search teams..." style={{width: 200}} onChange={(e) => handleSearch(e)}/>
-					<Divider type="vertical" />
-					<Button icon={<AntDesignOutlined />} shape="circle" onClick={toggleView}/>
-				</div>
-				<ButtonStyle type="primary" onClick={showModal}>Création d'une équipe</ButtonStyle>
-			</div>
-			<Modal
-				title={<span style={{ fontWeight: 700, fontSize: 22 }}>Création d'une équipe</span>}
-				destroyOnHidden={true}
-				open={isModalOpen}
-				onCancel={handleCancel}
-				centered
-				footer={null}
-				width={600}
-				styles={{
-					body: {
-						background: "#efedfa",
-						borderRadius: 12,
-						padding: "32px 24px"
-					}
-				}}
-			>
-				<CreateTeamForm 
-					form={form}
-					onFinish={onFinish}
+		<PageWrapper>
+			<Header>
+				<Breadcrumbs
+					items={[
+						{ label: "Dashboard", path: "/" },
+						{ label: "Teams" },
+					]}
 				/>
-	  		</Modal>
-			{preference === "card" ? (
-			<div style={{display: 'grid', gap: 20, gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 20,overflow : 'scroll', height: '70vh', paddingBottom: 10}}>
-				{filteredTeams.map(team => (
-					<TeamCard key={team.id} team={team} handleDelete={handleDelete}/>
-				))}
-			</div>
-		) : (
-			<div style={{marginTop: 20}}>
-				<TableStyle columns={columnsTeams} dataSource={filteredTeams} pagination={false} scroll={{ y: 450 }} footer={() => <Footer />} />
-			</div>
-		)}
-		</div>
-		</>
+				<h1>Gestion des Équipes</h1>
+				<ToolbarContainer>
+					<LeftActions>
+						<SearchContainer>
+							<Input
+								prefix={<SearchOutlined style={{ color: '#64748b' }} />}
+								placeholder="Rechercher une équipe..."
+								onChange={handleSearch}
+								allowClear
+							/>
+						</SearchContainer>
+						<ViewToggleGroup>
+							<ViewButton
+								icon={<AppstoreOutlined />}
+								$active={preference === "card"}
+								onClick={() => preference !== "card" && toggleView()}
+							/>
+							<ViewButton
+								icon={<UnorderedListOutlined />}
+								$active={preference === "table"}
+								onClick={() => preference !== "table" && toggleView()}
+							/>
+						</ViewToggleGroup>
+					</LeftActions>
+					<ButtonStyle
+						type="primary"
+						icon={<PlusOutlined />}
+						onClick={showModal}
+					>
+						Créer une équipe
+					</ButtonStyle>
+				</ToolbarContainer>
+			</Header>
+			<ScrollableContent>
+				<Modal
+					title={
+						<span style={{ 
+							fontWeight: 700, 
+							fontSize: 20,
+							background: 'linear-gradient(135deg, #9191fa 0%, #C0C0F6 100%)',
+							WebkitBackgroundClip: 'text',
+							WebkitTextFillColor: 'transparent',
+							backgroundClip: 'text'
+						}}>
+							Création d'une nouvelle équipe
+						</span>
+					}
+					destroyOnHidden={true}
+					open={isModalOpen}
+					onCancel={handleCancel}
+					centered
+					footer={null}
+					width={650}
+					styles={{
+						body: {
+							background: "linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%)",
+							borderRadius: 12,
+							padding: "32px 24px"
+						}
+					}}
+				>
+					<CreateTeamForm 
+						form={form}
+						onFinish={onFinish}
+					/>
+				</Modal>
+				{preference === "card" ? (
+					<CardsGrid>
+						{filteredTeams.map(team => (
+							<TeamCard key={team.id} team={team} handleDelete={handleDelete}/>
+						))}
+					</CardsGrid>
+				) : (
+					<div style={{margin:"24px 0"}}>
+						<TableStyle 
+							columns={columnsTeams} 
+							dataSource={filteredTeams} 
+							pagination={false}
+							footer={() => <Footer />}
+							scroll={{ y: 450 }}
+						/>
+					</div>
+				)}
+			</ScrollableContent>
+		</PageWrapper>
 	);
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import dayjs from 'dayjs';
+import { TagStyle } from '../../utils/TagStyle';
 
 
 export const columns = [
@@ -32,8 +33,15 @@ export const columns = [
 	title: 'Statut',
 	dataIndex: 'status',
 	key: 'status',
-	render: (text) => {
-	   return <Tag color={text === 'Accepted' ? 'green' : 'volcano'}>{text}</Tag>
+	render: (status) => {
+		let color = 'default';
+				if (status === 'Accepted') color = 'success';
+				if (status === 'Refused') color = 'error';
+				if (status === 'EnAttente') color = 'warning';
+				
+				return (
+					<TagStyle color={color} text={status} />
+				);
 	}
   },
 ];

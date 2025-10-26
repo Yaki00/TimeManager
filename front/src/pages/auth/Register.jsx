@@ -74,9 +74,6 @@ const LeftPanel = styled.div`
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
   }
 
-  @media (max-width: 950px) {
-    display: none;
-  }
 `;
 
 const RightPanel = styled.div`

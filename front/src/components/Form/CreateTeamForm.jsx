@@ -25,7 +25,9 @@ console.log("User list for team creation:", initialValues);
 		? {
 				...initialValues,
 				members: Array.isArray(initialValues.members)
-					? initialValues.members.map(m => (m && typeof m === 'object' ? m.id : m))
+					? initialValues.members
+						.map(m => (m && typeof m === 'object' ? m.id : m))
+						.filter(memberId => memberId !== userStore.id)
 					: [],
 		  }
 		: undefined;

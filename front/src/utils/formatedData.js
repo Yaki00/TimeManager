@@ -20,11 +20,8 @@ export const formatedDataForCalendar = (leaves) => {
 			});
 		}
 	});
-	
 	return formattedLeaves;
 }
-
-
 
 export const formatTeamDataForTableGetAllTeam = (teams) => {
 	if (!teams || teams.length === 0) return [];

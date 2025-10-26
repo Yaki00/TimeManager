@@ -6,12 +6,12 @@ import { PrivateRoutes } from './utils/PrivateRoutes.jsx';
 import { Login } from './pages/auth/Login.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Register } from './pages/auth/Register.jsx';
-import { Dashboard } from './pages/Dashboard.jsx';
 import { LayoutComponent } from './components/layout/index.jsx';
 import { Profile } from './pages/Profile.jsx';
 import { Teams } from './pages/Teams.jsx';
 import { TeamDetails } from './pages/TeamDetails.jsx';
-import { Time } from './pages/TIme.jsx';
+import { Time } from './pages/Time.jsx';
+import { Dashboard } from './pages/dashboard/index.jsx';
 
   const queryClient = new QueryClient()
 
