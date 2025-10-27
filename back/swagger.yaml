@@ -34,6 +34,8 @@ tags:
     description: Gestion des congés/demandes d'absence
   - name: Warnings
     description: Gestion des avertissements
+  - name: Notifications
+    description: Gestion des notifications
 
 security:
   - bearerAuth: []
@@ -983,6 +985,675 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  # ═══════════════════════════════════════════════════════
+  #  WARNINGS
+  # ═══════════════════════════════════════════════════════
+  /warnings:
+    post:
+      tags: [Warnings]
+      summary: Créer un avertissement (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des avertissements. Impossible de créer un warning pour soi-même.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningCreate"
+      responses:
+        "201":
+          description: Avertissement créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Warnings]
+      summary: Lister tous les avertissements (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count:
+    get:
+      tags: [Warnings]
+      summary: Compter tous les avertissements
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/user/{userId}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/status/{status}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements par statut
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/WarningStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/date-range:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements dans une plage de dates
+      parameters:
+        - in: query
+          name: startDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/created-by/{createdById}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements créés par un utilisateur
+      parameters:
+        - in: path
+          name: createdById
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/user/{userId}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/status/{status}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements par statut (paginé)
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/WarningStatus"
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/date-range:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements dans une plage de dates (paginé)
+      parameters:
+        - in: query
+          name: startDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/created-by/{createdById}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements créés par un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: createdById
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/{id}:
+    get:
+      tags: [Warnings]
+      summary: Obtenir un avertissement par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Warnings]
+      summary: Mettre à jour un avertissement
+      description: Seul le créateur du warning, un **Manager** ou un **Responsable** peut modifier.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningUpdate"
+      responses:
+        "200":
+          description: Avertissement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Warnings]
+      summary: Supprimer un avertissement
+      description: Seul le créateur du warning, un **Manager** ou un **Responsable** peut supprimer.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Avertissement supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════
+  /notifications:
+    post:
+      tags: [Notifications]
+      summary: Créer une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des notifications manuellement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationCreate"
+      responses:
+        "201":
+          description: Notification créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Notifications]
+      summary: Lister toutes les notifications (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count:
+    get:
+      tags: [Notifications]
+      summary: Compter toutes les notifications
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/status/{status}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications par statut
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/NotificationStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/user/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/unread/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications non lues d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/status/{status}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications par statut (paginé)
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/NotificationStatus"
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/user/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/unread/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications non lues d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications non lues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      summary: Obtenir une notification par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Notifications]
+      summary: Mettre à jour une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent modifier.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationUpdate"
+      responses:
+        "200":
+          description: Notification mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Notifications]
+      summary: Supprimer une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent supprimer.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Notification supprimée
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Notification marquée comme lue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notification marquée comme lue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 # ═══════════════════════════════════════════════════════
 #  COMPONENTS
 # ═══════════════════════════════════════════════════════
@@ -1088,6 +1759,22 @@ components:
         - EnAttente
         - Accepte
         - Refuse
+
+    WarningStatus:
+      type: string
+      description: Statut d'un avertissement
+      enum:
+        - Alert
+        - Late
+        - UnjustifiedAbsence
+
+    NotificationStatus:
+      type: string
+      description: Statut d'une notification
+      enum:
+        - Present
+        - Late
+        - Warning
 
     # ─────────────────────────────────────────────────────
     #  AUTH
@@ -1525,8 +2212,6 @@ components:
         daysLeave:
           type: integer
 
-<<<<<<< Updated upstream
-=======
     # ─────────────────────────────────────────────────────
     #  WARNINGS
     # ─────────────────────────────────────────────────────
@@ -1535,12 +2220,9 @@ components:
       properties:
         id:
           type: integer
-          format: int32
           example: 1
         status:
-          type: string
-          enum: [Alert, Late, UnjustifiedAbsence]
-          example: "Alert"
+          $ref: "#/components/schemas/WarningStatus"
         description:
           type: string
           example: "Retard répété"
@@ -1550,11 +2232,9 @@ components:
           example: "2024-01-15"
         createdById:
           type: integer
-          format: int32
           example: 1
         userId:
           type: integer
-          format: int32
           example: 2
         createdAt:
           type: string
@@ -1565,9 +2245,9 @@ components:
           format: date-time
           example: "2024-01-15T10:00:00Z"
         createdBy:
-          $ref: "#/components/schemas/UserBasic"
+          $ref: "#/components/schemas/User"
         user:
-          $ref: "#/components/schemas/UserBasic"
+          $ref: "#/components/schemas/User"
 
     WarningCreate:
       type: object
@@ -1578,9 +2258,7 @@ components:
         - userId
       properties:
         status:
-          type: string
-          enum: [Alert, Late, UnjustifiedAbsence]
-          example: "Alert"
+          $ref: "#/components/schemas/WarningStatus"
         description:
           type: string
           maxLength: 500
@@ -1591,15 +2269,13 @@ components:
           example: "2024-01-15"
         userId:
           type: integer
-          format: int32
           example: 2
 
     WarningUpdate:
       type: object
       properties:
         status:
-          type: string
-          enum: [Alert, Late, UnjustifiedAbsence]
+          $ref: "#/components/schemas/WarningStatus"
         description:
           type: string
           maxLength: 500
@@ -1607,37 +2283,96 @@ components:
           type: string
           format: date
 
-    WarningStats:
+    # ─────────────────────────────────────────────────────
+    #  NOTIFICATIONS
+    # ─────────────────────────────────────────────────────
+    Notification:
       type: object
       properties:
-        userId:
+        id:
           type: integer
-          format: int32
-          example: 2
-        totalWarningPoints:
-          type: integer
-          format: int32
-          example: 5
-        warningsByStatus:
-          type: object
-          properties:
-            alert:
-              type: integer
-              format: int32
-              example: 2
-            late:
-              type: integer
-              format: int32
-              example: 1
-            unjustifiedAbsence:
-              type: integer
-              format: int32
-              example: 1
+          example: 1
+        title:
+          type: string
+          example: "Nouvelle demande de congé"
+        message:
+          type: string
+          example: "Vous avez reçu une nouvelle demande de congé"
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        receivers:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                $ref: "#/components/schemas/User"
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+
+    NotificationCreate:
+      type: object
+      required:
+        - title
+        - message
+        - status
+        - receiverIds
+      properties:
+        title:
+          type: string
+          example: "Nouvelle demande de congé"
+        message:
+          type: string
+          example: "Vous avez reçu une nouvelle demande de congé"
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        receiverIds:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          example: [1, 2, 3]
+
+    NotificationUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+        receiverIds:
+          type: array
+          items:
+            type: integer
 
     # ─────────────────────────────────────────────────────
     #  UTILS
     # ─────────────────────────────────────────────────────
->>>>>>> Stashed changes
     CountResponse:
       type: object
       properties:
