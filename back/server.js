@@ -2,6 +2,12 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import asyncHandler from "express-async-handler";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import { load } from "js-yaml";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 import authRoutes from "./modules/auth/routes.js";
 import userRoutes from "./modules/user/routes.js";
@@ -15,12 +21,40 @@ import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
 import { logger } from "./core/logger.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: "*" }));
+  // Configuration CORS sécurisée
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["http://localhost:5173", "http://localhost:3000"];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Permettre les requêtes sans origine (Postman, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS non autorisé"));
+        }
+      },
+      credentials: true,
+    })
+  );
   app.use(express.json());
   app.use(requestId());
+
+  // Configuration Swagger
+  const swaggerDocument = load(
+    readFileSync(join(__dirname, "swagger.yaml"), "utf8")
+  );
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   app.get("/ping", (_req, res) => res.status(200).json({ pong: true }));
 

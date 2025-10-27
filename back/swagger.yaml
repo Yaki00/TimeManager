@@ -88,6 +88,16 @@ paths:
     post:
       tags: [Auth]
       summary: Créer un nouvel utilisateur
+      description: |
+        Permet de créer un nouveau compte utilisateur dans le système.
+
+        **Validation du mot de passe**: Le mot de passe doit contenir au moins 8 caractères.
+
+        **Rôle par défaut**: Tout nouvel utilisateur est créé avec le rôle "Employer".
+
+        **Contrat par défaut**: Le type de contrat par défaut est "H35".
+
+        **Retour**: L'utilisateur reçoit ses informations ainsi que les tokens d'accès et de rafraîchissement.
       security: []
       requestBody:
         required: true
@@ -95,6 +105,23 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              normalUser:
+                summary: Utilisateur standard
+                value:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  firstName: "John"
+                  lastName: "Doe"
+                  phoneNumber: "0123456789"
+              completeUser:
+                summary: Utilisateur avec toutes les informations
+                value:
+                  email: "jane.smith@company.com"
+                  password: "MyP@ssw0rd!"
+                  firstName: "Jane"
+                  lastName: "Smith"
+                  phoneNumber: "+33612345678"
       responses:
         "201":
           description: Utilisateur créé avec succès
@@ -102,6 +129,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              examples:
+                success:
+                  summary: Réponse de succès
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      lastName: "Doe"
+                      firstName: "John"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
+                      tokens:
+                        access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
@@ -110,11 +152,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emailExists:
+                  summary: Email déjà enregistré
+                  value:
+                    status: "error"
+                    code: "EMAIL_IN_USE"
+                    message: "Email déjà utilisé"
 
   /auth/login:
     post:
       tags: [Auth]
       summary: Se connecter et obtenir les jetons
+      description: |
+        Permet de s'authentifier dans le système en utilisant un email et un mot de passe.
+
+        **Sécurité**: Pour des raisons de sécurité, cette endpoint ne précise jamais si l'email existe ou non.
+        En cas d'échec, un message générique est retourné.
+
+        **Tokens**: 
+        - **Access Token**: Valide pendant 2 jours, doit être inclus dans le header `Authorization: Bearer <token>`
+        - **Refresh Token**: Valide pendant 7 jours, permet de renouveler le token d'accès
+
+        **Le refresh token** peut être utilisé avec l'endpoint `/auth/refresh` pour obtenir un nouveau token d'accès.
       security: []
       requestBody:
         required: true
@@ -122,6 +182,22 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LoginRequest"
+            examples:
+              validCredentials:
+                summary: Connexion réussie
+                value:
+                  email: "john.doe@example.com"
+                  password: "Secret123!"
+              invalidEmail:
+                summary: Email incorrect
+                value:
+                  email: "wrong@example.com"
+                  password: "AnyPassword123!"
+              invalidPassword:
+                summary: Mot de passe incorrect
+                value:
+                  email: "john.doe@example.com"
+                  password: "WrongPassword!"
       responses:
         "200":
           description: Connexion réussie
@@ -129,6 +205,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              examples:
+                loginSuccess:
+                  summary: Réponse de connexion réussie
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      lastName: "Doe"
+                      firstName: "John"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
+                      tokens:
+                        access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -136,6 +227,16 @@ paths:
     post:
       tags: [Auth]
       summary: Rafraîchir le jeton d'accès
+      description: |
+        Permet d'obtenir un nouveau token d'accès en utilisant un refresh token valide.
+
+        **Conditions**:
+        - Le refresh token doit être valide et non expiré
+        - Le refresh token doit avoir été émis par le même serveur
+
+        **Utilisation**: 
+        Lorsque votre token d'accès expire (après 2 jours), utilisez ce endpoint avec votre refresh token 
+        pour obtenir un nouveau token d'accès sans avoir à vous reconnecter.
       security: []
       requestBody:
         required: true
@@ -147,7 +248,13 @@ paths:
               properties:
                 refresh:
                   type: string
-                  description: Refresh token
+                  description: Refresh token obtenu lors de la connexion ou de l'inscription
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidG9rZW5UeXBlIjoicmVmcmVzaCJ9..."
+            examples:
+              refreshToken:
+                summary: Refresh avec token valide
+                value:
+                  refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidG9rZW5UeXBlIjoicmVmcmVzaCJ9..."
       responses:
         "200":
           description: Nouveau jeton d'accès
@@ -158,6 +265,13 @@ paths:
                 properties:
                   access:
                     type: string
+                    description: Nouveau token d'accès valide pour 2 jours
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsInJvbGUiOiJFbXBsb3llciJ9..."
+              examples:
+                refreshSuccess:
+                  summary: Refresh réussi
+                  value:
+                    access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsInJvbGUiOiJFbXBsb3llciIsImlhdCI6MTY5NzU0NTQwMCwiZXhwIjoxNjk3NzE4MjAwfQ..."
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -165,6 +279,13 @@ paths:
     get:
       tags: [Auth]
       summary: Profil de l'utilisateur courant (basique)
+      description: |
+        Récupère les informations de base de l'utilisateur authentifié.
+
+        **Authentification requise**: Un token d'accès valide doit être fourni dans le header.
+
+        **Différence avec `/users/me/info`**: Cette endpoint retourne uniquement les informations de base 
+        (id, email, role), tandis que `/users/me/info` retourne toutes les informations de l'utilisateur.
       responses:
         "200":
           description: OK
@@ -178,10 +299,20 @@ paths:
                     properties:
                       id:
                         type: integer
+                        description: Identifiant unique de l'utilisateur
                       email:
                         type: string
+                        description: Email de l'utilisateur
                       role:
                         $ref: "#/components/schemas/Role"
+              examples:
+                meResponse:
+                  summary: Profil utilisateur
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -192,18 +323,40 @@ paths:
     get:
       tags: [Users]
       summary: Lister tous les utilisateurs (paginé)
+      description: |
+        Récupère une liste paginée de tous les utilisateurs du système.
+
+        **Filtres automatiques**:
+        - Les utilisateurs supprimés (soft delete) sont automatiquement exclus
+        - Les utilisateurs sont triés par ID croissant
+
+        **Pagination**:
+        - Utilisez les paramètres `skip` et `take` pour la pagination
+        - `skip`: Nombre d'éléments à sauter (défaut: 0)
+        - `take`: Nombre d'éléments à retourner (défaut: 50, max: 200)
+
+        **Exemple**: Pour obtenir la deuxième page de 25 éléments:
+        ```
+        GET /users?skip=25&take=25
+        ```
       parameters:
         - in: query
           name: skip
           schema:
             type: integer
             default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
         - in: query
           name: take
           schema:
             type: integer
             default: 50
             maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner (max 200)
+          example: 50
       responses:
         "200":
           description: Liste d'utilisateurs
@@ -213,6 +366,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+              examples:
+                firstPage:
+                  summary: Première page (50 éléments)
+                  value:
+                    - id: 1
+                      email: "john.doe@example.com"
+                      firstName: "John"
+                      lastName: "Doe"
+                      phoneNumber: "0123456789"
+                      role: "Employer"
+                      contractType: "H35"
+                    - id: 2
+                      email: "jane.smith@example.com"
+                      firstName: "Jane"
+                      lastName: "Smith"
+                      phoneNumber: "0612345678"
+                      role: "Manager"
+                      contractType: "H40"
+                emptyList:
+                  summary: Liste vide
+                  value: []
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -817,37 +991,262 @@ paths:
     post:
       tags: [Leaves]
       summary: Créer une demande d'absence
+      description: |
+        Crée une nouvelle demande de congé, d'absence, de formation ou de télétravail.
+
+        **Types de congés disponibles**:
+        - **Absence**: Absence non rémunérée
+        - **PaidLeave**: Congé payé
+        - **Training**: Formation
+        - **Remote**: Télétravail
+
+        **Règles de validation**:
+        - Les dates doivent être valides et la date de début doit précéder la date de fin
+        - La période doit contenir au moins un jour ouvrable (du lundi au vendredi)
+        - Un seul congé par jour (pas de chevauchement de dates)
+        - Les jours de congé sont calculés automatiquement (jours ouvrés uniquement)
+
+        **Notifications**: Une notification est automatiquement envoyée aux managers et responsables.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/LeaveCreate"
+            examples:
+              paidLeave:
+                summary: Demande de congé payé
+                value:
+                  startDate: "2025-01-15"
+                  endDate: "2025-01-17"
+                  justification: "Congé pour raisons personnelles"
+                  type: "PaidLeave"
+              training:
+                summary: Demande de formation
+                value:
+                  startDate: "2025-02-10"
+                  endDate: "2025-02-11"
+                  justification: "Formation React avancé"
+                  type: "Training"
+              remote:
+                summary: Demande de télétravail
+                value:
+                  startDate: "2025-03-05"
+                  endDate: "2025-03-05"
+                  justification: "Travail à domicile"
+                  type: "Remote"
       responses:
         "201":
-          description: Demande créée
+          description: Demande créée avec succès
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Leave"
+              examples:
+                createdLeave:
+                  summary: Demande créée
+                  value:
+                    id: 1
+                    startDate: "2025-01-15T00:00:00.000Z"
+                    endDate: "2025-01-17T00:00:00.000Z"
+                    justification: "Congé pour raisons personnelles"
+                    status: "Pending"
+                    daysLeave: 3
+                    type: "PaidLeave"
+                    userId: 1
+                    user:
+                      id: 1
+                      firstName: "John"
+                      lastName: "Doe"
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidDates:
+                  summary: Dates invalides
+                  value:
+                    status: "error"
+                    code: "INVALID_DATES"
+                    message: "La date de début doit précéder la date de fin"
+                noBusinessDays:
+                  summary: Aucun jour ouvrable
+                  value:
+                    status: "error"
+                    code: "NO_BUSINESS_DAYS"
+                    message: "La période ne contient aucun jour ouvré"
+                overlap:
+                  summary: Chevauchement de dates
+                  value:
+                    status: "error"
+                    code: "OVERLAP"
+                    message: "Vous avez déjà une demande de congé/absence sur cette période."
         "401":
           $ref: "#/components/responses/Unauthorized"
 
     get:
       tags: [Leaves]
       summary: Lister toutes les demandes (Responsable/Manager)
-      description: Réservé aux **Responsable** et **Manager**.
+      description: |
+        Récupère toutes les demandes de congés du système. Réservé aux rôles **Responsable** et **Manager**.
+
+        **Fonctionnalités**:
+        - Retourne toutes les demandes de tous les utilisateurs
+        - Les demandes sont triées par date de création (plus récentes en premier)
+        - Supporte la pagination
+        - Les utilisateurs supprimés sont exclus de la liste
+
+        **Permissions**:
+        - **Employer**: Peut seulement lister ses propres demandes
+        - **Manager**: Peut lister toutes les demandes de son équipe
+        - **Responsable**: Peut lister toutes les demandes du système
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner
+          example: 50
       responses:
         "200":
-          description: OK
+          description: Liste des demandes de congés
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/Leave"
+              examples:
+                listLeaves:
+                  summary: Liste des demandes
+                  value:
+                    - id: 1
+                      startDate: "2025-01-15T00:00:00.000Z"
+                      endDate: "2025-01-17T00:00:00.000Z"
+                      justification: "Congé pour raisons personnelles"
+                      status: "Pending"
+                      daysLeave: 3
+                      type: "PaidLeave"
+                      userId: 1
+                      user:
+                        id: 1
+                        firstName: "John"
+                        lastName: "Doe"
+                        email: "john.doe@example.com"
+                    - id: 2
+                      startDate: "2025-02-10T00:00:00.000Z"
+                      endDate: "2025-02-11T00:00:00.000Z"
+                      justification: "Formation React"
+                      status: "Approved"
+                      daysLeave: 2
+                      type: "Training"
+                      userId: 2
+                      user:
+                        id: 2
+                        firstName: "Jane"
+                        lastName: "Smith"
+                        email: "jane.smith@example.com"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /leaves/managers:
+    get:
+      tags: [Leaves]
+      summary: Lister les demandes des managers (Manager ou Responsable)
+      description: |
+        Récupère toutes les demandes de congés des managers du système. 
+
+        **Permissions**:
+        - **Manager**: Peut voir les demandes des autres managers
+        - **Responsable**: Peut voir toutes les demandes des managers
+
+        **Différence avec `/leaves`**: Cette endpoint filtre uniquement les demandes des utilisateurs avec le rôle "Manager",
+        tandis que `/leaves` retourne toutes les demandes (tous rôles confondus).
+
+        **Cas d'usage**: Permet à un responsable ou un manager de gérer les demandes de congés des autres managers,
+        de la même manière qu'ils gèrent les demandes des employés.
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner
+          example: 50
+      responses:
+        "200":
+          description: Liste des demandes de congés des managers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+              examples:
+                managerLeaves:
+                  summary: Demandes des managers
+                  value:
+                    - id: 5
+                      startDate: "2025-01-20T00:00:00.000Z"
+                      endDate: "2025-01-22T00:00:00.000Z"
+                      justification: "Formation management"
+                      status: "Pending"
+                      daysLeave: 3
+                      type: "Training"
+                      userId: 3
+                      user:
+                        id: 3
+                        firstName: "Mike"
+                        lastName: "Manager"
+                        email: "mike.manager@example.com"
+                        role: "Manager"
+                        phoneNumber: "0612345678"
+                        contractType: "H40"
+                    - id: 6
+                      startDate: "2025-02-15T00:00:00.000Z"
+                      endDate: "2025-02-15T00:00:00.000Z"
+                      justification: "Journée télétravail"
+                      status: "Approved"
+                      daysLeave: 1
+                      type: "Remote"
+                      userId: 4
+                      user:
+                        id: 4
+                        firstName: "Jane"
+                        lastName: "Supervisor"
+                        email: "jane.supervisor@example.com"
+                        role: "Manager"
+                        phoneNumber: "0787654321"
+                        contractType: "H40"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1689,48 +2088,145 @@ components:
 
   responses:
     Unauthorized:
-      description: Non authentifié ou token invalide
+      description: |
+        Erreur d'authentification. Le token fourni est manquant, invalide ou expiré.
+
+        **Causes possibles**:
+        - Aucun token n'est fourni dans le header `Authorization`
+        - Le token est mal formé ou expiré
+        - Le token a été révoqué ou n'est plus valide
+
+        **Solution**: Utilisez l'endpoint `/auth/login` pour obtenir un nouveau token d'accès.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
-          example:
-            status: "error"
-            code: "UNAUTHORIZED"
-            message: "Token manquant ou invalide"
+          examples:
+            noToken:
+              summary: Token manquant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440000"
+                status: "error"
+                code: "UNAUTHORIZED"
+                message: "Token manquant ou invalide"
+            expiredToken:
+              summary: Token expiré
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440001"
+                status: "error"
+                code: "UNAUTHORIZED"
+                message: "Token expiré. Veuillez vous reconnecter."
 
     Forbidden:
-      description: Accès refusé (rôle insuffisant)
+      description: |
+        Accès refusé. L'utilisateur authentifié n'a pas les permissions nécessaires pour accéder à cette ressource.
+
+        **Causes possibles**:
+        - Le rôle de l'utilisateur n'est pas suffisant pour cette opération
+        - L'utilisateur tente d'accéder à une ressource qui ne lui appartient pas
+        - L'opération nécessite des droits spécifiques (Responsable, Manager)
+
+        **Rôles requis pour certaines opérations**:
+        - **Voir toutes les demandes**: Manager ou Responsable
+        - **Modifier le rôle d'un utilisateur**: Responsable uniquement
+        - **Voir tous les utilisateurs**: Responsable uniquement
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
-          example:
-            status: "error"
-            code: "FORBIDDEN"
-            message: "Accès refusé : rôle insuffisant"
+          examples:
+            insufficientRole:
+              summary: Rôle insuffisant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440002"
+                status: "error"
+                code: "FORBIDDEN"
+                message: "Accès refusé : rôle insuffisant"
+            notOwner:
+              summary: Pas le propriétaire de la ressource
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440003"
+                status: "error"
+                code: "FORBIDDEN"
+                message: "Permission refusée"
 
     NotFound:
-      description: Ressource non trouvée
+      description: |
+        La ressource demandée n'existe pas ou a été supprimée.
+
+        **Causes possibles**:
+        - L'ID fourni est incorrect
+        - La ressource a été supprimée
+        - L'utilisateur demandé utilise un soft delete et est considéré comme supprimé
+
+        **Solution**: Vérifiez l'ID de la ressource et assurez-vous qu'elle existe dans le système.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
-          example:
-            status: "error"
-            code: "NOT_FOUND"
-            message: "Ressource introuvable"
+          examples:
+            userNotFound:
+              summary: Utilisateur non trouvé
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440004"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Utilisateur non trouvé"
+            leaveNotFound:
+              summary: Demande non trouvée
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440005"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Demande de congé non trouvée"
+            resourceNotFound:
+              summary: Ressource générique non trouvée
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440006"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Ressource introuvable"
 
     BadRequest:
-      description: Requête invalide
+      description: |
+        La requête est invalide ou mal formée.
+
+        **Causes possibles**:
+        - Les données envoyées ne respectent pas le schéma attendu
+        - Des champs requis sont manquants
+        - Les valeurs fournies sont invalides (types incorrects, valeurs hors limites)
+        - Les règles de validation métier ne sont pas respectées
+
+        **Solution**: Vérifiez les données envoyées et consultez la documentation pour connaître le format attendu.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
-          example:
-            status: "error"
-            code: "BAD_REQUEST"
-            message: "Données invalides"
+          examples:
+            validationError:
+              summary: Erreur de validation
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440007"
+                status: "error"
+                code: "BAD_REQUEST"
+                message: "Données invalides"
+                details:
+                  field: "email"
+                  reason: "Format d'email invalide"
+            missingField:
+              summary: Champ requis manquant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440008"
+                status: "error"
+                code: "BAD_REQUEST"
+                message: "Le champ 'firstName' est requis"
+            invalidDates:
+              summary: Dates invalides
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440009"
+                status: "error"
+                code: "INVALID_DATES"
+                message: "La date de début doit précéder la date de fin"
 
   schemas:
     # ─────────────────────────────────────────────────────
@@ -1967,7 +2463,9 @@ components:
 
     TeamCreate:
       type: object
-      required:`n        - teamName`n        - ownerId
+      required:
+        - teamName
+        - ownerId
       properties:
         teamName:
           type: string
