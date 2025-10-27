@@ -135,3 +135,20 @@ export async function findOverlappingLeave(userId, start, end, excludeId) {
     select: { id: true },
   });
 }
+
+/**
+ * Récupère toutes les demandes des managers (role Manager)
+ */
+export async function findManagerLeaves({ skip = 0, take = 50 } = {}) {
+  return prisma.leave.findMany({
+    skip,
+    take,
+    where: {
+      user: {
+        role: "Manager",
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    select: leaveSelect,
+  });
+}

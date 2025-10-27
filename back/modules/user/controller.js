@@ -103,6 +103,8 @@ export const updateUserById = asyncHandler(async (req, res) => {
   const data = { firstName, lastName, phoneNumber, contractType, email };
 
   const user = await updateUser(id, data);
+  if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
+
   res.status(200).json(user);
 });
 
@@ -122,6 +124,8 @@ export const updateRoleUserById = asyncHandler(async (req, res) => {
     throw badRequest(TEXTS.INVALID_ROLE, "INVALID_ROLE");
   }
   const user = await updateRoleSvc(id, role);
+  if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
+
   res.status(200).json(user);
 });
 

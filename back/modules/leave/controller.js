@@ -7,6 +7,7 @@ import {
   updateLeaveById,
   deleteLeaveById,
   findOverlappingLeave,
+  findManagerLeaves,
 } from "./service.js";
 
 import { LeaveSchema, validate } from "./validators.js";
@@ -203,7 +204,7 @@ export const setLeaveStatus = asyncHandler(async (req, res) => {
 
   if (!status || !["Approved", "Refused"].includes(status)) {
     throw badRequest(
-      "Statut invalide (Accepte ou Refuse attendu).",
+      "Statut invalide (Approved ou Refused attendu).",
       "INVALID_STATUS"
     );
   }
@@ -212,13 +213,28 @@ export const setLeaveStatus = asyncHandler(async (req, res) => {
   if (!current) throw notFound(TEXTS.LEAVE_NOT_FOUND, "LEAVE_NOT_FOUND");
   if (current.status !== "Pending") {
     throw badRequest(
-      "Seules les demandes 'EnAttente' peuvent être traitées.",
+      "Seules les demandes 'Pending' peuvent être traitées.",
       "INVALID_STATE"
     );
   }
 
   const updated = await updateLeaveById(id, { status });
   res.json(updated);
+});
+
+/**
+ * GET /leaves/managers - Liste les demandes des managers (Manager ou Responsable)
+ */
+export const listManagerLeaves = asyncHandler(async (req, res) => {
+  if (!isManagerOrResponsable(req.user))
+    throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
+
+  const { skip, take } = parsePagination(req.query);
+
+  // Récupérer toutes les demandes des managers (role Manager)
+  const managerLeaves = await findManagerLeaves({ skip, take });
+
+  res.json(managerLeaves);
 });
 
 /**

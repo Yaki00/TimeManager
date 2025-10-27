@@ -10,6 +10,7 @@ import {
   updateLeave,
   setLeaveStatus,
   removeLeave,
+  listManagerLeaves,
 } from "./controller.js";
 import { requireResponsableOrManager } from "../user/middleware.js";
 import { validateCreate } from "./validators.js";
@@ -26,6 +27,12 @@ router.get(
 
 router.post("/", validateCreate, requireAuth, createNewLeave);
 router.get("/", requireAuth, requireResponsableOrManager, listLeaves);
+router.get(
+  "/managers",
+  requireAuth,
+  requireResponsableOrManager,
+  listManagerLeaves
+);
 router.patch(
   "/:id/status",
   requireAuth,
