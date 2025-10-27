@@ -32,6 +32,8 @@ tags:
     description: Gestion des pointages
   - name: Leaves
     description: Gestion des congés/demandes d'absence
+  - name: Warnings
+    description: Gestion des avertissements
 
 security:
   - bearerAuth: []
@@ -1523,9 +1525,119 @@ components:
         daysLeave:
           type: integer
 
+<<<<<<< Updated upstream
+=======
+    # ─────────────────────────────────────────────────────
+    #  WARNINGS
+    # ─────────────────────────────────────────────────────
+    Warning:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+          example: "Alert"
+        description:
+          type: string
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        createdById:
+          type: integer
+          format: int32
+          example: 1
+        userId:
+          type: integer
+          format: int32
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        createdBy:
+          $ref: "#/components/schemas/UserBasic"
+        user:
+          $ref: "#/components/schemas/UserBasic"
+
+    WarningCreate:
+      type: object
+      required:
+        - status
+        - description
+        - date
+        - userId
+      properties:
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+          example: "Alert"
+        description:
+          type: string
+          maxLength: 500
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        userId:
+          type: integer
+          format: int32
+          example: 2
+
+    WarningUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Alert, Late, UnjustifiedAbsence]
+        description:
+          type: string
+          maxLength: 500
+        date:
+          type: string
+          format: date
+
+    WarningStats:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int32
+          example: 2
+        totalWarningPoints:
+          type: integer
+          format: int32
+          example: 5
+        warningsByStatus:
+          type: object
+          properties:
+            alert:
+              type: integer
+              format: int32
+              example: 2
+            late:
+              type: integer
+              format: int32
+              example: 1
+            unjustifiedAbsence:
+              type: integer
+              format: int32
+              example: 1
+
     # ─────────────────────────────────────────────────────
     #  UTILS
     # ─────────────────────────────────────────────────────
+>>>>>>> Stashed changes
     CountResponse:
       type: object
       properties:
