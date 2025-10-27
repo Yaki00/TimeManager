@@ -22,8 +22,6 @@ services:
       sh -lc '
         set -e;
         echo "🔍 Vérification des dépendances frontend...";
-        echo "📦 Installation des dépendances natives de rollup...";
-        npm install --save-dev @rollup/rollup-linux-x64-gnu || true;
         if [ -f package-lock.json ]; then 
           echo "📦 Tentative avec npm ci...";
           npm ci --legacy-peer-deps || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install --legacy-peer-deps);
@@ -31,8 +29,6 @@ services:
           echo "📦 Installation avec npm install...";
           npm install --legacy-peer-deps;
         fi;
-        echo "🔧 Installation finale du package rollup natif...";
-        npm install --save-dev @rollup/rollup-linux-x64-gnu --force || true;
         echo "✅ Dépendances installées, démarrage de Vite...";
         exec npm run dev -- --host 0.0.0.0 --port 5173'
   backend:

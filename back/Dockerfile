@@ -10,10 +10,9 @@ ENV NPM_CONFIG_PRODUCTION=false
 
 COPY package*.json ./
 COPY prisma ./prisma
-RUN mkdir -p ./scripts
-COPY scripts/install-deps.sh ./scripts/
 
-RUN chmod +x ./scripts/install-deps.sh && bash ./scripts/install-deps.sh
+# Installation des dépendances : npm ci si lock file existe, sinon npm install
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 COPY . .
 
