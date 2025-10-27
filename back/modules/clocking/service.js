@@ -4,12 +4,11 @@ const clockingSelect = {
   id: true,
   firstArrival: true,
   lastDeparture: true,
-  workMinutes: true,
-  breakMinutes: true,
+  workTime: true,
+  breakTime: true,
   clockingDate: true,
   totalHours: true,
   weekDay: true,
-  workDay: true,
   userId: true,
   user: {
     select: {
@@ -32,7 +31,12 @@ function timeStringToDateTime(timeStr) {
   if (!timeStr) return null;
   const [hours, minutes, seconds = "00"] = timeStr.split(":");
   const date = new Date();
-  date.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds), 0);
+  date.setHours(
+    Number.parseInt(hours),
+    Number.parseInt(minutes),
+    Number.parseInt(seconds),
+    0
+  );
   return date;
 }
 
@@ -46,11 +50,10 @@ export async function createClocking(data) {
       clockingDate: new Date(data.clockingDate),
       firstArrival: timeStringToDateTime(data.firstArrival),
       lastDeparture: timeStringToDateTime(data.lastDeparture),
-      workMinutes: data.workMinutes || 0,
-      breakMinutes: data.breakMinutes || 0,
+      workTime: data.workTime || 0,
+      breakTime: data.breakTime || 0,
       totalHours: data.totalHours || 0,
       weekDay: data.weekDay,
-      workDay: data.workDay,
     },
     select: clockingSelect,
   });
@@ -146,12 +149,10 @@ export async function updateClockingById(id, data) {
     updateData.firstArrival = timeStringToDateTime(data.firstArrival);
   if (data.lastDeparture !== undefined)
     updateData.lastDeparture = timeStringToDateTime(data.lastDeparture);
-  if (data.workMinutes !== undefined) updateData.workMinutes = data.workMinutes;
-  if (data.breakMinutes !== undefined)
-    updateData.breakMinutes = data.breakMinutes;
+  if (data.workTime !== undefined) updateData.workTime = data.workTime;
+  if (data.breakTime !== undefined) updateData.breakTime = data.breakTime;
   if (data.totalHours !== undefined) updateData.totalHours = data.totalHours;
   if (data.weekDay !== undefined) updateData.weekDay = data.weekDay;
-  if (data.workDay !== undefined) updateData.workDay = data.workDay;
 
   return prisma.clocking.update({
     where: { id },
@@ -185,11 +186,11 @@ export async function getClockingStats(userId, startDate, endDate) {
   const stats = await prisma.clocking.aggregate({
     where,
     _sum: {
-      workMinutes: true,
-      breakMinutes: true,
+      workTime: true,
+      breakTime: true,
     },
     _avg: {
-      workMinutes: true,
+      workTime: true,
       totalHours: true,
     },
     _count: {
@@ -198,9 +199,9 @@ export async function getClockingStats(userId, startDate, endDate) {
   });
 
   return {
-    totalWorkMinutes: stats._sum.workMinutes || 0,
-    totalBreakMinutes: stats._sum.breakMinutes || 0,
-    averageWorkMinutes: stats._avg.workMinutes || 0,
+    totalWorkMinutes: stats._sum.workTime || 0,
+    totalBreakMinutes: stats._sum.breakTime || 0,
+    averageWorkMinutes: stats._avg.workTime || 0,
     averageTotalHours: stats._avg.totalHours || 0,
     totalDays: stats._count.id || 0,
   };

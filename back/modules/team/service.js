@@ -57,7 +57,7 @@ export async function createTeam(data) {
     ];
     await tx.belongs.createMany({
       data: membersToAdd,
-      skipDuplicates: true, 
+      skipDuplicates: true,
     });
     return tx.team.findUnique({
       where: { id: team.id },
@@ -91,10 +91,43 @@ export async function findTeamsByOwnerId(ownerId) {
 }
 
 export async function updateTeamById(id, data) {
-  return prisma.team.update({
-    where: { id },
-    data,
-    select: teamSelect,
+  return prisma.$transaction(async (tx) => {
+    // Mettre à jour les informations de base de l'équipe
+    const teamData = { ...data };
+    delete teamData.members; // Retirer les membres du data de mise à jour de l'équipe
+
+    const updatedTeam = await tx.team.update({
+      where: { id },
+      data: teamData,
+    });
+
+    // Si des membres sont fournis, les gérer
+    if (data.members !== undefined) {
+      // Supprimer tous les membres existants
+      await tx.belongs.deleteMany({
+        where: { teamId: id },
+      });
+
+      // Ajouter les nouveaux membres (si il y en a)
+      if (data.members.length > 0) {
+        const membersToAdd = data.members.map((member) => ({
+          teamId: id,
+          userId: member.userId,
+          isLead: member.isLead,
+        }));
+
+        await tx.belongs.createMany({
+          data: membersToAdd,
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    // Retourner l'équipe avec ses membres
+    return tx.team.findUnique({
+      where: { id },
+      select: teamSelect,
+    });
   });
 }
 

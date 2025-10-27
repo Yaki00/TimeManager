@@ -62,7 +62,7 @@ describe("POST /leaves", () => {
       .send(body);
 
     // debug utile si jamais ça replante
-    // console.log("📦 /leaves RESPONSE", { status: res.status, body: res.body, text: res.text });
+    // Debug info removed for production
 
     expect(res.status).toBe(201);
 
@@ -74,7 +74,7 @@ describe("POST /leaves", () => {
     expect(payload).toMatchObject({
       userId,
       justification: "vacances",
-      status: "EnAttente",
+      status: "Pending",
     });
     expect(payload.daysLeave).toBeGreaterThan(0);
     expect(new Date(payload.startDate).toISOString()).toBe(

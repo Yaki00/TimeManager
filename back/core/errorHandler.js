@@ -38,11 +38,14 @@ export function errorHandler(err, req, res, _next) {
 }
 
 function normalizeError(err) {
-  const statusFromErr = Number.isInteger(err.statusCode)
-    ? err.statusCode
-    : Number.isInteger(err.status)
-    ? err.status
-    : undefined;
+  let statusFromErr;
+  if (Number.isInteger(err.statusCode)) {
+    statusFromErr = err.statusCode;
+  } else if (Number.isInteger(err.status)) {
+    statusFromErr = err.status;
+  } else {
+    statusFromErr = undefined;
+  }
 
   // Cas AppError
   if (err instanceof AppError) {
@@ -106,5 +109,26 @@ function normalizeError(err) {
 }
 
 function generateTraceId() {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  // Utilise crypto.randomUUID() si disponible, sinon fallback sécurisé
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  // Fallback sécurisé utilisant crypto.getRandomValues
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  const hex = Array.from(array, (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+  return (
+    hex.substring(0, 8) +
+    "-" +
+    hex.substring(8, 12) +
+    "-" +
+    hex.substring(12, 16) +
+    "-" +
+    hex.substring(16, 20) +
+    "-" +
+    hex.substring(20, 32)
+  );
 }

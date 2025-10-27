@@ -13,7 +13,11 @@ export function requireAuth(req, res, next) {
 
     req.user = { id, email: payload.email, role: payload.role };
     next();
-  } catch (e) {
+  } catch (error) {
+    // Log l'erreur pour le debugging en développement
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Auth middleware error:", error.message);
+    }
     return res.status(401).json({ error: "Token invalide" });
   }
 }

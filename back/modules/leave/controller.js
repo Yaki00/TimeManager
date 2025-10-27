@@ -7,6 +7,7 @@ import {
   updateLeaveById,
   deleteLeaveById,
   findOverlappingLeave,
+  findManagerLeaves,
 } from "./service.js";
 
 import { LeaveSchema, validate } from "./validators.js";
@@ -18,33 +19,16 @@ import {
   forbidden,
 } from "../../core/httpErrors.js";
 import { parsePagination } from "../../core/pagination.js";
+import {
+  toUTCDateOnly,
+  computeBusinessDays,
+  isManagerOrResponsable,
+} from "./utils.js";
 
 const TEXTS = {
   PERMISSION_DENIED: "Permission refusée",
   LEAVE_NOT_FOUND: "Demande de congé non trouvée",
 };
-
-function toUTCDateOnly(d) {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  );
-}
-
-function computeBusinessDays(start, end) {
-  const s = toUTCDateOnly(start);
-  const e = toUTCDateOnly(end);
-  if (s > e) return 0;
-  let count = 0;
-  for (let d = new Date(s); d <= e; d.setUTCDate(d.getUTCDate() + 1)) {
-    const day = d.getUTCDay(); // 0=dim, 6=sam
-    if (day !== 0 && day !== 6) count++;
-  }
-  return count;
-}
-
-function isManagerOrResponsable(user) {
-  return user?.role === "Manager" || user?.role === "Responsable";
-}
 
 /**
  * POST /leaves
@@ -53,7 +37,10 @@ export const createNewLeave = asyncHandler(async (req, res) => {
   if (!req.user?.id)
     throw unauthorized(TEXTS.PERMISSION_DENIED, "PERMISSION_DENIED");
 
-  const { startDate, endDate, justification } = validate(LeaveSchema, req.body);
+  const { startDate, endDate, justification, type } = validate(
+    LeaveSchema,
+    req.body
+  );
 
   const start = toUTCDateOnly(new Date(startDate));
   const end = toUTCDateOnly(new Date(endDate));
@@ -85,6 +72,7 @@ export const createNewLeave = asyncHandler(async (req, res) => {
     justification: justification.trim(),
     daysLeave,
     userId: req.user.id,
+    type,
   });
 
   res.status(201).json(leave);
@@ -136,8 +124,6 @@ export const listLeavesByUser = asyncHandler(async (req, res) => {
  * GET /leaves/teams/:teamId
  */
 export const listLeavesByTeam = asyncHandler(async (req, res) => {
-  if (!isManagerOrResponsable(req.user))
-    throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   const teamId = Number(req.params.teamId);
   const leaves = await findLeavesByTeamId(teamId);
   res.json(leaves);
@@ -158,7 +144,7 @@ export const updateLeave = asyncHandler(async (req, res) => {
   if (!isOwner && !isManagerOrResponsable(req.user)) {
     throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   }
-  if (isOwner && current.status !== "EnAttente") {
+  if (isOwner && current.status !== "Pending") {
     throw badRequest(
       "Impossible de modifier une demande non 'EnAttente'.",
       "INVALID_STATE"
@@ -216,24 +202,39 @@ export const setLeaveStatus = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { status } = req.body;
 
-  if (!status || !["Accepte", "Refuse"].includes(status)) {
+  if (!status || !["Approved", "Refused"].includes(status)) {
     throw badRequest(
-      "Statut invalide (Accepte ou Refuse attendu).",
+      "Statut invalide (Approved ou Refused attendu).",
       "INVALID_STATUS"
     );
   }
 
   const current = await findLeaveById(id);
   if (!current) throw notFound(TEXTS.LEAVE_NOT_FOUND, "LEAVE_NOT_FOUND");
-  if (current.status !== "EnAttente") {
+  if (current.status !== "Pending") {
     throw badRequest(
-      "Seules les demandes 'EnAttente' peuvent être traitées.",
+      "Seules les demandes 'Pending' peuvent être traitées.",
       "INVALID_STATE"
     );
   }
 
   const updated = await updateLeaveById(id, { status });
   res.json(updated);
+});
+
+/**
+ * GET /leaves/managers - Liste les demandes des managers (Manager ou Responsable)
+ */
+export const listManagerLeaves = asyncHandler(async (req, res) => {
+  if (!isManagerOrResponsable(req.user))
+    throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
+
+  const { skip, take } = parsePagination(req.query);
+
+  // Récupérer toutes les demandes des managers (role Manager)
+  const managerLeaves = await findManagerLeaves({ skip, take });
+
+  res.json(managerLeaves);
 });
 
 /**
@@ -251,13 +252,13 @@ export const removeLeave = asyncHandler(async (req, res) => {
   if (!isOwner && !isManagerOrResponsable(req.user)) {
     throw forbidden(TEXTS.PERMISSION_DENIED, "FORBIDDEN");
   }
-  if (isOwner && current.status !== "EnAttente") {
+  if (isOwner && current.status !== "Pending") {
     throw badRequest(
       "Impossible de supprimer une demande non 'EnAttente'.",
       "INVALID_STATE"
     );
   }
 
-  const deleted = await deleteLeaveById(id);
-  res.json(deleted);
+  await deleteLeaveById(id);
+  res.status(204).send();
 });

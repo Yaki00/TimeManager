@@ -1,26 +1,34 @@
 import { Link } from 'react-router';
 import { DashboardOutlined, FieldTimeOutlined, SettingOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { getRoles } from './getRoles';
+
 const getItem = (
 	label,
-	key,
 	icon,
-	children,
-	title,
 	url,
-)=>{
+	roles = ['Employer', 'Manager', 'responsable'],
+) => {
 	return {
-	  key,
-	  icon,
-	  children,
-	  label : <Link to={url}>{label}</Link>,
-	  title: "",
-	  url
+		key: url,
+		icon,
+		label: <Link to={url}>{label}</Link>,
+		url,
+		roles,
 	};
 }
-  
-export const items  = [
-	getItem('Dashboard', '1', <DashboardOutlined />, null, 'Dashboard', '/'),
-	getItem('Time', '2', <FieldTimeOutlined />, null, 'Time', '/time'),
-	getItem('Teams', '3', <SettingOutlined />, null, 'Teams', '/teams'),
-	getItem('Recherche', '4', <FileSearchOutlined />, null, 'Recherche', '/search-user'),
+
+const allItems = [
+	getItem('Dashboard', <DashboardOutlined />, '/'),
+	getItem('Time', <FieldTimeOutlined />, '/time'),
+	getItem('Teams', <SettingOutlined />, '/teams', ['Manager', 'responsable']),
+	getItem('Recherche', <FileSearchOutlined />, '/search-user', ['responsable']),
 ];
+
+export const getFilteredItems = () => {
+	const userRole = getRoles();
+	if (!userRole) return allItems.filter(item => item.roles.includes('Employer'));
+
+	return allItems.filter(item => item.roles.includes(userRole));
+};
+
+export const items = getFilteredItems();

@@ -8,8 +8,8 @@ describe("Teams routes", () => {
   let app;
 
   let employerJohn;
-  let managerMike; 
-  let responsableRita; 
+  let managerMike;
+  let responsableRita;
 
   // tokens
   let tokenEmployer;
@@ -116,9 +116,50 @@ describe("Teams routes", () => {
       ownerId: managerMike.id,
     });
 
+    // Vérifier qu'il y a bien plusieurs membres
+    expect(res.body.members).toBeDefined();
+    expect(Array.isArray(res.body.members)).toBe(true);
+    expect(res.body.members.length).toBeGreaterThanOrEqual(2); // Au moins owner + 1 membre
+
     // le manager (owner) doit être membre et lead
     const lead = res.body.members.find((m) => m.isLead === true);
     expect(lead?.user?.id).toBe(managerMike.id);
+
+    // John (employerJohn) doit être membre mais pas lead
+    const memberJohn = res.body.members.find(
+      (m) => m.user?.id === employerJohn.id
+    );
+    expect(memberJohn).toBeDefined();
+    expect(memberJohn.isLead).toBe(false);
+  });
+
+  it("POST /teams -> 201 avec plusieurs membres", async () => {
+    const res = await request(app)
+      .post("/teams")
+      .set("Authorization", `Bearer ${tokenResponsable}`)
+      .send({
+        teamName: "Team Multi-Membres",
+        description: "Équipe avec plusieurs membres",
+        ownerId: managerMike.id,
+        members: [
+          { userId: employerJohn.id, isLead: false },
+          { userId: responsableRita.id, isLead: true },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.members).toBeDefined();
+    expect(res.body.members.length).toBeGreaterThanOrEqual(3); // owner + 2 membres
+
+    // Vérifier que tous les membres sont présents
+    const memberIds = res.body.members.map((m) => m.user?.id);
+    expect(memberIds).toContain(managerMike.id); // owner
+    expect(memberIds).toContain(employerJohn.id); // membre 1
+    expect(memberIds).toContain(responsableRita.id); // membre 2
+
+    // Vérifier les rôles de lead
+    const leads = res.body.members.filter((m) => m.isLead === true);
+    expect(leads.length).toBeGreaterThanOrEqual(2); // owner + Rita
   });
 
   it("GET /teams -> 200 et contient au moins une team", async () => {
@@ -210,7 +251,7 @@ describe("Teams routes", () => {
     expect(res.body.description).toBe("MAJ par Responsable");
   });
 
-  it("DELETE /teams/:id -> 200 pour Responsable", async () => {
+  it("DELETE /teams/:id -> 204 pour Responsable", async () => {
     // créer une team à supprimer
     const created = await request(app)
       .post("/teams")
@@ -228,8 +269,7 @@ describe("Teams routes", () => {
       .delete(`/teams/${teamId}`)
       .set("Authorization", `Bearer ${tokenResponsable}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.id).toBe(teamId);
+    expect(res.status).toBe(204);
   });
 
   it("GET /teams/:id -> 404 si n’existe pas", async () => {

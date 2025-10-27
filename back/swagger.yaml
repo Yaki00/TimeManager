@@ -1,11 +1,20 @@
 openapi: 3.0.3
 info:
-  title: API Auth / Users / Leaves
+  title: Time Manager API
   version: "1.0.0"
   description: |
-    Spécification OpenAPI générée à partir de vos routes Express.
+    API complète pour la gestion du temps, des équipes et des congés.
 
     **Base URL**: `http://localhost:3000`
+
+    ## Authentification
+    La plupart des endpoints nécessitent un token JWT dans le header `Authorization: Bearer <token>`.
+
+    ## Rôles
+    - **Employer**: Utilisateur standard
+    - **Manager**: Gestionnaire d'équipe
+    - **Responsable**: Administrateur avec tous les droits
+
 servers:
   - url: http://localhost:3000
     description: Développement local
@@ -17,13 +26,24 @@ tags:
     description: Authentification & jetons
   - name: Users
     description: Gestion des utilisateurs
+  - name: Teams
+    description: Gestion des équipes
+  - name: Clocking
+    description: Gestion des pointages
   - name: Leaves
     description: Gestion des congés/demandes d'absence
+  - name: Warnings
+    description: Gestion des avertissements
+  - name: Notifications
+    description: Gestion des notifications
 
 security:
   - bearerAuth: []
 
 paths:
+  # ═══════════════════════════════════════════════════════
+  #  HEALTH
+  # ═══════════════════════════════════════════════════════
   /ping:
     get:
       tags: [Health]
@@ -40,6 +60,7 @@ paths:
                   pong:
                     type: boolean
                 example: { pong: true }
+
   /db:
     get:
       tags: [Health]
@@ -58,12 +79,25 @@ paths:
                     type: string
                     format: date-time
                 example:
-                  db_time: "2025-10-14T13:12:00.123Z"
+                  db_time: "2025-10-17T13:12:00.123Z"
 
+  # ═══════════════════════════════════════════════════════
+  #  AUTH
+  # ═══════════════════════════════════════════════════════
   /auth/register:
     post:
       tags: [Auth]
-      summary: Créer un utilisateur
+      summary: Créer un nouvel utilisateur
+      description: |
+        Permet de créer un nouveau compte utilisateur dans le système.
+
+        **Validation du mot de passe**: Le mot de passe doit contenir au moins 8 caractères.
+
+        **Rôle par défaut**: Tout nouvel utilisateur est créé avec le rôle "Employer".
+
+        **Contrat par défaut**: Le type de contrat par défaut est "H35".
+
+        **Retour**: L'utilisateur reçoit ses informations ainsi que les tokens d'accès et de rafraîchissement.
       security: []
       requestBody:
         required: true
@@ -71,19 +105,76 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              normalUser:
+                summary: Utilisateur standard
+                value:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  firstName: "John"
+                  lastName: "Doe"
+                  phoneNumber: "0123456789"
+              completeUser:
+                summary: Utilisateur avec toutes les informations
+                value:
+                  email: "jane.smith@company.com"
+                  password: "MyP@ssw0rd!"
+                  firstName: "Jane"
+                  lastName: "Smith"
+                  phoneNumber: "+33612345678"
       responses:
         "201":
-          description: Utilisateur créé
+          description: Utilisateur créé avec succès
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              examples:
+                success:
+                  summary: Réponse de succès
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      lastName: "Doe"
+                      firstName: "John"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
+                      tokens:
+                        access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emailExists:
+                  summary: Email déjà enregistré
+                  value:
+                    status: "error"
+                    code: "EMAIL_IN_USE"
+                    message: "Email déjà utilisé"
+
   /auth/login:
     post:
       tags: [Auth]
       summary: Se connecter et obtenir les jetons
+      description: |
+        Permet de s'authentifier dans le système en utilisant un email et un mot de passe.
+
+        **Sécurité**: Pour des raisons de sécurité, cette endpoint ne précise jamais si l'email existe ou non.
+        En cas d'échec, un message générique est retourné.
+
+        **Tokens**: 
+        - **Access Token**: Valide pendant 2 jours, doit être inclus dans le header `Authorization: Bearer <token>`
+        - **Refresh Token**: Valide pendant 7 jours, permet de renouveler le token d'accès
+
+        **Le refresh token** peut être utilisé avec l'endpoint `/auth/refresh` pour obtenir un nouveau token d'accès.
       security: []
       requestBody:
         required: true
@@ -91,19 +182,61 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LoginRequest"
+            examples:
+              validCredentials:
+                summary: Connexion réussie
+                value:
+                  email: "john.doe@example.com"
+                  password: "Secret123!"
+              invalidEmail:
+                summary: Email incorrect
+                value:
+                  email: "wrong@example.com"
+                  password: "AnyPassword123!"
+              invalidPassword:
+                summary: Mot de passe incorrect
+                value:
+                  email: "john.doe@example.com"
+                  password: "WrongPassword!"
       responses:
         "200":
-          description: OK
+          description: Connexion réussie
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              examples:
+                loginSuccess:
+                  summary: Réponse de connexion réussie
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      lastName: "Doe"
+                      firstName: "John"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
+                      tokens:
+                        access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /auth/refresh:
     post:
       tags: [Auth]
       summary: Rafraîchir le jeton d'accès
+      description: |
+        Permet d'obtenir un nouveau token d'accès en utilisant un refresh token valide.
+
+        **Conditions**:
+        - Le refresh token doit être valide et non expiré
+        - Le refresh token doit avoir été émis par le même serveur
+
+        **Utilisation**: 
+        Lorsque votre token d'accès expire (après 2 jours), utilisez ce endpoint avec votre refresh token 
+        pour obtenir un nouveau token d'accès sans avoir à vous reconnecter.
       security: []
       requestBody:
         required: true
@@ -111,10 +244,17 @@ paths:
           application/json:
             schema:
               type: object
-              required: [refreshToken]
+              required: [refresh]
               properties:
-                refreshToken:
+                refresh:
                   type: string
+                  description: Refresh token obtenu lors de la connexion ou de l'inscription
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidG9rZW5UeXBlIjoicmVmcmVzaCJ9..."
+            examples:
+              refreshToken:
+                summary: Refresh avec token valide
+                value:
+                  refresh: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidG9rZW5UeXBlIjoicmVmcmVzaCJ9..."
       responses:
         "200":
           description: Nouveau jeton d'accès
@@ -123,28 +263,100 @@ paths:
               schema:
                 type: object
                 properties:
-                  accessToken:
+                  access:
                     type: string
+                    description: Nouveau token d'accès valide pour 2 jours
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsInJvbGUiOiJFbXBsb3llciJ9..."
+              examples:
+                refreshSuccess:
+                  summary: Refresh réussi
+                  value:
+                    access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBleGFtcGxlLmNvbSIsInJvbGUiOiJFbXBsb3llciIsImlhdCI6MTY5NzU0NTQwMCwiZXhwIjoxNjk3NzE4MjAwfQ..."
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /auth/me:
     get:
       tags: [Auth]
-      summary: Profil de l'utilisateur courant
+      summary: Profil de l'utilisateur courant (basique)
+      description: |
+        Récupère les informations de base de l'utilisateur authentifié.
+
+        **Authentification requise**: Un token d'accès valide doit être fourni dans le header.
+
+        **Différence avec `/users/me/info`**: Cette endpoint retourne uniquement les informations de base 
+        (id, email, role), tandis que `/users/me/info` retourne toutes les informations de l'utilisateur.
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: Identifiant unique de l'utilisateur
+                      email:
+                        type: string
+                        description: Email de l'utilisateur
+                      role:
+                        $ref: "#/components/schemas/Role"
+              examples:
+                meResponse:
+                  summary: Profil utilisateur
+                  value:
+                    user:
+                      id: 1
+                      email: "john.doe@example.com"
+                      role: "Employer"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  # ═══════════════════════════════════════════════════════
+  #  USERS
+  # ═══════════════════════════════════════════════════════
   /users:
     get:
       tags: [Users]
-      summary: Lister tous les utilisateurs
+      summary: Lister tous les utilisateurs (paginé)
+      description: |
+        Récupère une liste paginée de tous les utilisateurs du système.
+
+        **Filtres automatiques**:
+        - Les utilisateurs supprimés (soft delete) sont automatiquement exclus
+        - Les utilisateurs sont triés par ID croissant
+
+        **Pagination**:
+        - Utilisez les paramètres `skip` et `take` pour la pagination
+        - `skip`: Nombre d'éléments à sauter (défaut: 0)
+        - `take`: Nombre d'éléments à retourner (défaut: 50, max: 200)
+
+        **Exemple**: Pour obtenir la deuxième page de 25 éléments:
+        ```
+        GET /users?skip=25&take=25
+        ```
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner (max 200)
+          example: 50
       responses:
         "200":
           description: Liste d'utilisateurs
@@ -154,12 +366,34 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+              examples:
+                firstPage:
+                  summary: Première page (50 éléments)
+                  value:
+                    - id: 1
+                      email: "john.doe@example.com"
+                      firstName: "John"
+                      lastName: "Doe"
+                      phoneNumber: "0123456789"
+                      role: "Employer"
+                      contractType: "H35"
+                    - id: 2
+                      email: "jane.smith@example.com"
+                      firstName: "Jane"
+                      lastName: "Smith"
+                      phoneNumber: "0612345678"
+                      role: "Manager"
+                      contractType: "H40"
+                emptyList:
+                  summary: Liste vide
+                  value: []
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/me/info:
     get:
       tags: [Users]
-      summary: Obtenir les infos du user courant
+      summary: Obtenir les informations complètes du user courant
       responses:
         "200":
           description: OK
@@ -169,6 +403,7 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count:
     get:
       tags: [Users]
@@ -182,6 +417,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count/role/{role}:
     get:
       tags: [Users]
@@ -197,6 +433,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/count/contract/{contractType}:
     get:
       tags: [Users]
@@ -212,6 +449,7 @@ paths:
                 $ref: "#/components/schemas/CountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/role/{role}:
     get:
       tags: [Users]
@@ -229,10 +467,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/name/{name}:
     get:
       tags: [Users]
-      summary: Rechercher par nom
+      summary: Rechercher des utilisateurs par nom (prénom ou nom)
       parameters:
         - in: path
           name: name
@@ -250,10 +489,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/phone/{phoneNumber}:
     get:
       tags: [Users]
-      summary: Rechercher par téléphone
+      summary: Rechercher un utilisateur par numéro de téléphone
       parameters:
         - in: path
           name: phoneNumber
@@ -271,10 +511,11 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/contract/{contractType}:
     get:
       tags: [Users]
-      summary: Lister par type de contrat
+      summary: Lister les utilisateurs par type de contrat
       parameters:
         - $ref: "#/components/parameters/ContractTypeParam"
       responses:
@@ -288,6 +529,7 @@ paths:
                   $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /users/{id}:
     get:
       tags: [Users]
@@ -305,9 +547,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     put:
       tags: [Users]
-      summary: Mettre à jour un utilisateur (remplacement)
+      summary: Mettre à jour un utilisateur
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -327,9 +570,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     delete:
       tags: [Users]
-      summary: Supprimer un utilisateur
+      summary: Supprimer un utilisateur (soft delete)
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
@@ -339,11 +583,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /users/{id}/role:
     patch:
       tags: [Users]
-      summary: Mettre à jour le rôle d'un utilisateur
-      description: Nécessite des privilèges de **Responsable**.
+      summary: Mettre à jour le rôle d'un utilisateur (Responsable uniquement)
+      description: Nécessite des privilèges de **Responsable**. Impossible de modifier son propre rôle.
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -358,11 +603,17 @@ paths:
                   $ref: "#/components/schemas/Role"
       responses:
         "200":
-          description: Mis à jour
+          description: Rôle mis à jour
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "400":
+          description: Impossible de modifier son propre rôle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -370,48 +621,641 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /leaves:
+  # ═══════════════════════════════════════════════════════
+  #  TEAMS
+  # ═══════════════════════════════════════════════════════
+  /teams:
+    get:
+      tags: [Teams]
+      summary: Lister toutes les équipes (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Liste des équipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
     post:
-      tags: [Leaves]
-      summary: Créer une demande d'absence
+      tags: [Teams]
+      summary: Créer une nouvelle équipe (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des équipes.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LeaveCreate"
+              $ref: "#/components/schemas/TeamCreate"
       responses:
         "201":
-          description: Créé
+          description: Équipe créée
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Leave"
+                $ref: "#/components/schemas/Team"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /teams/owner/{ownerId}:
     get:
-      tags: [Leaves]
-      summary: Lister toutes les demandes (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      tags: [Teams]
+      summary: Lister les équipes d'un propriétaire (Manager)
+      parameters:
+        - in: path
+          name: ownerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Liste des équipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /teams/{id}:
+    get:
+      tags: [Teams]
+      summary: Obtenir une équipe par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Leave"
+                $ref: "#/components/schemas/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Teams]
+      summary: Mettre à jour une équipe (Owner ou Responsable)
+      description: Seul le propriétaire (Manager) ou un Responsable peut modifier l'équipe.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Équipe mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Teams]
+      summary: Supprimer une équipe (Owner ou Responsable)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Équipe supprimée
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  CLOCKING (Pointages)
+  # ═══════════════════════════════════════════════════════
+  /clockings:
+    post:
+      tags: [Clocking]
+      summary: Créer un pointage
+      description: Tous les utilisateurs peuvent créer un pointage. Manager/Responsable peuvent créer pour leur équipe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingCreate"
+      responses:
+        "201":
+          description: Pointage créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Clocking]
+      summary: Lister tous les pointages (paginé, avec filtres)
+      description: Responsable uniquement. Filtres disponibles par userId, date, etc.
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: userId
+          schema:
+            type: integer
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Liste des pointages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /clockings/user/{userId}:
+    get:
+      tags: [Clocking]
+      summary: Lister les pointages d'un utilisateur
+      description: Un utilisateur peut voir ses propres pointages. Manager peut voir ceux de son équipe. Responsable peut tout voir.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Liste des pointages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/user/{userId}/stats:
+    get:
+      tags: [Clocking]
+      summary: Obtenir les statistiques de pointage d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Statistiques calculées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClockingStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/user/{userId}/date/{date}:
+    get:
+      tags: [Clocking]
+      summary: Lister les pointages d'un utilisateur pour une date spécifique
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Format YYYY-MM-DD
+      responses:
+        "200":
+          description: Liste des pointages pour cette date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /clockings/{id}:
+    get:
+      tags: [Clocking]
+      summary: Obtenir un pointage par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Clocking]
+      summary: Mettre à jour un pointage
+      description: |
+        - **Employer** : peut uniquement modifier `lastDeparture` de ses propres pointages
+        - **Manager** : peut modifier les pointages de son équipe
+        - **Responsable** : peut tout modifier
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockingUpdate"
+      responses:
+        "200":
+          description: Pointage mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clocking"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Champs non autorisés pour Employer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Clocking]
+      summary: Supprimer un pointage (Manager/Responsable)
+      description: Employer ne peut pas supprimer de pointages.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Pointage supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Employer ne peut pas supprimer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  LEAVES (Congés)
+  # ═══════════════════════════════════════════════════════
+  /leaves:
+    post:
+      tags: [Leaves]
+      summary: Créer une demande d'absence
+      description: |
+        Crée une nouvelle demande de congé, d'absence, de formation ou de télétravail.
+
+        **Types de congés disponibles**:
+        - **Absence**: Absence non rémunérée
+        - **PaidLeave**: Congé payé
+        - **Training**: Formation
+        - **Remote**: Télétravail
+
+        **Règles de validation**:
+        - Les dates doivent être valides et la date de début doit précéder la date de fin
+        - La période doit contenir au moins un jour ouvrable (du lundi au vendredi)
+        - Un seul congé par jour (pas de chevauchement de dates)
+        - Les jours de congé sont calculés automatiquement (jours ouvrés uniquement)
+
+        **Notifications**: Une notification est automatiquement envoyée aux managers et responsables.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveCreate"
+            examples:
+              paidLeave:
+                summary: Demande de congé payé
+                value:
+                  startDate: "2025-01-15"
+                  endDate: "2025-01-17"
+                  justification: "Congé pour raisons personnelles"
+                  type: "PaidLeave"
+              training:
+                summary: Demande de formation
+                value:
+                  startDate: "2025-02-10"
+                  endDate: "2025-02-11"
+                  justification: "Formation React avancé"
+                  type: "Training"
+              remote:
+                summary: Demande de télétravail
+                value:
+                  startDate: "2025-03-05"
+                  endDate: "2025-03-05"
+                  justification: "Travail à domicile"
+                  type: "Remote"
+      responses:
+        "201":
+          description: Demande créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+              examples:
+                createdLeave:
+                  summary: Demande créée
+                  value:
+                    id: 1
+                    startDate: "2025-01-15T00:00:00.000Z"
+                    endDate: "2025-01-17T00:00:00.000Z"
+                    justification: "Congé pour raisons personnelles"
+                    status: "Pending"
+                    daysLeave: 3
+                    type: "PaidLeave"
+                    userId: 1
+                    user:
+                      id: 1
+                      firstName: "John"
+                      lastName: "Doe"
+                      email: "john.doe@example.com"
+                      role: "Employer"
+                      phoneNumber: "0123456789"
+                      contractType: "H35"
+        "400":
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidDates:
+                  summary: Dates invalides
+                  value:
+                    status: "error"
+                    code: "INVALID_DATES"
+                    message: "La date de début doit précéder la date de fin"
+                noBusinessDays:
+                  summary: Aucun jour ouvrable
+                  value:
+                    status: "error"
+                    code: "NO_BUSINESS_DAYS"
+                    message: "La période ne contient aucun jour ouvré"
+                overlap:
+                  summary: Chevauchement de dates
+                  value:
+                    status: "error"
+                    code: "OVERLAP"
+                    message: "Vous avez déjà une demande de congé/absence sur cette période."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      tags: [Leaves]
+      summary: Lister toutes les demandes (Responsable/Manager)
+      description: |
+        Récupère toutes les demandes de congés du système. Réservé aux rôles **Responsable** et **Manager**.
+
+        **Fonctionnalités**:
+        - Retourne toutes les demandes de tous les utilisateurs
+        - Les demandes sont triées par date de création (plus récentes en premier)
+        - Supporte la pagination
+        - Les utilisateurs supprimés sont exclus de la liste
+
+        **Permissions**:
+        - **Employer**: Peut seulement lister ses propres demandes
+        - **Manager**: Peut lister toutes les demandes de son équipe
+        - **Responsable**: Peut lister toutes les demandes du système
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner
+          example: 50
+      responses:
+        "200":
+          description: Liste des demandes de congés
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+              examples:
+                listLeaves:
+                  summary: Liste des demandes
+                  value:
+                    - id: 1
+                      startDate: "2025-01-15T00:00:00.000Z"
+                      endDate: "2025-01-17T00:00:00.000Z"
+                      justification: "Congé pour raisons personnelles"
+                      status: "Pending"
+                      daysLeave: 3
+                      type: "PaidLeave"
+                      userId: 1
+                      user:
+                        id: 1
+                        firstName: "John"
+                        lastName: "Doe"
+                        email: "john.doe@example.com"
+                    - id: 2
+                      startDate: "2025-02-10T00:00:00.000Z"
+                      endDate: "2025-02-11T00:00:00.000Z"
+                      justification: "Formation React"
+                      status: "Approved"
+                      daysLeave: 2
+                      type: "Training"
+                      userId: 2
+                      user:
+                        id: 2
+                        firstName: "Jane"
+                        lastName: "Smith"
+                        email: "jane.smith@example.com"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /leaves/managers:
+    get:
+      tags: [Leaves]
+      summary: Lister les demandes des managers (Manager ou Responsable)
+      description: |
+        Récupère toutes les demandes de congés des managers du système. 
+
+        **Permissions**:
+        - **Manager**: Peut voir les demandes des autres managers
+        - **Responsable**: Peut voir toutes les demandes des managers
+
+        **Différence avec `/leaves`**: Cette endpoint filtre uniquement les demandes des utilisateurs avec le rôle "Manager",
+        tandis que `/leaves` retourne toutes les demandes (tous rôles confondus).
+
+        **Cas d'usage**: Permet à un responsable ou un manager de gérer les demandes de congés des autres managers,
+        de la même manière qu'ils gèrent les demandes des employés.
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre d'éléments à sauter
+          example: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+            minimum: 1
+          description: Nombre d'éléments à retourner
+          example: 50
+      responses:
+        "200":
+          description: Liste des demandes de congés des managers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+              examples:
+                managerLeaves:
+                  summary: Demandes des managers
+                  value:
+                    - id: 5
+                      startDate: "2025-01-20T00:00:00.000Z"
+                      endDate: "2025-01-22T00:00:00.000Z"
+                      justification: "Formation management"
+                      status: "Pending"
+                      daysLeave: 3
+                      type: "Training"
+                      userId: 3
+                      user:
+                        id: 3
+                        firstName: "Mike"
+                        lastName: "Manager"
+                        email: "mike.manager@example.com"
+                        role: "Manager"
+                        phoneNumber: "0612345678"
+                        contractType: "H40"
+                    - id: 6
+                      startDate: "2025-02-15T00:00:00.000Z"
+                      endDate: "2025-02-15T00:00:00.000Z"
+                      justification: "Journée télétravail"
+                      status: "Approved"
+                      daysLeave: 1
+                      type: "Remote"
+                      userId: 4
+                      user:
+                        id: 4
+                        firstName: "Jane"
+                        lastName: "Supervisor"
+                        email: "jane.supervisor@example.com"
+                        role: "Manager"
+                        phoneNumber: "0787654321"
+                        contractType: "H40"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /leaves/{id}:
     get:
       tags: [Leaves]
-      summary: Obtenir une demande
+      summary: Obtenir une demande par ID
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
@@ -425,9 +1269,10 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     patch:
       tags: [Leaves]
-      summary: Mettre à jour une demande (partiel)
+      summary: Mettre à jour une demande
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -447,6 +1292,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
     delete:
       tags: [Leaves]
       summary: Supprimer une demande
@@ -459,11 +1305,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /leaves/{id}/status:
     patch:
       tags: [Leaves]
-      summary: Changer le statut d'une demande (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      summary: Changer le statut d'une demande (Manager/Responsable)
+      description: Réservé aux **Responsable** et **Manager**.
       parameters:
         - $ref: "#/components/parameters/IdParam"
       requestBody:
@@ -476,14 +1323,9 @@ paths:
               properties:
                 status:
                   $ref: "#/components/schemas/LeaveStatus"
-                decidedBy:
-                  type: string
-                  description: ID de l'utilisateur validateur
-                decisionComment:
-                  type: string
       responses:
         "200":
-          description: Mis à jour
+          description: Statut mis à jour
           content:
             application/json:
               schema:
@@ -494,6 +1336,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
   /leaves/users/{userId}:
     get:
       tags: [Leaves]
@@ -503,7 +1346,7 @@ paths:
           name: userId
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: OK
@@ -515,17 +1358,18 @@ paths:
                   $ref: "#/components/schemas/Leave"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
   /leaves/teams/{teamId}:
     get:
       tags: [Leaves]
-      summary: Lister les demandes d'une équipe (restreint)
-      description: Réservé aux **Responsable**/**Manager**.
+      summary: Lister les demandes d'une équipe (Manager/Responsable)
+      description: Réservé aux **Responsable** et **Manager**.
       parameters:
         - in: path
           name: teamId
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: OK
@@ -540,6 +1384,678 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  # ═══════════════════════════════════════════════════════
+  #  WARNINGS
+  # ═══════════════════════════════════════════════════════
+  /warnings:
+    post:
+      tags: [Warnings]
+      summary: Créer un avertissement (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des avertissements. Impossible de créer un warning pour soi-même.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningCreate"
+      responses:
+        "201":
+          description: Avertissement créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Warnings]
+      summary: Lister tous les avertissements (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count:
+    get:
+      tags: [Warnings]
+      summary: Compter tous les avertissements
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/user/{userId}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/status/{status}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements par statut
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/WarningStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/date-range:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements dans une plage de dates
+      parameters:
+        - in: query
+          name: startDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/count/created-by/{createdById}:
+    get:
+      tags: [Warnings]
+      summary: Compter les avertissements créés par un utilisateur
+      parameters:
+        - in: path
+          name: createdById
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/user/{userId}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/status/{status}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements par statut (paginé)
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/WarningStatus"
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/date-range:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements dans une plage de dates (paginé)
+      parameters:
+        - in: query
+          name: startDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/created-by/{createdById}:
+    get:
+      tags: [Warnings]
+      summary: Lister les avertissements créés par un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: createdById
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des avertissements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /warnings/{id}:
+    get:
+      tags: [Warnings]
+      summary: Obtenir un avertissement par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Warnings]
+      summary: Mettre à jour un avertissement
+      description: Seul le créateur du warning, un **Manager** ou un **Responsable** peut modifier.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningUpdate"
+      responses:
+        "200":
+          description: Avertissement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Warning"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Warnings]
+      summary: Supprimer un avertissement
+      description: Seul le créateur du warning, un **Manager** ou un **Responsable** peut supprimer.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Avertissement supprimé
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ═══════════════════════════════════════════════════════
+  #  NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════
+  /notifications:
+    post:
+      tags: [Notifications]
+      summary: Créer une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent créer des notifications manuellement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationCreate"
+      responses:
+        "201":
+          description: Notification créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [Notifications]
+      summary: Lister toutes les notifications (paginé)
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count:
+    get:
+      tags: [Notifications]
+      summary: Compter toutes les notifications
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/status/{status}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications par statut
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/NotificationStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/user/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/count/unread/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Compter les notifications non lues d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/status/{status}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications par statut (paginé)
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            $ref: "#/components/schemas/NotificationStatus"
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/user/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/unread/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications non lues d'un utilisateur (paginé)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: take
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Liste des notifications non lues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      summary: Obtenir une notification par ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Notifications]
+      summary: Mettre à jour une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent modifier.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationUpdate"
+      responses:
+        "200":
+          description: Notification mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Notifications]
+      summary: Supprimer une notification (Manager/Responsable)
+      description: Seuls les **Manager** et **Responsable** peuvent supprimer.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Notification supprimée
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Notification marquée comme lue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notification marquée comme lue"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+# ═══════════════════════════════════════════════════════
+#  COMPONENTS
+# ═══════════════════════════════════════════════════════
 components:
   securitySchemes:
     bearerAuth:
@@ -553,13 +2069,16 @@ components:
       name: id
       required: true
       schema:
-        type: string
+        type: integer
+      description: ID de la ressource
+
     RoleParam:
       in: path
       name: role
       required: true
       schema:
         $ref: "#/components/schemas/Role"
+
     ContractTypeParam:
       in: path
       name: contractType
@@ -569,205 +2088,811 @@ components:
 
   responses:
     Unauthorized:
-      description: Non authentifié
+      description: |
+        Erreur d'authentification. Le token fourni est manquant, invalide ou expiré.
+
+        **Causes possibles**:
+        - Aucun token n'est fourni dans le header `Authorization`
+        - Le token est mal formé ou expiré
+        - Le token a été révoqué ou n'est plus valide
+
+        **Solution**: Utilisez l'endpoint `/auth/login` pour obtenir un nouveau token d'accès.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            noToken:
+              summary: Token manquant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440000"
+                status: "error"
+                code: "UNAUTHORIZED"
+                message: "Token manquant ou invalide"
+            expiredToken:
+              summary: Token expiré
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440001"
+                status: "error"
+                code: "UNAUTHORIZED"
+                message: "Token expiré. Veuillez vous reconnecter."
+
     Forbidden:
-      description: Accès refusé (rôle insuffisant)
+      description: |
+        Accès refusé. L'utilisateur authentifié n'a pas les permissions nécessaires pour accéder à cette ressource.
+
+        **Causes possibles**:
+        - Le rôle de l'utilisateur n'est pas suffisant pour cette opération
+        - L'utilisateur tente d'accéder à une ressource qui ne lui appartient pas
+        - L'opération nécessite des droits spécifiques (Responsable, Manager)
+
+        **Rôles requis pour certaines opérations**:
+        - **Voir toutes les demandes**: Manager ou Responsable
+        - **Modifier le rôle d'un utilisateur**: Responsable uniquement
+        - **Voir tous les utilisateurs**: Responsable uniquement
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            insufficientRole:
+              summary: Rôle insuffisant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440002"
+                status: "error"
+                code: "FORBIDDEN"
+                message: "Accès refusé : rôle insuffisant"
+            notOwner:
+              summary: Pas le propriétaire de la ressource
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440003"
+                status: "error"
+                code: "FORBIDDEN"
+                message: "Permission refusée"
+
     NotFound:
-      description: Ressource non trouvée
+      description: |
+        La ressource demandée n'existe pas ou a été supprimée.
+
+        **Causes possibles**:
+        - L'ID fourni est incorrect
+        - La ressource a été supprimée
+        - L'utilisateur demandé utilise un soft delete et est considéré comme supprimé
+
+        **Solution**: Vérifiez l'ID de la ressource et assurez-vous qu'elle existe dans le système.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            userNotFound:
+              summary: Utilisateur non trouvé
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440004"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Utilisateur non trouvé"
+            leaveNotFound:
+              summary: Demande non trouvée
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440005"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Demande de congé non trouvée"
+            resourceNotFound:
+              summary: Ressource générique non trouvée
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440006"
+                status: "error"
+                code: "NOT_FOUND"
+                message: "Ressource introuvable"
+
     BadRequest:
-      description: Requête invalide
+      description: |
+        La requête est invalide ou mal formée.
+
+        **Causes possibles**:
+        - Les données envoyées ne respectent pas le schéma attendu
+        - Des champs requis sont manquants
+        - Les valeurs fournies sont invalides (types incorrects, valeurs hors limites)
+        - Les règles de validation métier ne sont pas respectées
+
+        **Solution**: Vérifiez les données envoyées et consultez la documentation pour connaître le format attendu.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            validationError:
+              summary: Erreur de validation
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440007"
+                status: "error"
+                code: "BAD_REQUEST"
+                message: "Données invalides"
+                details:
+                  field: "email"
+                  reason: "Format d'email invalide"
+            missingField:
+              summary: Champ requis manquant
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440008"
+                status: "error"
+                code: "BAD_REQUEST"
+                message: "Le champ 'firstName' est requis"
+            invalidDates:
+              summary: Dates invalides
+              value:
+                traceId: "550e8400-e29b-41d4-a716-446655440009"
+                status: "error"
+                code: "INVALID_DATES"
+                message: "La date de début doit précéder la date de fin"
 
   schemas:
+    # ─────────────────────────────────────────────────────
+    #  ENUMS
+    # ─────────────────────────────────────────────────────
+    Role:
+      type: string
+      description: Rôle de l'utilisateur
+      enum:
+        - Employer
+        - Manager
+        - Responsable
+
+    ContractType:
+      type: string
+      description: Type de contrat horaire
+      enum:
+        - H15
+        - H35
+        - H40
+
+    LeaveStatus:
+      type: string
+      description: Statut de la demande de congé
+      enum:
+        - EnAttente
+        - Accepte
+        - Refuse
+
+    WarningStatus:
+      type: string
+      description: Statut d'un avertissement
+      enum:
+        - Alert
+        - Late
+        - UnjustifiedAbsence
+
+    NotificationStatus:
+      type: string
+      description: Statut d'une notification
+      enum:
+        - Present
+        - Late
+        - Warning
+
+    # ─────────────────────────────────────────────────────
+    #  AUTH
+    # ─────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+        - phoneNumber
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "Secret123!"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        phoneNumber:
+          type: string
+          example: "0123456789"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          example: "Secret123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            email:
+              type: string
+              example: "john.doe@example.com"
+            role:
+              $ref: "#/components/schemas/Role"
+            lastName:
+              type: string
+              example: "Doe"
+            firstName:
+              type: string
+              example: "John"
+            phoneNumber:
+              type: string
+              example: "0123456789"
+            contractType:
+              $ref: "#/components/schemas/ContractType"
+            tokens:
+              type: object
+              properties:
+                access:
+                  type: string
+                  description: Access token JWT
+                refresh:
+                  type: string
+                  description: Refresh token JWT
+
+    # ─────────────────────────────────────────────────────
+    #  USER
+    # ─────────────────────────────────────────────────────
     User:
       type: object
       properties:
         id:
+          type: integer
+          example: 1
+        firstName:
           type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
         email:
           type: string
           format: email
-        name:
-          type: string
+          example: "john.doe@example.com"
         phoneNumber:
           type: string
+          example: "0123456789"
         role:
           $ref: "#/components/schemas/Role"
         contractType:
           $ref: "#/components/schemas/ContractType"
+        avatarUrl:
+          type: string
+          nullable: true
+          example: null
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, email, role]
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - phoneNumber
+        - role
+        - contractType
+
     UserUpdate:
       type: object
       properties:
         email:
           type: string
           format: email
-        name:
+        firstName:
+          type: string
+        lastName:
           type: string
         phoneNumber:
           type: string
-        role:
-          $ref: "#/components/schemas/Role"
         contractType:
           $ref: "#/components/schemas/ContractType"
-    Role:
-      type: string
-      description: Rôle applicatif
-      enum: [USER, MANAGER, RESPONSABLE, ADMIN]
-    ContractType:
-      type: string
-      enum: [CDI, CDD, STAGE, APPRENTISSAGE, FREELANCE, AUTRE]
 
-    RegisterRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-        name:
-          type: string
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-    AuthResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-        user:
-          $ref: "#/components/schemas/User"
-
-    Leave:
+    # ─────────────────────────────────────────────────────
+    #  TEAM
+    # ─────────────────────────────────────────────────────
+    Team:
       type: object
       properties:
         id:
+          type: integer
+          example: 1
+        teamName:
           type: string
-        userId:
+          example: "Équipe Dev Frontend"
+        description:
           type: string
-        teamId:
-          type: string
-          nullable: true
-        type:
-          $ref: "#/components/schemas/LeaveType"
-        status:
-          $ref: "#/components/schemas/LeaveStatus"
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-        reason:
-          type: string
-          nullable: true
-        decidedBy:
-          type: string
-          nullable: true
-        decisionComment:
-          type: string
-          nullable: true
+          example: "Équipe de développement frontend React"
+        ownerId:
+          type: integer
+          example: 2
+        owner:
+          $ref: "#/components/schemas/User"
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                $ref: "#/components/schemas/User"
+              joinedAt:
+                type: string
+                format: date-time
+              isLead:
+                type: boolean
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, userId, type, status, startDate, endDate]
-    LeaveCreate:
+      required:
+        - id
+        - teamName
+        - description
+        - ownerId
+
+    TeamCreate:
       type: object
-      required: [type, startDate, endDate]
+      required:
+        - teamName
+        - ownerId
       properties:
-        type:
-          $ref: "#/components/schemas/LeaveType"
+        teamName:
+          type: string
+          example: "Équipe Backend"
+        description:
+          type: string
+          example: "Équipe de développement backend"
+        ownerId:
+          type: integer
+          description: ID du propriétaire de l'équipe (Manager/Responsable)
+          example: 2
+        members:
+          type: array
+          description: Liste optionnelle des membres à ajouter (le owner sera automatiquement ajouté comme lead)
+          items:
+            type: object
+            required:
+              - userId
+            properties:
+              userId:
+                type: integer
+                example: 3
+              isLead:
+                type: boolean
+                default: false
+                example: false
+          example:
+            - userId: 3
+              isLead: false
+            - userId: 5
+              isLead: true
+
+    TeamUpdate:
+      type: object
+      properties:
+        teamName:
+          type: string
+        description:
+          type: string
+
+    # ─────────────────────────────────────────────────────
+    #  CLOCKING
+    # ─────────────────────────────────────────────────────
+    Clocking:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        firstArrival:
+          type: string
+          format: time
+          nullable: true
+          example: "08:30:00"
+        lastDeparture:
+          type: string
+          format: time
+          nullable: true
+          example: "17:30:00"
+        workMinutes:
+          type: integer
+          default: 0
+          example: 480
+        breakMinutes:
+          type: integer
+          default: 0
+          example: 60
+        clockingDate:
+          type: string
+          format: date
+          example: "2025-10-17"
+        totalHours:
+          type: number
+          format: decimal
+          example: 8.0
+        weekDay:
+          type: string
+          example: "Mercredi"
+        workDay:
+          type: integer
+          example: 3
+        userId:
+          type: integer
+          example: 1
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clockingDate
+        - userId
+
+    ClockingCreate:
+      type: object
+      required:
+        - userId
+        - clockingDate
+      properties:
+        userId:
+          type: integer
+          example: 1
+        clockingDate:
+          type: string
+          format: date
+          example: "2025-10-17"
+        firstArrival:
+          type: string
+          format: time
+          example: "08:30:00"
+        lastDeparture:
+          type: string
+          format: time
+          nullable: true
+          example: null
+        workMinutes:
+          type: integer
+          default: 0
+        breakMinutes:
+          type: integer
+          default: 0
+
+    ClockingUpdate:
+      type: object
+      properties:
+        firstArrival:
+          type: string
+          format: time
+        lastDeparture:
+          type: string
+          format: time
+        workMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+      description: |
+        **Employer** peut uniquement modifier `lastDeparture`.
+        **Manager/Responsable** peuvent modifier tous les champs.
+
+    ClockingStats:
+      type: object
+      properties:
+        totalWorkMinutes:
+          type: integer
+          example: 9600
+        totalBreakMinutes:
+          type: integer
+          example: 600
+        averageWorkMinutes:
+          type: number
+          example: 480.0
+        averageTotalHours:
+          type: number
+          example: 8.0
+        totalClockings:
+          type: integer
+          example: 20
+
+    # ─────────────────────────────────────────────────────
+    #  LEAVE
+    # ─────────────────────────────────────────────────────
+    Leave:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
         startDate:
           type: string
           format: date
+          example: "2025-11-01"
         endDate:
           type: string
           format: date
-        reason:
+          example: "2025-11-05"
+        justification:
           type: string
-          nullable: true
-        teamId:
+          example: "Congés annuels"
+        status:
+          $ref: "#/components/schemas/LeaveStatus"
+        daysLeave:
+          type: integer
+          example: 5
+        userId:
+          type: integer
+          example: 1
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
           type: string
-          nullable: true
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - startDate
+        - endDate
+        - justification
+        - status
+        - daysLeave
+        - userId
+
+    LeaveCreate:
+      type: object
+      required:
+        - startDate
+        - endDate
+        - justification
+        - daysLeave
+      properties:
+        startDate:
+          type: string
+          format: date
+          example: "2025-11-01"
+        endDate:
+          type: string
+          format: date
+          example: "2025-11-05"
+        justification:
+          type: string
+          example: "Congés annuels"
+        daysLeave:
+          type: integer
+          example: 5
+
     LeaveUpdate:
       type: object
       properties:
-        type:
-          $ref: "#/components/schemas/LeaveType"
         startDate:
           type: string
           format: date
         endDate:
           type: string
           format: date
-        reason:
+        justification:
           type: string
-          nullable: true
-        teamId:
-          type: string
-          nullable: true
-    LeaveType:
-      type: string
-      enum: [PAID, UNPAID, SICK, RTT, OTHER]
-    LeaveStatus:
-      type: string
-      enum: [PENDING, APPROVED, REJECTED]
+        daysLeave:
+          type: integer
 
+    # ─────────────────────────────────────────────────────
+    #  WARNINGS
+    # ─────────────────────────────────────────────────────
+    Warning:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        status:
+          $ref: "#/components/schemas/WarningStatus"
+        description:
+          type: string
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        createdById:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        createdBy:
+          $ref: "#/components/schemas/User"
+        user:
+          $ref: "#/components/schemas/User"
+
+    WarningCreate:
+      type: object
+      required:
+        - status
+        - description
+        - date
+        - userId
+      properties:
+        status:
+          $ref: "#/components/schemas/WarningStatus"
+        description:
+          type: string
+          maxLength: 500
+          example: "Retard répété"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        userId:
+          type: integer
+          example: 2
+
+    WarningUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/WarningStatus"
+        description:
+          type: string
+          maxLength: 500
+        date:
+          type: string
+          format: date
+
+    # ─────────────────────────────────────────────────────
+    #  NOTIFICATIONS
+    # ─────────────────────────────────────────────────────
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Nouvelle demande de congé"
+        message:
+          type: string
+          example: "Vous avez reçu une nouvelle demande de congé"
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        receivers:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                $ref: "#/components/schemas/User"
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+
+    NotificationCreate:
+      type: object
+      required:
+        - title
+        - message
+        - status
+        - receiverIds
+      properties:
+        title:
+          type: string
+          example: "Nouvelle demande de congé"
+        message:
+          type: string
+          example: "Vous avez reçu une nouvelle demande de congé"
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        receiverIds:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          example: [1, 2, 3]
+
+    NotificationUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/NotificationStatus"
+        date:
+          type: string
+          format: date
+        receiverIds:
+          type: array
+          items:
+            type: integer
+
+    # ─────────────────────────────────────────────────────
+    #  UTILS
+    # ─────────────────────────────────────────────────────
     CountResponse:
       type: object
       properties:
         count:
           type: integer
           format: int32
-      example: { count: 42 }
+      example:
+        count: 42
 
     ErrorResponse:
       type: object
       properties:
         status:
           type: string
-          example: error
+          example: "error"
         code:
           type: string
-          example: NOT_FOUND
+          example: "NOT_FOUND"
         message:
           type: string
-        requestId:
+          example: "Ressource introuvable"
+        traceId:
           type: string
-          description: Identifiant de requête (middleware requestId)
+          description: Identifiant de requête pour le débogage
+          example: "76f70655-437e-4ec5-af19-3716e8743850"

@@ -16,7 +16,6 @@ export const createTeam = asyncHandler(async (req, res) => {
   res.status(201).json(team);
 });
 
-
 export const getTeamById = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
@@ -26,7 +25,6 @@ export const getTeamById = asyncHandler(async (req, res) => {
   if (!team) throw notFound("Équipe introuvable", "TEAM_NOT_FOUND");
   res.json(team);
 });
-
 
 export const listTeams = asyncHandler(async (req, res) => {
   const { skip, take } = parsePagination(req.query, {
@@ -46,7 +44,6 @@ export const listTeamsByOwner = asyncHandler(async (req, res) => {
   res.json(teams);
 });
 
-
 export const updateTeam = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
@@ -56,12 +53,11 @@ export const updateTeam = asyncHandler(async (req, res) => {
   res.json(updated);
 });
 
-
 export const removeTeam = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     throw badRequest("ID invalide", "ID_INVALID");
   }
-  const deleted = await deleteTeamById(id);
-  res.json(deleted);
+  await deleteTeamById(id);
+  res.status(204).send();
 });

@@ -6,10 +6,10 @@ export const registerSchema = z.object({
     .string()
     .min(8)
     .max(100)
-    .regex(/[a-z]/, "at least one lowercase letter")
-    .regex(/[A-Z]/, "at least one uppercase letter")
-    .regex(/[0-9]/, "at least one number")
-    .regex(/[^a-zA-Z0-9]/, "at least one special character"),
+    .regex(/[a-z]/, { message: "at least one lowercase letter" })
+    .regex(/[A-Z]/, { message: "at least one uppercase letter" })
+    .regex(/\d/, { message: "at least one number" })
+    .regex(/[^a-zA-Z0-9]/, { message: "at least one special character" }),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   phoneNumber: z.string().min(10).max(15),

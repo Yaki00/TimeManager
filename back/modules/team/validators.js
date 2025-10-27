@@ -44,7 +44,7 @@ export function validateCreateTeam(req, _res, next) {
 }
 
 export function validateUpdateTeam(req, _res, next) {
-  const { teamName, description } = req.body ?? {};
+  const { teamName, description, members } = req.body ?? {};
   const patch = {};
 
   if (teamName != null) {
@@ -59,6 +59,27 @@ export function validateUpdateTeam(req, _res, next) {
       throw badRequest("description invalide", "DESCRIPTION_INVALID");
     }
     patch.description = description.trim();
+  }
+
+  if (members != null) {
+    if (!Array.isArray(members)) {
+      throw badRequest("members doit être un tableau", "MEMBERS_INVALID");
+    }
+    for (const m of members) {
+      if (!m || !isPositiveInt(Number(m.userId))) {
+        throw badRequest("members[].userId invalide", "MEMBER_USER_ID_INVALID");
+      }
+      if (m.isLead != null && typeof m.isLead !== "boolean") {
+        throw badRequest(
+          "members[].isLead doit être booléen",
+          "MEMBER_IS_LEAD_INVALID"
+        );
+      }
+    }
+    patch.members = members.map((member) => ({
+      userId: Number(member.userId),
+      isLead: !!member.isLead,
+    }));
   }
   req.body = patch;
   next();
