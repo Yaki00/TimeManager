@@ -166,12 +166,22 @@ services:
     command: >-
       sh -lc '
         set -e;
+        echo "🔍 Vérification des dépendances...";
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
+          echo "📦 Installation des dépendances...";
+          if [ -f package-lock.json ]; then 
+            npm ci || (echo "⚠️ npm ci échoué (lock file désynchronisé), utilisation de npm install..." && npm install);
+          else 
+            npm install;
+          fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
+        echo "🗄️ Configuration de la base de données...";
         npx prisma db push --schema=prisma/schema.prisma --skip-generate;
-        npm run test'
+        echo "📁 Création du dossier allure-results...";
+        mkdir -p allure-results;
+        echo "🧪 Lancement des tests avec Allure...";
+        npm run test:allure;'
 
   sonarqube-db:
     image: postgres:15
@@ -231,6 +241,36 @@ services:
       - tools
     # La configuration est dans sonar-project.properties
 
+  # Service Allure Report pour visualiser les résultats de tests
+  # Utilisation:
+  #   1. Lancer les tests: docker compose run --rm backend-tests
+  #   2. Générer et servir le rapport: docker compose --profile tools up allure
+  #   3. Accéder au rapport: http://localhost:5051
+  allure:
+    image: "frankescobar/allure-docker-service:latest"
+    user: root
+    ports:
+      - "5051:5050"
+    volumes:
+      - ./back/allure-results:/app/allure-results:ro
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+      KEEP_HISTORY: 0
+    command: >
+      sh -c "
+        if [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; then
+          echo '⚠️ Aucun résultat de test trouvé. Lancez d''abord: docker compose run --rm backend-tests';
+          echo '⏳ En attente de résultats...';
+          while [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; do
+            sleep 5
+          done
+        fi
+        exec allure serve -h 0.0.0.0 -p 5050 /app/allure-results
+      "
+    profiles:
+      - tools
+    # → Allure Report: http://localhost:5051
+
 volumes:
   pgdata:
   node_modules:
@@ -239,7 +279,6 @@ volumes:
   node_modules_back_studio:
   node_modules_back_tests:
   pgadmin_data:
-
   sonarqube_db_data:
   sonarqube_data:
   sonarqube_extensions:

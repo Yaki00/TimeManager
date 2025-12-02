@@ -13,6 +13,9 @@
     "test:watch": "NODE_ENV=test vitest",
     "test:coverage": "NODE_ENV=test vitest run --coverage --reporter=default",
     "test:ci": "vitest run --coverage --reporter=junit",
+    "test:allure": "vitest run",
+    "allure:generate": "allure generate --clean",
+    "allure:open": "allure open",
     "monthly-leaves": "node scripts/monthlyLeaveGain.js"
   },
   "dependencies": {
@@ -30,7 +33,10 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/runner": "^3.2.4",
     "@vitest/ui": "^3.2.4",
+    "allure-js-commons": "^3.0.0",
+    "allure-vitest": "^3.4.2",
     "nodemon": "^3.1.10",
     "prisma": "^6.17.1",
     "supertest": "^7.1.4",
