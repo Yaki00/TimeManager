@@ -9,8 +9,11 @@ export default defineConfig({
     restoreMocks: true,
     mockReset: true,
     passWithNoTests: false,
-    reporters: ["default"],
-    setupFiles: ["tests/setupTests.js"],
+    setupFiles: ["allure-vitest/setup", "tests/setupTests.js"],
+    reporters: [
+      "default",
+      ["allure-vitest/reporter", { resultsDir: "allure-results" }],
+    ],
     env: {
       NODE_ENV: "test",
     },
