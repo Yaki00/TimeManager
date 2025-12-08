@@ -1,21 +1,21 @@
-# 📊 Guide SonarQube - Time Manager
+# Guide SonarQube - Time Manager
 
-## 🎯 Qu'est-ce que SonarQube ?
+## Qu'est-ce que SonarQube ?
 
 SonarQube est un outil d'**analyse de qualité de code**. Il analyse automatiquement votre code et vous donne :
 
-- 🐛 **Bugs détectés**
-- 🔒 **Vulnérabilités de sécurité**
-- 💩 **Code smells** (mauvaises pratiques)
-- 📈 **Couverture de tests**
-- 📊 **Métriques de qualité** (complexité, duplication, etc.)
+- **Bugs détectés**
+- **Vulnérabilités de sécurité**
+- **Code smells** (mauvaises pratiques)
+- **Couverture de tests**
+- **Métriques de qualité** (complexité, duplication, etc.)
 
-**❌ NE PAS lire les logs ligne par ligne !**  
-**✅ Utilisez l'interface web visuelle !**
+** NE PAS lire les logs ligne par ligne !**  
+** Utilisez l'interface web visuelle !**
 
 ---
 
-## 🚀 Démarrage rapide
+## Demarrage rapide
 
 ### 1. Démarrer SonarQube
 
@@ -38,11 +38,11 @@ http://localhost:9000
 - Username: `admin`
 - Password: `admin`
 
-⚠️ **Vous devrez changer le mot de passe au premier login !**
+  **Vous devrez changer le mot de passe au premier login !**
 
 ---
 
-## 🔑 Générer un Token d'authentification
+## Générer un Token d'authentification
 
 Pour que le scanner puisse envoyer les résultats, vous devez créer un token :
 
@@ -64,7 +64,7 @@ Suivez les instructions pour définir un nouveau mot de passe
    - **Type:** `Global Analysis Token` (ou `User Token`)
    - **Expires in:** 90 days (ou plus)
 5. Cliquez sur **Generate**
-6. **⚠️ COPIEZ LE TOKEN IMMÉDIATEMENT** (vous ne pourrez plus le voir après !)
+6. ** COPIEZ LE TOKEN IMMÉDIATEMENT** (vous ne pourrez plus le voir après !)
 
 ### Étape 4 : Créer un fichier .env
 
@@ -82,9 +82,46 @@ SONAR_TOKEN=squ_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
 ---
 
-## 🔍 Lancer une analyse
+## Lancer une analyse
 
-Une fois le token configuré, lancez l'analyse :
+### ⚠️ Important : Générer le rapport de couverture d'abord
+
+Pour que SonarQube affiche la couverture de code, vous devez **générer le rapport de couverture AVANT** de lancer l'analyse :
+
+**Solution simple :** Le service `backend-tests` génère maintenant **automatiquement** la couverture ET les rapports Allure :
+
+```bash
+# Cette commande génère à la fois la couverture ET les rapports Allure
+docker compose run --rm backend-tests
+```
+
+Cette commande va :
+
+1. Installer les dépendances si nécessaire
+2. Configurer la base de données
+3. Lancer les tests avec génération de couverture ET rapports Allure
+4. Créer le fichier `back/coverage/lcov.info` nécessaire à SonarQube
+5. Créer les rapports Allure dans `back/allure-results/`
+
+**Alternative :** Si vous voulez seulement la couverture (sans Allure) :
+
+```bash
+docker compose run --rm backend-tests npm run test:coverage
+```
+
+Ou localement :
+
+```bash
+cd back
+npm run test:full  # Génère couverture + Allure
+# ou
+npm run test:coverage  # Seulement la couverture
+cd ..
+```
+
+### Lancer l'analyse SonarQube
+
+Une fois le rapport de couverture généré, lancez l'analyse :
 
 ```bash
 docker compose run --rm sonar-scanner
@@ -92,16 +129,33 @@ docker compose run --rm sonar-scanner
 
 Cette commande va :
 
-1. ✅ Analyser tout votre code (frontend + backend)
-2. ✅ Détecter les problèmes
-3. ✅ Envoyer les résultats à SonarQube
-4. ✅ Se terminer automatiquement
+1. Analyser votre code (selon la configuration dans `sonar-project.properties`)
+2. Détecter les problèmes
+3. Inclure la couverture de code si le rapport existe
+4. Envoyer les résultats à SonarQube
+5. Se terminer automatiquement
 
-**⏱️ Temps d'analyse :** environ 1-2 minutes
+**⏱ Temps d'analyse :** environ 1-2 minutes
+
+**Note :** Si vous voyez 0% de couverture, c'est que le rapport `back/coverage/lcov.info` n'existe pas. Relancez `npm run test:coverage` dans le dossier `back/`.
+
+**Probleme courant : Le dossier coverage se cree puis est supprime**
+
+Si le dossier `coverage` se crée mais disparaît après les tests, assurez-vous qu'il existe sur l'hôte avant de lancer les tests :
+
+```bash
+# Créer le dossier coverage sur l'hôte (une seule fois)
+mkdir -p back/coverage
+
+# Ou sur Windows PowerShell
+New-Item -ItemType Directory -Force -Path back\coverage
+```
+
+Le fichier `.gitkeep` dans `back/coverage/` garantit que le dossier existe et persiste.
 
 ---
 
-## 📊 Voir les résultats
+## Voir les résultats
 
 ### Dans l'interface web
 
@@ -116,21 +170,21 @@ Cette commande va :
 
 ### Ce que vous verrez
 
-#### 🎯 Qualité Gate
+#### Qualité Gate
 
-- **Passed** ✅ ou **Failed** ❌
+- **Passed** ou **Failed**
 - Indique si votre code respecte les standards minimaux
 
-#### 🐛 Types de problèmes
+#### Types de problèmes
 
-| Type                 | Description                      | Gravité      |
-| -------------------- | -------------------------------- | ------------ |
-| **Bug**              | Erreur qui causera un problème   | 🔴 Critique  |
-| **Vulnerability**    | Faille de sécurité               | 🔴 Critique  |
-| **Code Smell**       | Mauvaise pratique                | 🟡 Mineure   |
-| **Security Hotspot** | Code à vérifier pour la sécurité | 🟠 À réviser |
+| Type                 | Description                      | Gravité   |
+| -------------------- | -------------------------------- | --------- |
+| **Bug**              | Erreur qui causera un problème   | Critique  |
+| **Vulnerability**    | Faille de sécurité               | Critique  |
+| **Code Smell**       | Mauvaise pratique                | Mineure   |
+| **Security Hotspot** | Code à vérifier pour la sécurité | À réviser |
 
-#### 📈 Métriques importantes
+#### Métriques importantes
 
 - **Coverage** : % de code couvert par les tests
 - **Duplications** : % de code dupliqué
@@ -139,7 +193,7 @@ Cette commande va :
 
 ---
 
-## 🎨 Comprendre l'interface
+## Comprendre l'interface
 
 ### Page d'accueil (Projects)
 
@@ -161,13 +215,13 @@ Cette commande va :
 │  Overview │ Issues │ Measures │ Code │ Activity│
 ├─────────────────────────────────────────────────┤
 │                                                 │
-│  Quality Gate: Passed ✅                       │
+│  Quality Gate: Passed                       │
 │                                                 │
-│  🐛 Bugs: 3                                    │
-│  🔒 Vulnerabilities: 0                         │
-│  💩 Code Smells: 47                            │
-│  📊 Coverage: 65.3%                            │
-│  📋 Duplications: 2.1%                         │
+│   Bugs: 3                                    │
+│   Vulnerabilities: 0                         │
+│   Code Smells: 47                            │
+│   Coverage: 65.3%                            │
+│   Duplications: 2.1%                         │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
@@ -176,14 +230,14 @@ Cette commande va :
 
 Liste tous les problèmes avec :
 
-- 🔍 **Filtres** (par type, gravité, fichier)
-- 📝 **Explication détaillée** de chaque problème
-- 💡 **Suggestions de correction**
-- 📍 **Localisation exacte** dans le code
+- **Filtres** (par type, gravité, fichier)
+- **Explication détaillée** de chaque problème
+- **Suggestions de correction**
+- **Localisation exacte** dans le code
 
 ---
 
-## 🔄 Workflow recommandé
+## Workflow recommandé
 
 ### Analyse régulière
 
@@ -191,14 +245,25 @@ Liste tous les problèmes avec :
 # 1. Faire des modifications dans votre code
 git commit -m "feat: nouvelle fonctionnalité"
 
-# 2. Lancer les tests
+# 2. Lancer les tests (génère couverture + Allure en une seule commande)
 docker compose run --rm backend-tests
 
-# 3. Lancer l'analyse SonarQube
+# 3. (Optionnel) Voir les rapports Allure
+docker compose --profile tools up allure
+# Puis ouvrir http://localhost:5051
+
+# 4. Lancer l'analyse SonarQube
 docker compose run --rm sonar-scanner
 
-# 4. Voir les résultats sur http://localhost:9000
+# 5. Voir les résultats sur http://localhost:9000
 ```
+
+**Note :** La commande `docker compose run --rm backend-tests` génère maintenant **automatiquement** :
+
+- La couverture de code (`back/coverage/lcov.info`)
+- ✅ Les rapports Allure (`back/allure-results/`)
+
+Plus besoin de choisir entre les deux !
 
 ### Avant un merge/pull request
 
@@ -207,13 +272,13 @@ docker compose run --rm sonar-scanner
 docker compose run --rm sonar-scanner
 
 # Vérifier la Quality Gate sur http://localhost:9000
-# ✅ Si Passed → OK pour merger
-# ❌ Si Failed → Corriger les problèmes critiques
+#  Si Passed → OK pour merger
+#  Si Failed → Corriger les problèmes critiques
 ```
 
 ---
 
-## 🔧 Configuration avancée
+## Configuration avancée
 
 ### Fichier `sonar-project.properties`
 
@@ -242,7 +307,7 @@ sonar.exclusions=\
 
 ---
 
-## 📚 Ressources
+## Ressources
 
 - **Interface web locale :** http://localhost:9000
 - **Documentation SonarQube :** https://docs.sonarqube.org/latest/
@@ -250,7 +315,7 @@ sonar.exclusions=\
 
 ---
 
-## 🆘 Dépannage
+## Dépannage
 
 ### SonarQube ne démarre pas
 
@@ -279,13 +344,57 @@ docker compose run --rm sonar-scanner
 
 → Le token est invalide ou manquant. Regénérez un token et mettez à jour `.env`
 
+### Couverture à 0% alors que vous avez des tests
+
+**Problème :** SonarQube affiche 0% de couverture même si vous avez des tests.
+
+**Solutions :**
+
+1. **Vérifier que le rapport de couverture existe :**
+
+   ```bash
+   # Vérifier si le fichier existe
+   ls back/coverage/lcov.info
+   # ou sur Windows
+   dir back\coverage\lcov.info
+   ```
+
+2. **Générer le rapport de couverture :**
+
+   ```bash
+   # Option 1 : Avec Docker (recommandé - génère couverture + Allure)
+   docker compose run --rm backend-tests
+
+   # Option 2 : Si vous voulez seulement la couverture (sans Allure)
+   docker compose run --rm backend-tests npm run test:coverage
+
+   # Option 3 : Localement (depuis le dossier back)
+   cd back
+   npm run test:full  # Génère couverture + Allure
+   # ou
+   npm run test:coverage  # Seulement la couverture
+   cd ..
+   ```
+
+   **Vérification :** Après cette commande, le fichier `back/coverage/lcov.info` doit exister.
+
+3. **Vérifier le chemin dans `sonar-project.properties` :**
+   Le chemin doit être `back/coverage/lcov.info` (relatif au working_dir `/workspace` dans Docker)
+
+4. **Relancer l'analyse SonarQube :**
+   ```bash
+   docker compose run --rm sonar-scanner
+   ```
+
+**Note importante :** Le rapport de couverture doit être généré **AVANT** chaque analyse SonarQube. Si vous modifiez votre code, régénérez le rapport.
+
 ### Interface web lente
 
 → Normal au premier démarrage. Attendez 2-3 minutes.
 
 ---
 
-## 💡 Conseils
+## Conseils
 
 1. **Lancez une analyse après chaque grosse modification**
 2. **Corrigez les bugs et vulnérabilités en priorité**
@@ -295,7 +404,7 @@ docker compose run --rm sonar-scanner
 
 ---
 
-## 🎯 Objectifs qualité recommandés
+## Objectifs qualité recommandés
 
 | Métrique            | Objectif débutant | Objectif avancé |
 | ------------------- | ----------------- | --------------- |
@@ -306,5 +415,3 @@ docker compose run --rm sonar-scanner
 | **Code Smells**     | < 100             | < 50            |
 
 ---
-
-**🚀 Bonne analyse !**

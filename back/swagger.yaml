@@ -2256,6 +2256,15 @@ components:
         - Accepte
         - Refuse
 
+    LeaveType:
+      type: string
+      description: Type de demande de congé
+      enum:
+        - Absence
+        - PaidLeave
+        - Training
+        - Remote
+
     WarningStatus:
       type: string
       description: Statut d'un avertissement
@@ -2525,11 +2534,11 @@ components:
           format: time
           nullable: true
           example: "17:30:00"
-        workMinutes:
+        workTime:
           type: integer
           default: 0
           example: 480
-        breakMinutes:
+        breakTime:
           type: integer
           default: 0
           example: 60
@@ -2543,10 +2552,8 @@ components:
           example: 8.0
         weekDay:
           type: string
-          example: "Mercredi"
-        workDay:
-          type: integer
-          example: 3
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+          example: "Wednesday"
         userId:
           type: integer
           example: 1
@@ -2585,12 +2592,19 @@ components:
           format: time
           nullable: true
           example: null
-        workMinutes:
+        workTime:
           type: integer
           default: 0
-        breakMinutes:
+        breakTime:
           type: integer
           default: 0
+        totalHours:
+          type: number
+          format: decimal
+          default: 0
+        weekDay:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 
     ClockingUpdate:
       type: object
@@ -2601,10 +2615,16 @@ components:
         lastDeparture:
           type: string
           format: time
-        workMinutes:
+        workTime:
           type: integer
-        breakMinutes:
+        breakTime:
           type: integer
+        totalHours:
+          type: number
+          format: decimal
+        weekDay:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
       description: |
         **Employer** peut uniquement modifier `lastDeparture`.
         **Manager/Responsable** peuvent modifier tous les champs.
@@ -2624,7 +2644,7 @@ components:
         averageTotalHours:
           type: number
           example: 8.0
-        totalClockings:
+        totalDays:
           type: integer
           example: 20
 
@@ -2650,6 +2670,8 @@ components:
           example: "Congés annuels"
         status:
           $ref: "#/components/schemas/LeaveStatus"
+        type:
+          $ref: "#/components/schemas/LeaveType"
         daysLeave:
           type: integer
           example: 5
@@ -2670,6 +2692,7 @@ components:
         - endDate
         - justification
         - status
+        - type
         - daysLeave
         - userId
 
@@ -2692,6 +2715,10 @@ components:
         justification:
           type: string
           example: "Congés annuels"
+        type:
+          $ref: "#/components/schemas/LeaveType"
+          default: "PaidLeave"
+          description: "Type de demande (optionnel, défaut: PaidLeave)"
         daysLeave:
           type: integer
           example: 5

@@ -21,6 +21,9 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage",
       reporter: ["text", "lcov"],
+      // Evite la suppression du dossier monte (host) qui provoque EBUSY sous Windows
+      cleanOnRerun: false,
+      clean: false,
       // Force Unix paths in coverage reports
       all: true,
       include: ["**/*.js"],

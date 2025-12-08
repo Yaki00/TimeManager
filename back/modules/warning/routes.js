@@ -24,6 +24,7 @@ import {
   validateUpdateWarning,
   validateWarningId,
   validateUserId,
+  validateCreatedById,
   validateWarningStatus,
   validateDateRange,
 } from "./validators.js";
@@ -65,7 +66,7 @@ router.get(
 router.get(
   "/count/created-by/:createdById",
   requireAuth,
-  validateUserId,
+  validateCreatedById,
   getCountWarningsByCreatedBy
 );
 
@@ -86,7 +87,7 @@ router.get(
 router.get(
   "/created-by/:createdById",
   requireAuth,
-  validateUserId,
+  validateCreatedById,
   getWarningsByCreatedBy
 );
 

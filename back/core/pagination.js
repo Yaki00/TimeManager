@@ -8,3 +8,11 @@ export function parsePagination(
     takeRaw <= 0 ? defaultTake : Math.max(1, Math.min(maxTake, takeRaw));
   return { skip, take };
 }
+
+// Middleware pour parser la pagination et la stocker dans res.locals.pagination
+export function paginationMiddleware(options = {}) {
+  return (req, res, next) => {
+    res.locals.pagination = parsePagination(req.query, options);
+    next();
+  };
+}

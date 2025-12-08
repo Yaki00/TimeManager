@@ -21,15 +21,15 @@ services:
     command: >-
       sh -lc '
         set -e;
-        echo "🔍 Vérification des dépendances frontend...";
+        echo "Verification des dependances frontend...";
         if [ -f package-lock.json ]; then 
-          echo "📦 Tentative avec npm ci...";
-          npm ci --legacy-peer-deps || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install --legacy-peer-deps);
+          echo "Tentative avec npm ci...";
+          npm ci --legacy-peer-deps || (echo "npm ci echoue, regeneration..." && rm -f package-lock.json && npm install --legacy-peer-deps);
         else 
-          echo "📦 Installation avec npm install...";
+          echo "Installation avec npm install...";
           npm install --legacy-peer-deps;
         fi;
-        echo "✅ Dépendances installées, démarrage de Vite...";
+        echo "Dependances installees, demarrage de Vite...";
         exec npm run dev -- --host 0.0.0.0 --port 5173'
   backend:
     build:
@@ -55,12 +55,12 @@ services:
       sh -lc '
         set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          echo "🔍 Vérification des dépendances...";
+          echo "Verification des dependances...";
           if [ -f package-lock.json ]; then 
-            echo "📦 Tentative avec npm ci...";
-            npm ci || (echo "⚠️ npm ci échoué, régénération..." && rm -f package-lock.json && npm install);
+            echo "Tentative avec npm ci...";
+            npm ci || (echo "npm ci echoue, regeneration..." && rm -f package-lock.json && npm install);
           else 
-            echo "📦 Installation avec npm install...";
+            echo "Installation avec npm install...";
             npm install;
           fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
@@ -89,7 +89,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432" # utilisez 5433 sur l'hôte pour éviter les conflits locaux
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d app -h localhost || exit 1"]
       interval: 5s
@@ -162,26 +162,71 @@ services:
       - DATABASE_URL=postgresql://app:app@db:5432/app?schema=test
     volumes:
       - ./back:/app
+      - ./back/coverage:/app/coverage
+      - ./back/allure-results:/app/allure-results
       - node_modules_back_tests:/app/node_modules
-    command: >-
-      sh -lc '
+    command:
+      - sh
+      - -lc
+      - |
         set -e;
-        echo "🔍 Vérification des dépendances...";
+        echo "Verification des dependances...";
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          echo "📦 Installation des dépendances...";
+          echo "Installation des dependances...";
           if [ -f package-lock.json ]; then 
-            npm ci || (echo "⚠️ npm ci échoué (lock file désynchronisé), utilisation de npm install..." && npm install);
+            npm ci || (echo "npm ci echoue, utilisation de npm install..." && npm install);
           else 
             npm install;
           fi;
           sha256sum package-lock.json > node_modules/.npmci.sha;
         fi;
-        echo "🗄️ Configuration de la base de données...";
+        echo "Configuration de la base de donnees...";
         npx prisma db push --schema=prisma/schema.prisma --skip-generate;
-        echo "📁 Création du dossier allure-results...";
-        mkdir -p allure-results;
-        echo "🧪 Lancement des tests avec Allure...";
-        npm run test:allure;'
+        echo "Creation des dossiers allure-results et coverage...";
+        mkdir -p allure-results coverage;
+        echo "Nettoyage des anciens resultats Allure pour forcer la regeneration...";
+        find allure-results -type f -name "*.json" -delete 2>/dev/null || true;
+        find allure-results -type f -name "*.txt" -delete 2>/dev/null || true;
+        echo "Lancement des tests avec couverture et Allure...";
+        npm run test:full;
+        echo "Verification des resultats Allure generes...";
+        sleep 2;
+        if [ -d allure-results ] && [ "$(find allure-results -type f -name '*.json' 2>/dev/null | wc -l)" -gt 0 ]; then
+          echo "Resultats Allure generes avec succes: $(find allure-results -type f -name '*.json' 2>/dev/null | wc -l) fichiers";
+        else
+          echo "ATTENTION: Aucun resultat Allure genere !";
+          echo "Contenu du dossier allure-results:";
+          ls -la allure-results/ || echo "Dossier vide ou inexistant";
+        fi;
+        echo "Tests termines. Verification du fichier de couverture...";
+        if [ -f coverage/lcov.info ]; then
+          echo "Fichier lcov.info cree avec succes !";
+          ls -lh coverage/lcov.info;
+          pwd;
+          echo "Forcer la synchronisation du systeme de fichiers...";
+          sync || true;
+          echo "Attente de 10 secondes pour garantir la synchronisation avec l'hote...";
+          sleep 10;
+          echo "Verification finale que le fichier existe toujours:";
+          if [ -f coverage/lcov.info ]; then
+            echo "SUCCESS: Le fichier lcov.info est present et devrait persister !";
+            ls -lh coverage/lcov.info;
+            echo "Contenu du dossier coverage:";
+            ls -la coverage/;
+          else
+            echo "ERREUR: Le fichier lcov.info a disparu !";
+            ls -la coverage/ || echo "Le dossier coverage n'existe pas";
+            exit 1;
+          fi;
+        else
+          echo "ATTENTION: Le fichier lcov.info n'a pas ete cree !";
+          ls -la coverage/ || echo "Le dossier coverage n'existe pas";
+          exit 1;
+        fi;
+        echo "IMPORTANT: Le dossier coverage doit exister sur l'hote pour persister.";
+        echo "Si le dossier coverage disparait, creez-le avant de lancer les tests:";
+        echo "  Windows: New-Item -ItemType Directory -Force -Path back\\coverage";
+        echo "  Linux/Mac: mkdir -p back/coverage";
 
   sonarqube-db:
     image: postgres:15
@@ -259,12 +304,21 @@ services:
     command: >
       sh -c "
         if [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; then
-          echo '⚠️ Aucun résultat de test trouvé. Lancez d''abord: docker compose run --rm backend-tests';
-          echo '⏳ En attente de résultats...';
+          echo 'Aucun resultat de test trouve. Lancez d abord: docker compose run --rm backend-tests';
+          echo 'En attente de resultats...';
           while [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; do
             sleep 5
           done
         fi
+        echo '';
+        echo '========================================';
+        echo '  Allure Report est disponible sur:';
+        echo '  http://localhost:5051';
+        echo '';
+        echo '  Nombre de resultats trouves:';
+        ls -1 /app/allure-results/*.json 2>/dev/null | wc -l || echo '0';
+        echo '========================================';
+        echo '';
         exec allure serve -h 0.0.0.0 -p 5050 /app/allure-results
       "
     profiles:

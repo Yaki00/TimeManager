@@ -1,8 +1,30 @@
 import request from "supertest";
 import { createApp } from "../server.js";
 import { signAccessToken } from "../modules/auth/jwt.js";
+import prisma from "../db.js";
 
 describe("Warning Routes", () => {
+  let employerJohn;
+  let managerMike;
+  let responsableRita;
+
+  beforeAll(async () => {
+    // Récupérer les utilisateurs du setup
+    employerJohn = await prisma.user.findUnique({
+      where: { email: "john@doe.com" },
+      select: { id: true, email: true, role: true },
+    });
+
+    managerMike = await prisma.user.findUnique({
+      where: { email: "manager@doe.com" },
+      select: { id: true, email: true, role: true },
+    });
+
+    responsableRita = await prisma.user.findUnique({
+      where: { email: "responsable@doe.com" },
+      select: { id: true, email: true, role: true },
+    });
+  });
   it("401 sans Authorization pour GET /warnings", async () => {
     const app = createApp();
     const res = await request(app).get("/warnings");
@@ -12,9 +34,9 @@ describe("Warning Routes", () => {
   it("200 avec token valide pour GET /warnings", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -32,7 +54,7 @@ describe("Warning Routes", () => {
       status: "Alert",
       description: "Test warning",
       date: "2024-01-20",
-      userId: 1,
+      userId: employerJohn.id,
     });
     expect([401, 403]).toContain(res.status);
   });
@@ -40,9 +62,9 @@ describe("Warning Routes", () => {
   it("403 pour Employer essayant de créer un warning", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -53,7 +75,7 @@ describe("Warning Routes", () => {
         status: "Alert",
         description: "Test warning",
         date: "2024-01-20",
-        userId: 1,
+        userId: managerMike.id,
       });
 
     expect(res.status).toBe(403);
@@ -62,9 +84,9 @@ describe("Warning Routes", () => {
   it("200 avec token Manager pour POST /warnings", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "manager@doe.com",
-      role: "Manager",
+      id: managerMike.id,
+      email: managerMike.email,
+      role: managerMike.role,
     });
 
     const res = await request(app)
@@ -75,21 +97,28 @@ describe("Warning Routes", () => {
         status: "Alert",
         description: "Test warning from manager",
         date: "2024-01-20",
-        userId: 1,
+        userId: employerJohn.id,
       });
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
     expect(res.body.status).toBe("Alert");
     expect(res.body.description).toBe("Test warning from manager");
+
+    // Nettoyer
+    if (res.body.id) {
+      await prisma.warning
+        .delete({ where: { id: res.body.id } })
+        .catch(() => {});
+    }
   });
 
   it("200 avec token Responsable pour POST /warnings", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "responsable@doe.com",
-      role: "Responsable",
+      id: responsableRita.id,
+      email: responsableRita.email,
+      role: responsableRita.role,
     });
 
     const res = await request(app)
@@ -100,21 +129,28 @@ describe("Warning Routes", () => {
         status: "Late",
         description: "Test warning from responsable",
         date: "2024-01-21",
-        userId: 1,
+        userId: employerJohn.id,
       });
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
     expect(res.body.status).toBe("Late");
     expect(res.body.description).toBe("Test warning from responsable");
+
+    // Nettoyer
+    if (res.body.id) {
+      await prisma.warning
+        .delete({ where: { id: res.body.id } })
+        .catch(() => {});
+    }
   });
 
   it("400 pour données invalides dans POST /warnings", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "manager@doe.com",
-      role: "Manager",
+      id: managerMike.id,
+      email: managerMike.email,
+      role: managerMike.role,
     });
 
     const res = await request(app)
@@ -125,7 +161,7 @@ describe("Warning Routes", () => {
         status: "InvalidStatus",
         description: "Test warning",
         date: "2024-01-20",
-        userId: 1,
+        userId: employerJohn.id,
       });
 
     expect(res.status).toBe(400);
@@ -134,9 +170,9 @@ describe("Warning Routes", () => {
   it("400 pour ID invalide dans GET /warnings/:id", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -150,9 +186,9 @@ describe("Warning Routes", () => {
   it("404 pour warning inexistant dans GET /warnings/:id", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -166,9 +202,9 @@ describe("Warning Routes", () => {
   it("400 pour userId invalide dans GET /warnings/user/:userId", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -182,9 +218,9 @@ describe("Warning Routes", () => {
   it("400 pour statut invalide dans GET /warnings/status/:status", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -198,9 +234,9 @@ describe("Warning Routes", () => {
   it("200 pour statut valide dans GET /warnings/status/:status", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -215,9 +251,9 @@ describe("Warning Routes", () => {
   it("200 pour plage de dates valide dans GET /warnings/date-range", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -232,9 +268,9 @@ describe("Warning Routes", () => {
   it("400 pour plage de dates invalide dans GET /warnings/date-range", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -248,9 +284,9 @@ describe("Warning Routes", () => {
   it("200 pour GET /warnings/count", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -266,13 +302,13 @@ describe("Warning Routes", () => {
   it("200 pour GET /warnings/count/user/:userId", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
-      .get("/warnings/count/user/1")
+      .get(`/warnings/count/user/${employerJohn.id}`)
       .set("Authorization", `Bearer ${token}`)
       .set("Accept", "application/json");
 
@@ -284,9 +320,9 @@ describe("Warning Routes", () => {
   it("200 pour GET /warnings/count/status/:status", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -302,9 +338,9 @@ describe("Warning Routes", () => {
   it("200 pour GET /warnings/count/date-range", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
@@ -320,13 +356,13 @@ describe("Warning Routes", () => {
   it("200 pour GET /warnings/count/created-by/:createdById", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "john@doe.com",
-      role: "Employer",
+      id: employerJohn.id,
+      email: employerJohn.email,
+      role: employerJohn.role,
     });
 
     const res = await request(app)
-      .get("/warnings/count/created-by/1")
+      .get(`/warnings/count/created-by/${managerMike.id}`)
       .set("Authorization", `Bearer ${token}`)
       .set("Accept", "application/json");
 
@@ -352,9 +388,9 @@ describe("Warning Routes", () => {
   it("400 pour ID invalide dans PATCH /warnings/:id", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "manager@doe.com",
-      role: "Manager",
+      id: managerMike.id,
+      email: managerMike.email,
+      role: managerMike.role,
     });
 
     const res = await request(app)
@@ -369,9 +405,9 @@ describe("Warning Routes", () => {
   it("400 pour ID invalide dans DELETE /warnings/:id", async () => {
     const app = createApp();
     const token = signAccessToken({
-      id: 999,
-      email: "manager@doe.com",
-      role: "Manager",
+      id: managerMike.id,
+      email: managerMike.email,
+      role: managerMike.role,
     });
 
     const res = await request(app)

@@ -149,7 +149,7 @@ describe("Leave Controller", () => {
       expect(res.body).toMatchObject({
         userId: employerJohn.id,
         justification: "Vacances",
-        status: "EnAttente",
+        status: "Pending",
       });
       expect(res.body.daysLeave).toBeGreaterThan(0);
     });
@@ -228,7 +228,8 @@ describe("Leave Controller", () => {
           justification: "Test leave",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -311,7 +312,8 @@ describe("Leave Controller", () => {
             justification: "Leave 1",
             daysLeave: 5,
             userId: employerJohn.id,
-            status: "EnAttente",
+            status: "Pending",
+            type: "PaidLeave",
           },
           {
             startDate: new Date("2025-03-01"),
@@ -319,7 +321,8 @@ describe("Leave Controller", () => {
             justification: "Leave 2",
             daysLeave: 5,
             userId: managerMike.id,
-            status: "Accepte",
+            status: "Approved",
+            type: "PaidLeave",
           },
         ],
       });
@@ -363,7 +366,8 @@ describe("Leave Controller", () => {
           justification: "User leave",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -425,7 +429,8 @@ describe("Leave Controller", () => {
           justification: "Team leave",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -468,7 +473,8 @@ describe("Leave Controller", () => {
           justification: "Original justification",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -519,7 +525,7 @@ describe("Leave Controller", () => {
       // Mettre à jour le statut
       await prisma.leave.update({
         where: { id: leaveToUpdate.id },
-        data: { status: "Accepte" },
+        data: { status: "Approved" },
       });
 
       const res = await request(app)
@@ -558,7 +564,8 @@ describe("Leave Controller", () => {
           justification: "Status test leave",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -568,11 +575,11 @@ describe("Leave Controller", () => {
         .patch(`/leaves/${leaveToUpdate.id}/status`)
         .set("Authorization", `Bearer ${tokenManager}`)
         .send({
-          status: "Accepte",
+          status: "Approved",
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe("Accepte");
+      expect(res.body.status).toBe("Approved");
     });
 
     it("should reject leave", async () => {
@@ -580,11 +587,11 @@ describe("Leave Controller", () => {
         .patch(`/leaves/${leaveToUpdate.id}/status`)
         .set("Authorization", `Bearer ${tokenManager}`)
         .send({
-          status: "Refuse",
+          status: "Refused",
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe("Refuse");
+      expect(res.body.status).toBe("Refused");
     });
 
     it("should reject invalid status", async () => {
@@ -603,18 +610,18 @@ describe("Leave Controller", () => {
       // Mettre à jour le statut
       await prisma.leave.update({
         where: { id: leaveToUpdate.id },
-        data: { status: "Accepte" },
+        data: { status: "Approved" },
       });
 
       const res = await request(app)
         .patch(`/leaves/${leaveToUpdate.id}/status`)
         .set("Authorization", `Bearer ${tokenManager}`)
         .send({
-          status: "Refuse",
+          status: "Refused",
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain("Seules les demandes 'EnAttente'");
+      expect(res.body.message).toContain("Seules les demandes 'Pending'");
     });
 
     it("should reject access for employer", async () => {
@@ -622,7 +629,7 @@ describe("Leave Controller", () => {
         .patch(`/leaves/${leaveToUpdate.id}/status`)
         .set("Authorization", `Bearer ${tokenEmployer}`)
         .send({
-          status: "Accepte",
+          status: "Approved",
         });
 
       expect(res.status).toBe(403);
@@ -640,7 +647,8 @@ describe("Leave Controller", () => {
           justification: "Delete test leave",
           daysLeave: 5,
           userId: employerJohn.id,
-          status: "EnAttente",
+          status: "Pending",
+          type: "PaidLeave",
         },
       });
     });
@@ -671,7 +679,7 @@ describe("Leave Controller", () => {
       // Mettre à jour le statut
       await prisma.leave.update({
         where: { id: leaveToDelete.id },
-        data: { status: "Accepte" },
+        data: { status: "Approved" },
       });
 
       const res = await request(app)
