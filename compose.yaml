@@ -89,7 +89,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432" # utilisez 5433 sur l'hôte pour éviter les conflits locaux
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d app -h localhost || exit 1"]
       interval: 5s
@@ -162,6 +162,8 @@ services:
       - DATABASE_URL=postgresql://app:app@db:5432/app?schema=test
     volumes:
       - ./back:/app
+      - ./back/coverage:/app/coverage
+      - ./back/allure-results:/app/allure-results
       - node_modules_back_tests:/app/node_modules
     command:
       - sh
@@ -182,8 +184,20 @@ services:
         npx prisma db push --schema=prisma/schema.prisma --skip-generate;
         echo "Creation des dossiers allure-results et coverage...";
         mkdir -p allure-results coverage;
+        echo "Nettoyage des anciens resultats Allure pour forcer la regeneration...";
+        find allure-results -type f -name "*.json" -delete 2>/dev/null || true;
+        find allure-results -type f -name "*.txt" -delete 2>/dev/null || true;
         echo "Lancement des tests avec couverture et Allure...";
         npm run test:full;
+        echo "Verification des resultats Allure generes...";
+        sleep 2;
+        if [ -d allure-results ] && [ "$(find allure-results -type f -name '*.json' 2>/dev/null | wc -l)" -gt 0 ]; then
+          echo "Resultats Allure generes avec succes: $(find allure-results -type f -name '*.json' 2>/dev/null | wc -l) fichiers";
+        else
+          echo "ATTENTION: Aucun resultat Allure genere !";
+          echo "Contenu du dossier allure-results:";
+          ls -la allure-results/ || echo "Dossier vide ou inexistant";
+        fi;
         echo "Tests termines. Verification du fichier de couverture...";
         if [ -f coverage/lcov.info ]; then
           echo "Fichier lcov.info cree avec succes !";
@@ -296,6 +310,15 @@ services:
             sleep 5
           done
         fi
+        echo '';
+        echo '========================================';
+        echo '  Allure Report est disponible sur:';
+        echo '  http://localhost:5051';
+        echo '';
+        echo '  Nombre de resultats trouves:';
+        ls -1 /app/allure-results/*.json 2>/dev/null | wc -l || echo '0';
+        echo '========================================';
+        echo '';
         exec allure serve -h 0.0.0.0 -p 5050 /app/allure-results
       "
     profiles:

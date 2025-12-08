@@ -39,6 +39,12 @@ docker compose up --build web
 
 ## Tests
 
+### Pré-requis (une seule fois)
+
+- Docker Desktop lancé
+- Créer `back/.env.docker` (ou laisser le script le copier depuis `back/env.docker.example`)
+- S'assurer que le dossier `back/coverage` existe (le script le crée si besoin)
+
 ### Lancer les tests :
 
 **Recommandé (Windows PowerShell) :**
@@ -47,16 +53,21 @@ docker compose up --build web
 .\run-tests.ps1
 ```
 
-Ce script crée automatiquement le dossier `back/coverage` et lance les tests, puis vérifie que les fichiers de couverture persistent.
+Ce script crée automatiquement `back/.env.docker` (s'il manque) à partir de `back/env.docker.example`, crée le dossier `back/coverage` puis lance les tests.
 
 **Ou manuellement :**
 
 ```bash
-# IMPORTANT: Creer le dossier coverage sur l'hote avant de lancer les tests
-# Pour Windows PowerShell:
-New-Item -ItemType Directory -Force -Path back\coverage
+# IMPORTANT: Disposer du fichier d'env pour Docker
+# Windows PowerShell:
+Copy-Item back\env.docker.example back\.env.docker -Force
+# Linux/Mac:
+cp back/env.docker.example back/.env.docker
 
-# Pour Linux/Mac:
+# IMPORTANT: Créer le dossier coverage sur l'hôte avant de lancer les tests
+# Windows PowerShell:
+New-Item -ItemType Directory -Force -Path back\coverage
+# Linux/Mac:
 mkdir -p back/coverage
 
 # Puis lancer les tests
@@ -70,14 +81,16 @@ Cette commande lance tous les tests avec Vitest et génère les rapports Allure 
 ### Visualiser les rapports de tests (Allure) :
 
 ```bash
-# 1. Lancer les tests (si pas déjà fait)
+# 1. Lancer les tests (les anciens résultats Allure seront nettoyés automatiquement)
 docker compose run --rm backend-tests
 
-# 2. Générer et servir le rapport Allure
+# 2. Générer et servir le rapport Allure avec les nouveaux résultats
 docker compose --profile tools up allure
 ```
 
 Accédez ensuite au rapport sur : **http://localhost:5051**
+
+**Note importante :** Les résultats Allure sont automatiquement nettoyés avant chaque exécution de tests pour garantir que le rapport affiche les résultats les plus récents. Si vous voyez des différences, assurez-vous d'avoir relancé les tests juste avant d'ouvrir Allure.
 
 ### Tests API manuels
 
