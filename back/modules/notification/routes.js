@@ -9,7 +9,7 @@ import {
 } from "./validators.js";
 import { requireAuth } from "../auth/middleware.js";
 import { requireResponsableOrManager } from "../user/middleware.js";
-import { parsePagination } from "../../core/pagination.js";
+import { paginationMiddleware } from "../../core/pagination.js";
 
 /**
  * Router pour les routes de notifications
@@ -40,7 +40,7 @@ router.post(
  * Récupérer toutes les notifications avec pagination
  * Accessible à tous les utilisateurs authentifiés
  */
-router.get("/", parsePagination, notificationController.getAllNotifications);
+router.get("/", paginationMiddleware(), notificationController.getAllNotifications);
 
 /**
  * GET /notifications/count
@@ -66,7 +66,7 @@ router.get(
 router.get(
   "/status/:status",
   validateNotificationStatus,
-  parsePagination,
+  paginationMiddleware(),
   notificationController.getNotificationsByStatus
 );
 
@@ -88,7 +88,7 @@ router.get(
 router.get(
   "/user/:userId",
   validateUserId,
-  parsePagination,
+  paginationMiddleware(),
   notificationController.getNotificationsByUserId
 );
 
@@ -111,7 +111,7 @@ router.get(
 router.get(
   "/unread/:userId",
   validateUserId,
-  parsePagination,
+  paginationMiddleware(),
   notificationController.getUnreadNotificationsByUserId
 );
 

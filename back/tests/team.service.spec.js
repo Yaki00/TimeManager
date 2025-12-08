@@ -11,8 +11,10 @@ describe("Team Service", () => {
     const pw = await bcrypt.hash("Secret123!", 10);
 
     testUsers = await Promise.all([
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: "test-manager@example.com" },
+        update: {},
+        create: {
           email: "test-manager@example.com",
           password: pw,
           firstName: "Test",
@@ -22,8 +24,10 @@ describe("Team Service", () => {
           phoneNumber: "0600000001",
         },
       }),
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: "test-employee1@example.com" },
+        update: {},
+        create: {
           email: "test-employee1@example.com",
           password: pw,
           firstName: "Test",
@@ -33,8 +37,10 @@ describe("Team Service", () => {
           phoneNumber: "0600000002",
         },
       }),
-      prisma.user.create({
-        data: {
+      prisma.user.upsert({
+        where: { email: "test-employee2@example.com" },
+        update: {},
+        create: {
           email: "test-employee2@example.com",
           password: pw,
           firstName: "Test",

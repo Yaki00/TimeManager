@@ -329,25 +329,44 @@ describe("Warning Service", () => {
 
   describe("deleteWarningById", () => {
     it("should delete warning and remove user points", async () => {
-      // Créer un warning temporaire
-      const tempWarning = await prisma.warning.create({
-        data: {
-          status: "Late",
-          description: "Temp warning for deletion",
-          date: new Date("2024-01-26"),
-          userId: testUsers[0].id,
-          createdById: testUsers[1].id,
-        },
+      // S'assurer que les points sont à 0 avant le test
+      await prisma.user.update({
+        where: { id: testUsers[0].id },
+        data: { totalWarningPoints: 0 },
       });
+
+      // Récupérer les points initiaux de l'utilisateur (devrait être 0)
+      const userBefore = await prisma.user.findUnique({
+        where: { id: testUsers[0].id },
+        select: { totalWarningPoints: true },
+      });
+      const initialPoints = userBefore.totalWarningPoints;
+
+      // Créer un warning temporaire en utilisant createWarning pour ajouter les points
+      const tempWarning = await createWarning({
+        status: "Late",
+        description: "Temp warning for deletion",
+        date: "2024-01-26",
+        userId: testUsers[0].id,
+        createdById: testUsers[1].id,
+      });
+
+      // Vérifier que les points ont été ajoutés
+      const userAfterCreate = await prisma.user.findUnique({
+        where: { id: testUsers[0].id },
+        select: { totalWarningPoints: true },
+      });
+      expect(userAfterCreate.totalWarningPoints).toBe(initialPoints + 2); // Late = 2 points
 
       const deletedWarning = await deleteWarningById(tempWarning.id);
       expect(deletedWarning.id).toBe(tempWarning.id);
 
-      // Vérifier que les points ont été retirés
-      const user = await prisma.user.findUnique({
+      // Vérifier que les points ont été retirés (retour aux points initiaux)
+      const userAfterDelete = await prisma.user.findUnique({
         where: { id: testUsers[0].id },
+        select: { totalWarningPoints: true },
       });
-      expect(user.totalWarningPoints).toBe(0); // Les points ont été retirés
+      expect(userAfterDelete.totalWarningPoints).toBe(initialPoints); // Retour aux points initiaux
 
       // Vérifier que le warning a été supprimé
       const foundWarning = await prisma.warning.findUnique({

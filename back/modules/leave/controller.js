@@ -10,7 +10,7 @@ import {
   findManagerLeaves,
 } from "./service.js";
 
-import { LeaveSchema, validate } from "./validators.js";
+import { LeaveSchema } from "./validators.js";
 import { asyncHandler } from "../../core/async.js";
 import {
   badRequest,
@@ -37,10 +37,8 @@ export const createNewLeave = asyncHandler(async (req, res) => {
   if (!req.user?.id)
     throw unauthorized(TEXTS.PERMISSION_DENIED, "PERMISSION_DENIED");
 
-  const { startDate, endDate, justification, type } = validate(
-    LeaveSchema,
-    req.body
-  );
+  // req.body a déjà été validé par le middleware validateCreate
+  const { startDate, endDate, justification, type } = req.body;
 
   const start = toUTCDateOnly(new Date(startDate));
   const end = toUTCDateOnly(new Date(endDate));

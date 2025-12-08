@@ -465,10 +465,27 @@ describe("Warning Controller Routes", () => {
     });
 
     it("should return 403 for unauthorized user", async () => {
+      // Créer un autre employer qui n'est pas le créateur
+      const pw = await bcrypt.hash("Secret123!", 10);
+      const otherEmployer = await prisma.user.upsert({
+        where: { email: "other-employer-warning-controller@example.com" },
+        update: {},
+        create: {
+          email: "other-employer-warning-controller@example.com",
+          password: pw,
+          firstName: "Other",
+          lastName: "Employer",
+          role: "Employer",
+          contractType: "H35",
+          phoneNumber: "0600000004",
+          totalWarningPoints: 0,
+        },
+      });
+
       const token = signAccessToken({
-        id: testUsers[0].id, // Employer qui n'est pas le créateur
-        email: testUsers[0].email,
-        role: testUsers[0].role,
+        id: otherEmployer.id,
+        email: otherEmployer.email,
+        role: otherEmployer.role,
       });
 
       const res = await request(app)
@@ -480,6 +497,9 @@ describe("Warning Controller Routes", () => {
         });
 
       expect(res.status).toBe(403);
+
+      // Nettoyer
+      await prisma.user.delete({ where: { id: otherEmployer.id } }).catch(() => {});
     });
 
     it("should return 400 for invalid ID", async () => {
@@ -540,10 +560,27 @@ describe("Warning Controller Routes", () => {
     });
 
     it("should return 403 for unauthorized user", async () => {
+      // Créer un autre employer qui n'est pas le créateur
+      const pw = await bcrypt.hash("Secret123!", 10);
+      const otherEmployer = await prisma.user.upsert({
+        where: { email: "other-employer-warning-controller-delete@example.com" },
+        update: {},
+        create: {
+          email: "other-employer-warning-controller-delete@example.com",
+          password: pw,
+          firstName: "Other",
+          lastName: "Employer",
+          role: "Employer",
+          contractType: "H35",
+          phoneNumber: "0600000005",
+          totalWarningPoints: 0,
+        },
+      });
+
       const token = signAccessToken({
-        id: testUsers[0].id,
-        email: testUsers[0].email,
-        role: testUsers[0].role,
+        id: otherEmployer.id,
+        email: otherEmployer.email,
+        role: otherEmployer.role,
       });
 
       const res = await request(app)
@@ -552,6 +589,9 @@ describe("Warning Controller Routes", () => {
         .set("Accept", "application/json");
 
       expect(res.status).toBe(403);
+
+      // Nettoyer
+      await prisma.user.delete({ where: { id: otherEmployer.id } }).catch(() => {});
     });
 
     it("should return 400 for invalid ID", async () => {

@@ -282,16 +282,17 @@ describe("User Service", () => {
 
   describe("deleteUser", () => {
     it("should delete user", async () => {
-      // Créer un utilisateur temporaire pour le test de suppression
+      // Créer un utilisateur temporaire pour le test de suppression avec un email unique
+      const uniqueEmail = `temp-user-${Date.now()}@example.com`;
       const tempUser = await prisma.user.create({
         data: {
-          email: "temp-user@example.com",
+          email: uniqueEmail,
           password: await bcrypt.hash("Secret123!", 10),
           firstName: "Temp",
           lastName: "User",
           role: "Employer",
           contractType: "H35",
-          phoneNumber: "0600000099",
+          phoneNumber: `0600000${Math.floor(Math.random() * 1000)}`,
         },
       });
 
@@ -299,11 +300,18 @@ describe("User Service", () => {
       expect(deletedUser).toBeDefined();
       expect(deletedUser.id).toBe(tempUser.id);
 
-      // Vérifier que l'utilisateur a été supprimé
+      // Vérifier que l'utilisateur a été supprimé (soft delete - deletedAt doit être défini)
       const foundUser = await prisma.user.findUnique({
         where: { id: tempUser.id },
+        select: { id: true, deletedAt: true },
       });
-      expect(foundUser).toBeNull();
+      expect(foundUser).toBeDefined();
+      expect(foundUser.deletedAt).not.toBeNull();
+      
+      // Vérifier que findUserById retourne null pour un utilisateur supprimé
+      const { findUserById } = await import("../modules/user/service.js");
+      const foundUserById = await findUserById(tempUser.id);
+      expect(foundUserById).toBeNull();
     });
   });
 

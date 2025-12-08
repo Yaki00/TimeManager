@@ -1,6 +1,55 @@
 import prisma from "../../db.js";
 import { notifyWarningCreated } from "../notification/utils.js";
 
+// Fonction utilitaire pour convertir une date en objet Date pour les opérations create/update
+// Pour les champs @db.Date, Prisma accepte les objets Date
+function toDateTimeISO(dateString, isEndDate = false) {
+  if (!dateString) return null;
+  // Si c'est déjà un objet Date, le retourner tel quel
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  // Si c'est déjà un DateTime complet, le convertir en Date
+  if (dateString.includes("T") || dateString.includes(" ")) {
+    return new Date(dateString);
+  }
+  // Pour une date de fin, utiliser la fin de la journée (23:59:59.999)
+  if (isEndDate) {
+    return new Date(`${dateString}T23:59:59.999Z`);
+  }
+  // Sinon, ajouter le temps à minuit UTC
+  return new Date(`${dateString}T00:00:00.000Z`);
+}
+
+// Fonction utilitaire pour convertir une date pour les clauses where (accepte Date ou string)
+function toDateTimeForWhere(dateString, isEndDate = false) {
+  if (!dateString) return null;
+  // Si c'est déjà un objet Date, le retourner tel quel (Prisma accepte les Date dans where)
+  if (dateString instanceof Date) {
+    if (isEndDate) {
+      // Pour une date de fin, utiliser la fin de la journée
+      const date = new Date(dateString);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    }
+    return dateString;
+  }
+  // Si c'est déjà un DateTime complet, le convertir en Date
+  if (dateString.includes("T") || dateString.includes(" ")) {
+    const date = new Date(dateString);
+    if (isEndDate) {
+      date.setHours(23, 59, 59, 999);
+    }
+    return date;
+  }
+  // Pour une date de fin, utiliser la fin de la journée (23:59:59.999)
+  if (isEndDate) {
+    return new Date(`${dateString}T23:59:59.999Z`);
+  }
+  // Sinon, ajouter le temps à minuit UTC
+  return new Date(`${dateString}T00:00:00.000Z`);
+}
+
 const warningSelect = {
   id: true,
   status: true,
@@ -42,7 +91,7 @@ export async function createWarning(data) {
       data: {
         status: data.status,
         description: data.description,
-        date: data.date,
+        date: toDateTimeISO(data.date),
         createdById: data.createdById,
         userId: data.userId,
       },
@@ -109,6 +158,12 @@ export async function findWarningsByStatus(
   status,
   { skip = 0, take = 50 } = {}
 ) {
+  // Valider le statut avant de l'utiliser dans la requête Prisma
+  const validStatuses = ["Alert", "Late", "UnjustifiedAbsence"];
+  if (!validStatuses.includes(status)) {
+    return [];
+  }
+
   return prisma.warning.findMany({
     where: { status },
     skip,
@@ -126,8 +181,8 @@ export async function findWarningsByDateRange(
   return prisma.warning.findMany({
     where: {
       date: {
-        gte: startDate,
-        lte: endDate,
+        gte: toDateTimeForWhere(startDate, false),
+        lte: toDateTimeForWhere(endDate, true),
       },
     },
     skip,
@@ -161,10 +216,16 @@ export async function updateWarningById(id, data) {
       throw new Error("Warning non trouvé");
     }
 
+    // Convertir la date si elle est présente
+    const updateData = { ...data };
+    if (updateData.date) {
+      updateData.date = toDateTimeISO(updateData.date);
+    }
+
     // Mettre à jour le warning
     const updatedWarning = await tx.warning.update({
       where: { id },
-      data,
+      data: updateData,
     });
 
     // Si le statut a changé, ajuster les points de warning
@@ -235,6 +296,12 @@ export async function countWarningsByUserId(userId) {
 }
 
 export async function countWarningsByStatus(status) {
+  // Valider le statut avant de l'utiliser dans la requête Prisma
+  const validStatuses = ["Alert", "Late", "UnjustifiedAbsence"];
+  if (!validStatuses.includes(status)) {
+    return 0;
+  }
+
   return prisma.warning.count({
     where: { status },
   });
@@ -244,8 +311,8 @@ export async function countWarningsByDateRange(startDate, endDate) {
   return prisma.warning.count({
     where: {
       date: {
-        gte: startDate,
-        lte: endDate,
+        gte: toDateTimeForWhere(startDate, false),
+        lte: toDateTimeForWhere(endDate, true),
       },
     },
   });

@@ -16,7 +16,7 @@ import {
 } from "./service.js";
 
 import { asyncHandler } from "../../core/async.js";
-import { badRequest, notFound, unauthorized } from "../../core/httpErrors.js";
+import { badRequest, notFound, unauthorized, forbidden } from "../../core/httpErrors.js";
 import { parsePagination } from "../../core/pagination.js";
 
 const TEXTS = {
@@ -157,7 +157,7 @@ export const updateWarning = asyncHandler(async (req, res) => {
     req.user.role === "Responsable";
 
   if (!canModify) {
-    throw unauthorized(
+    throw forbidden(
       TEXTS.INSUFFICIENT_PERMISSIONS,
       "INSUFFICIENT_PERMISSIONS"
     );
@@ -188,7 +188,7 @@ export const deleteWarning = asyncHandler(async (req, res) => {
     req.user.role === "Responsable";
 
   if (!canDelete) {
-    throw unauthorized(
+    throw forbidden(
       TEXTS.INSUFFICIENT_PERMISSIONS,
       "INSUFFICIENT_PERMISSIONS"
     );

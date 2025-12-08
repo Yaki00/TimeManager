@@ -31,8 +31,10 @@ describe("GET /leaves/teams/:teamId", () => {
     employerId = employer.id;
 
     // Créer un autre manager pour tester l'isolation des équipes
-    const otherManager = await prisma.user.create({
-      data: {
+    const otherManager = await prisma.user.upsert({
+      where: { email: "other.manager@doe.com" },
+      update: {},
+      create: {
         email: "other.manager@doe.com",
         password: await bcrypt.hash("Secret123!", 10),
         firstName: "Other",
@@ -98,13 +100,21 @@ describe("GET /leaves/teams/:teamId", () => {
   });
 
   afterAll(async () => {
-    // Nettoyer les données de test
-    await prisma.leave.deleteMany({ where: { userId: employerId } });
-    await prisma.belongs.deleteMany({ where: { teamId } });
-    await prisma.belongs.deleteMany({ where: { teamId: otherTeamId } });
-    await prisma.team.delete({ where: { id: teamId } });
-    await prisma.team.delete({ where: { id: otherTeamId } });
-    await prisma.user.delete({ where: { id: otherManagerId } });
+    // Nettoyer les données de test (vérifier que les variables sont définies)
+    if (employerId) {
+      await prisma.leave.deleteMany({ where: { userId: employerId } });
+    }
+    if (teamId) {
+      await prisma.belongs.deleteMany({ where: { teamId } });
+      await prisma.team.delete({ where: { id: teamId } }).catch(() => {});
+    }
+    if (otherTeamId) {
+      await prisma.belongs.deleteMany({ where: { teamId: otherTeamId } });
+      await prisma.team.delete({ where: { id: otherTeamId } }).catch(() => {});
+    }
+    if (otherManagerId) {
+      await prisma.user.delete({ where: { id: otherManagerId } }).catch(() => {});
+    }
     await prisma.$disconnect();
   });
 

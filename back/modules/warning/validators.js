@@ -16,13 +16,11 @@ export const CreateWarningSchema = z.object({
     message: "Format de date invalide",
   }),
   userId: z
-    .number()
-    .int()
-    .positive("L'ID utilisateur doit être un entier positif"),
+    .union([z.number(), z.string()])
+    .pipe(z.coerce.number().int().positive("L'ID utilisateur doit être un entier positif")),
   createdById: z
-    .number()
-    .int()
-    .positive("L'ID créateur doit être un entier positif")
+    .union([z.number(), z.string()])
+    .pipe(z.coerce.number().int().positive("L'ID créateur doit être un entier positif"))
     .optional(),
 });
 
@@ -103,20 +101,43 @@ export function validateWarningStatus(req, _res, next) {
 export function validateDateRange(req, _res, next) {
   const { startDate, endDate } = req.query;
 
-  if (startDate && Number.isNaN(Date.parse(startDate))) {
+  if (!startDate || (typeof startDate === "string" && startDate.trim() === "") || 
+      !endDate || (typeof endDate === "string" && endDate.trim() === "")) {
+    throw badRequest(
+      "Les dates de début et de fin sont requises",
+      "DATE_RANGE_REQUIRED"
+    );
+  }
+
+  const startDateStr = String(startDate).trim();
+  const endDateStr = String(endDate).trim();
+
+  const startDateParsed = Date.parse(startDateStr);
+  const endDateParsed = Date.parse(endDateStr);
+
+  if (Number.isNaN(startDateParsed)) {
     throw badRequest("Date de début invalide", "START_DATE_INVALID");
   }
 
-  if (endDate && Number.isNaN(Date.parse(endDate))) {
+  if (Number.isNaN(endDateParsed)) {
     throw badRequest("Date de fin invalide", "END_DATE_INVALID");
   }
 
-  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+  if (startDateParsed > endDateParsed) {
     throw badRequest(
       "La date de début doit être antérieure à la date de fin",
       "DATE_RANGE_INVALID"
     );
   }
 
+  next();
+}
+
+export function validateCreatedById(req, _res, next) {
+  const createdById = Number.parseInt(req.params.createdById, 10);
+  if (Number.isNaN(createdById) || createdById <= 0) {
+    throw badRequest("ID créateur invalide", "CREATED_BY_ID_INVALID");
+  }
+  req.params.createdById = createdById;
   next();
 }
