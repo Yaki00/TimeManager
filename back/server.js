@@ -16,6 +16,7 @@ import teamRoutes from "./modules/team/routes.js";
 import clockingRoutes from "./modules/clocking/routes.js";
 import warningRoutes from "./modules/warning/routes.js";
 import notificationRoutes from "./modules/notification/routes.js";
+import kpiRoutes from "./modules/kpi/routes.js";
 import prisma from "./db.js";
 import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
@@ -86,6 +87,7 @@ export function createApp() {
   app.use("/clockings", clockingRoutes);
   app.use("/warnings", warningRoutes);
   app.use("/notifications", notificationRoutes);
+  app.use("/kpi", kpiRoutes);
 
   if (process.env.NODE_ENV === "test") {
     app.get("/__crash", () => {
