@@ -84,7 +84,7 @@ SONAR_TOKEN=squ_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
 ## Lancer une analyse
 
-### ⚠️ Important : Générer le rapport de couverture d'abord
+### Important : Générer le rapport de couverture d'abord
 
 Pour que SonarQube affiche la couverture de code, vous devez **générer le rapport de couverture AVANT** de lancer l'analyse :
 
@@ -135,7 +135,7 @@ Cette commande va :
 4. Envoyer les résultats à SonarQube
 5. Se terminer automatiquement
 
-**⏱ Temps d'analyse :** environ 1-2 minutes
+**Temps d'analyse :** environ 1-2 minutes
 
 **Note :** Si vous voyez 0% de couverture, c'est que le rapport `back/coverage/lcov.info` n'existe pas. Relancez `npm run test:coverage` dans le dossier `back/`.
 
@@ -261,7 +261,7 @@ docker compose run --rm sonar-scanner
 **Note :** La commande `docker compose run --rm backend-tests` génère maintenant **automatiquement** :
 
 - La couverture de code (`back/coverage/lcov.info`)
-- ✅ Les rapports Allure (`back/allure-results/`)
+- Les rapports Allure (`back/allure-results/`)
 
 Plus besoin de choisir entre les deux !
 

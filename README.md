@@ -42,20 +42,10 @@ docker compose up --build web
 ### Pré-requis (une seule fois)
 
 - Docker Desktop lancé
-- Créer `back/.env.docker` (ou laisser le script le copier depuis `back/env.docker.example`)
-- S'assurer que le dossier `back/coverage` existe (le script le crée si besoin)
+- Créer `back/.env.docker` à partir de `back/env.docker.example`
+- S'assurer que le dossier `back/coverage` existe
 
 ### Lancer les tests :
-
-**Recommandé (Windows PowerShell) :**
-
-```powershell
-.\run-tests.ps1
-```
-
-Ce script crée automatiquement `back/.env.docker` (s'il manque) à partir de `back/env.docker.example`, crée le dossier `back/coverage` puis lance les tests.
-
-**Ou manuellement :**
 
 ```bash
 # IMPORTANT: Disposer du fichier d'env pour Docker

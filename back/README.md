@@ -2,7 +2,7 @@
 
 ## Commande
 
-### ▶️ Lancer le backend
+### Lancer le backend
 
 docker compose up
 
@@ -55,14 +55,14 @@ back/ # Dossier principal du backend (Express + PostgreSQL + Prisma)
 
 ## Modules de l'API
 
-### 🔐 Auth (Authentification)
+### Auth (Authentification)
 
 - **Inscription** : Création de nouveaux utilisateurs
 - **Connexion** : Authentification avec email/mot de passe
 - **JWT** : Gestion des tokens d'accès et de rafraîchissement
 - **Profil** : Récupération des informations de l'utilisateur connecté
 
-### 👥 Users (Utilisateurs)
+### Users (Utilisateurs)
 
 - **CRUD complet** : Création, lecture, mise à jour, suppression
 - **Gestion des rôles** : USER, MANAGER, RESPONSABLE, ADMIN
@@ -70,21 +70,21 @@ back/ # Dossier principal du backend (Express + PostgreSQL + Prisma)
 - **Recherche** : Par nom, téléphone, rôle, type de contrat
 - **Statistiques** : Comptage par rôle et type de contrat
 
-### 🏢 Teams (Équipes)
+### Teams (Équipes)
 
 - **Création** : Réservée aux Responsables et Managers
 - **Gestion** : Attribution de propriétaires, permissions
 - **Listage** : Toutes les équipes ou par propriétaire
 - **Modification** : Seuls les propriétaires/managers peuvent modifier
 
-### ⏰ Clocking (Pointages)
+### Clocking (Pointages)
 
 - **Pointage** : Entrée/sortie avec gestion des pauses
 - **Statistiques** : Heures travaillées, moyennes par jour
 - **Historique** : Pointages par utilisateur et par date
 - **Permissions** : Utilisateurs voient leurs propres données, Responsables voient tout
 
-### 📅 Leaves (Congés)
+### Leaves (Congés)
 
 - **Demandes** : Création de demandes d'absence
 - **Types** : PAYE, NON_PAYE, MALADIE, RTT, AUTRE
@@ -92,7 +92,6 @@ back/ # Dossier principal du backend (Express + PostgreSQL + Prisma)
 - **Gestion** : Par utilisateur, équipe, ou globale (Responsables/Managers)
 
 ## Configuration
-
 
 ### Fichier .env
 

@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function addMonthlyLeaveGain() {
   try {
-    console.log("🔄 Début de l'ajout des congés mensuels...");
+    console.log("Début de l'ajout des congés mensuels...");
 
     const users = await prisma.user.findMany({
       where: {
@@ -48,7 +48,7 @@ async function addMonthlyLeaveGain() {
 
         updatedUsers++;
         console.log(
-          `✅ Utilisateur ${user.firstName} ${user.lastName}: +${
+          `Utilisateur ${user.firstName} ${user.lastName}: +${
             user.monthlyLeaveGain
           } jours (total: ${
             Number(user.totalPayeLeave) + Number(user.monthlyLeaveGain)
@@ -57,9 +57,9 @@ async function addMonthlyLeaveGain() {
       }
     }
 
-    console.log(`🎉 Terminé ! ${updatedUsers} utilisateurs mis à jour.`);
+    console.log(`Terminé ! ${updatedUsers} utilisateurs mis à jour.`);
   } catch (error) {
-    console.error("❌ Erreur lors de l'ajout des congés mensuels:", error);
+    console.error("Erreur lors de l'ajout des congés mensuels:", error);
   } finally {
     await prisma.$disconnect();
   }
