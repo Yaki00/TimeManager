@@ -175,6 +175,20 @@ npx prisma studio
 
 ### Générer des données mockées
 
+**Via Docker (recommandé) :**
+
+```bash
+docker compose exec backend node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
+```
+
+**En local :**
+
+Assurez-vous que :
+
+1. La base de données PostgreSQL est accessible sur `localhost:5433` (port mappé depuis Docker)
+2. Le fichier `.env` contient `DATABASE_URL=postgresql://app:app@localhost:5433/app?schema=public`
+3. Les dépendances sont installées (`npm install`) et le client Prisma est généré (`npx prisma generate`)
+
 ```bash
 node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
 ```
@@ -189,15 +203,23 @@ node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
 
 ```bash
 # Génération avec les valeurs par défaut (50 users, 10 teams, 3 leaves/user)
-node scripts/generateMockData.js
+docker compose exec backend node scripts/generateMockData.js
 
 # Génération personnalisée
-node scripts/generateMockData.js 100 20 5
+docker compose exec backend node scripts/generateMockData.js 100 20 5
 ```
 
 **Note :** Les données mockées utilisent le préfixe `mock_` dans les emails (ex: `mock_user0@example.com`). Le mot de passe par défaut est `password123`.
 
 ### Supprimer les données mockées
+
+**Via Docker (recommandé) :**
+
+```bash
+docker compose exec backend node scripts/deleteMockData.js --force
+```
+
+**En local :**
 
 ```bash
 node scripts/deleteMockData.js --force
