@@ -170,3 +170,37 @@ npx prisma migrate dev
 ### Ouvrir Prisma Studio
 
 npx prisma studio
+
+## Scripts de données mockées
+
+### Générer des données mockées
+
+```bash
+node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
+```
+
+**Paramètres optionnels :**
+
+- `userCount` : Nombre d'utilisateurs à créer (défaut : 50)
+- `teamCount` : Nombre d'équipes à créer (défaut : 10)
+- `leavesPerUser` : Nombre de congés par utilisateur (défaut : 3)
+
+**Exemples :**
+
+```bash
+# Génération avec les valeurs par défaut (50 users, 10 teams, 3 leaves/user)
+node scripts/generateMockData.js
+
+# Génération personnalisée
+node scripts/generateMockData.js 100 20 5
+```
+
+**Note :** Les données mockées utilisent le préfixe `mock_` dans les emails (ex: `mock_user0@example.com`). Le mot de passe par défaut est `password123`.
+
+### Supprimer les données mockées
+
+```bash
+node scripts/deleteMockData.js --force
+```
+
+**Attention :** Cette commande supprime toutes les données avec le préfixe `mock_` (utilisateurs, équipes, congés, pointages, avertissements, notifications). Le flag `--force` ou `-f` est obligatoire pour confirmer la suppression.
