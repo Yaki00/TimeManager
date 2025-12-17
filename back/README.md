@@ -170,3 +170,59 @@ npx prisma migrate dev
 ### Ouvrir Prisma Studio
 
 npx prisma studio
+
+## Scripts de données mockées
+
+### Générer des données mockées
+
+**Via Docker (recommandé) :**
+
+```bash
+docker compose exec backend node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
+```
+
+**En local :**
+
+Assurez-vous que :
+
+1. La base de données PostgreSQL est accessible sur `localhost:5433` (port mappé depuis Docker)
+2. Le fichier `.env` contient `DATABASE_URL=postgresql://app:app@localhost:5433/app?schema=public`
+3. Les dépendances sont installées (`npm install`) et le client Prisma est généré (`npx prisma generate`)
+
+```bash
+node scripts/generateMockData.js [userCount] [teamCount] [leavesPerUser]
+```
+
+**Paramètres optionnels :**
+
+- `userCount` : Nombre d'utilisateurs à créer (défaut : 50)
+- `teamCount` : Nombre d'équipes à créer (défaut : 10)
+- `leavesPerUser` : Nombre de congés par utilisateur (défaut : 3)
+
+**Exemples :**
+
+```bash
+# Génération avec les valeurs par défaut (50 users, 10 teams, 3 leaves/user)
+docker compose exec backend node scripts/generateMockData.js
+
+# Génération personnalisée
+docker compose exec backend node scripts/generateMockData.js 100 20 5
+```
+
+**Note :** Les données mockées utilisent le préfixe `mock_` dans les emails (ex: `mock_user0@example.com`). Le mot de passe par défaut est `password123`.
+
+### Supprimer les données mockées
+
+**Via Docker (recommandé) :**
+
+```bash
+docker compose exec backend node scripts/deleteMockData.js --force
+```
+
+**En local :**
+
+```bash
+node scripts/deleteMockData.js --force
+```
+
+**Attention :** Cette commande supprime toutes les données avec le préfixe `mock_` (utilisateurs, équipes, congés, pointages, avertissements, notifications). Le flag `--force` ou `-f` est obligatoire pour confirmer la suppression.
