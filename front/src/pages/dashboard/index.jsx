@@ -5,11 +5,11 @@ import { DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import { Header,PageWrapper, ScrollableContent } from '../../utils/layoutStyle';
-import { mockManagerTeams, mockResponsableData, mockUserData } from '../../utils/mockDataDashboard';
 import { Breadcrumbs } from '../../utils/Breadcrumb';
 import { Responsable } from './Responsable';
 import { Manager } from './Manager';
 import { Employer } from './Employer';
+import { useGetTeams } from '../../service/useTeam';
 
 dayjs.locale('fr');
 
@@ -134,11 +134,13 @@ const DateRangeSelector = styled.div`
 
 export const Dashboard = () => {
 	const [activeView, setActiveView] = useState('responsable');
-	const [selectedTeam, setSelectedTeam] = useState('team-1');
+	const [selectedTeam, setSelectedTeam] = useState(null);
 	const [dateRange, setDateRange] = useState([
 		dayjs().subtract(30, 'days'),
 		dayjs()
 	]);
+
+	const { data: teams, isLoading: isLoadingTeams } = useGetTeams();
 
 	const handleRequestAction = (requestId, action) => {
 		console.log(`Action ${action} sur la demande ${requestId}`);
@@ -235,10 +237,13 @@ return (
 								<Select
 									value={selectedTeam}
 									onChange={setSelectedTeam}
-									options={Object.entries(mockManagerTeams).map(([key, team]) => ({
-										label: team.name,
-										value: key,
-									}))}
+									loading={isLoadingTeams}
+									placeholder="Sélectionner une équipe"
+									options={teams?.map((team) => ({
+										label: team.teamName,
+										value: team.id.toString(),
+									})) || []}
+									style={{ minWidth: '200px' }}
 								/>
 							</TeamSelector>
 						)}
@@ -257,9 +262,9 @@ return (
 				</div>
 			</Header>
 			<ScrollableContent>
-				{activeView === 'responsable' && <Responsable mockResponsableData={mockResponsableData} mockManagerTeams={mockManagerTeams} selectedTeam={selectedTeam} />}
-				{activeView === 'manager' && <Manager selectedTeam={selectedTeam}  mockManagerTeams={mockManagerTeams} />}
-        		{activeView === 'user' && <Employer mockUserData={mockUserData} onRequestAction={handleRequestAction} />}
+				{activeView === 'responsable' && <Responsable selectedTeam={selectedTeam} dateRange={dateRange} onRequestAction={handleRequestAction} />}
+				{activeView === 'manager' && <Manager selectedTeam={selectedTeam} dateRange={dateRange} onRequestAction={handleRequestAction} />}
+        		{activeView === 'user' && <Employer dateRange={dateRange} />}
 			</ScrollableContent>
 		</PageWrapper>
 	);
