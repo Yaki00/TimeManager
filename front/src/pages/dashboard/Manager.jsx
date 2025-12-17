@@ -2,8 +2,9 @@
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
-import { Table as AntTable, Button, Space, Tag } from 'antd';
+import { Table as AntTable, Button, Space, Tag, Spin, Alert } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { useGetManagerKPIs } from '../../service/useKpi';
 import {
 	BarChart,
 	Bar,
@@ -138,7 +139,7 @@ const columns = [
 							icon={<CheckOutlined />}
 							size="small"
 							style={{ background: '#10B981', borderColor: '#10B981' }}
-							onClick={() => handleRequestAction(record.id, 'approve')}
+							onClick={() => onRequestAction?.(record.id, 'approve')}
 						>
 							Approuver
 						</Button>
@@ -146,7 +147,7 @@ const columns = [
 							danger
 							icon={<CloseOutlined />}
 							size="small"
-							onClick={() => handleRequestAction(record.id, 'reject')}
+							onClick={() => onRequestAction?.(record.id, 'reject')}
 						>
 							Refuser
 						</Button>
@@ -157,31 +158,65 @@ const columns = [
 			),
 		},
 	];
-const handleRequestAction = (requestId, action) => {
-console.log(`Action ${action} sur la demande ${requestId}`);
-alert(`Demande ${requestId} ${action === 'approve' ? 'approuvée' : 'refusée'}`);
-	};
-export const Manager = ({ selectedTeam, mockManagerTeams }) => {
-	const currentTeamData = mockManagerTeams[selectedTeam];
+export const Manager = ({ selectedTeam, dateRange, onRequestAction }) => {
+	const teamId = selectedTeam ? parseInt(selectedTeam) : null;
+	const startDate = dateRange?.[0]?.format('YYYY-MM-DD');
+	const endDate = dateRange?.[1]?.format('YYYY-MM-DD');
+	
+	const { data: teamData, isLoading, error } = useGetManagerKPIs(teamId, startDate, endDate);
+
+	if (isLoading) {
+		return (
+			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+				<Spin size="large" />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<Alert
+				message="Erreur"
+				description={error.message || 'Erreur lors du chargement des données'}
+				type="error"
+				showIcon
+			/>
+		);
+	}
+
+	if (!teamData) {
+		return (
+			<Alert
+				message="Aucune donnée"
+				description="Aucune donnée disponible pour cette équipe"
+				type="info"
+				showIcon
+			/>
+		);
+	}
+
+	const currentTeamData = teamData;
 
 	return (
 		<>
 			<StatsGrid>
 				<StatCard color="#4F46E5">
 					<StatLabel>Présence Équipe</StatLabel>
-						<StatValue>{currentTeamData.teamAttendance.rate}%</StatValue>
+						<StatValue>{currentTeamData.teamAttendance?.rate || 0}%</StatValue>
 					</StatCard>
 					<StatCard color="#10B981">
 						<StatLabel>Heures Moyenne</StatLabel>
-						<StatValue>{(currentTeamData.hoursWorked.reduce((acc, curr) => acc + curr.hours, 0) / currentTeamData.hoursWorked.length).toFixed(1)}h</StatValue>
+						<StatValue>{(currentTeamData.hoursWorked?.length > 0 
+							? (currentTeamData.hoursWorked.reduce((acc, curr) => acc + curr.hours, 0) / currentTeamData.hoursWorked.length).toFixed(1)
+							: 0)}h</StatValue>
 					</StatCard>
 					<StatCard color="#EF4444">
 						<StatLabel>Avertissements</StatLabel>
-						<StatValue>{currentTeamData.warnings.reduce((acc, curr) => acc + curr.count, 0)}</StatValue>
+						<StatValue>{currentTeamData.warnings?.reduce((acc, curr) => acc + curr.count, 0) || 0}</StatValue>
 					</StatCard>
 					<StatCard color="#8B5CF6">
 						<StatLabel>Membres</StatLabel>
-						<StatValue>{currentTeamData.attendance.length}</StatValue>
+						<StatValue>{currentTeamData.attendance?.length || 0}</StatValue>
 					</StatCard>
 				</StatsGrid>
 
@@ -190,7 +225,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Taux de Présence par Membre</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={280}>
-								<BarChart data={currentTeamData.attendance}>
+								<BarChart data={currentTeamData.attendance || []}>
 									<defs>
 										<linearGradient id="colorPresence" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="5%" stopColor="#4F46E5" stopOpacity={0.8}/>
@@ -218,7 +253,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Heures Travaillées par Membre</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={280}>
-								<BarChart data={currentTeamData.hoursWorked}>
+								<BarChart data={currentTeamData.hoursWorked || []}>
 									<defs>
 										<linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
@@ -246,7 +281,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Avertissements par Membre</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={280}>
-								<BarChart data={currentTeamData.warnings}>
+								<BarChart data={currentTeamData.warnings || []}>
 									<defs>
 										<linearGradient id="colorWarnings" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
@@ -274,7 +309,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Conformité au Contrat (% des heures)</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={320}>
-								<LineChart data={currentTeamData.contractCompliance}>
+								<LineChart data={currentTeamData.contractCompliance || []}>
 									<CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
 									<XAxis dataKey="month" stroke="#6B7280" />
 									<YAxis domain={[90, 105]} stroke="#6B7280" />
@@ -291,7 +326,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 											paddingTop: '20px'
 										}}
 									/>
-									{currentTeamData.attendance.map((member, index) => (
+									{(currentTeamData.attendance || []).map((member, index) => (
 										<Line 
 											key={member.name}
 											type="monotone" 
@@ -311,7 +346,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Temps de Pause Moyen</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={280}>
-								<BarChart data={currentTeamData.pauseTime}>
+								<BarChart data={currentTeamData.pauseTime || []}>
 									<defs>
 										<linearGradient id="colorPause" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
@@ -339,7 +374,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Jours de Congé par Membre</h3>
 						<ChartContainer>
 							<ResponsiveContainer width="100%" height={280}>
-								<BarChart data={currentTeamData.leaveDays}>
+								<BarChart data={currentTeamData.leaveDays || []}>
 									<defs>
 										<linearGradient id="colorLeave" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
@@ -367,7 +402,7 @@ export const Manager = ({ selectedTeam, mockManagerTeams }) => {
 						<h3>Demandes des Membres</h3>
 						<TableStyle
 							columns={columns}
-							dataSource={currentTeamData.requests}
+							dataSource={currentTeamData.requests || []}
 							pagination={false}
 							locale={{
 								filterConfirm: 'Filtrer',
