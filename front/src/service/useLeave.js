@@ -5,8 +5,13 @@ import { leaveApi } from '../api/leave';
 export const useGetLeavesByUserId = (userId) => {
 	return useQuery({
 		queryKey: ['leaves', userId],
-		queryFn: () => leaveApi.getLeavesByUserId(userId),
-		enabled: !!userId, 
+		queryFn: async () => {
+			const data = await leaveApi.getLeavesByUserId(userId);
+			return Array.isArray(data) ? data : [];
+		},
+		enabled: !!userId,
+		retry: false,
+		initialData: [], 
 	});
 };
 

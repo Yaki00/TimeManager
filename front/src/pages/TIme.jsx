@@ -8,7 +8,7 @@ import {
 	FieldTimeOutlined,
 	UserOutlined,
 } from '@ant-design/icons';
-import { Button, Modal, DatePicker, message, Progress, Avatar, Tag } from 'antd';
+import { Button, Modal, DatePicker, message, Progress, Avatar, Tag, Alert } from 'antd';
 import { Breadcrumbs } from '../utils/Breadcrumb';
 import { useCreateLeave, useGetLeavesByUserId } from '../service/useLeave';
 
@@ -258,10 +258,16 @@ export const Time = () => {
 	const userId = user.id;
 
 	const { createLeaveAsync, isLoading } = useCreateLeave();
-	const { data: userLeaves, isLoading: isLoadingLeaves } = useGetLeavesByUserId(userId);
+	const { data: userLeaves, isLoading: isLoadingLeaves, error: leavesError } = useGetLeavesByUserId(userId);
+
+	// S'assurer que userLeaves est toujours un tableau
+	const safeUserLeaves = React.useMemo(() => {
+		if (!userLeaves) return [];
+		return Array.isArray(userLeaves) ? userLeaves : [];
+	}, [userLeaves]);
 
 	const leaveStats = React.useMemo(() => {
-		if (!userLeaves || userLeaves.length === 0) {
+		if (!safeUserLeaves || safeUserLeaves.length === 0) {
 			return { 
 				usedDays: 0, 
 				remainingDays: 20, 
@@ -272,7 +278,7 @@ export const Time = () => {
 			};
 		}
 
-		const approvedLeaves = userLeaves.filter(leave => leave.status === 'approved');
+		const approvedLeaves = safeUserLeaves.filter(leave => leave.status === 'approved');
 		const usedDays = approvedLeaves
 			.filter(leave => leave.leaveType !== 'remote')
 			.reduce((total, leave) => total + (leave.dayLeave || 0), 0);
@@ -295,15 +301,17 @@ export const Time = () => {
 			remainingRemoteDays,
 			totalRemoteDays
 		};
-	}, [userLeaves]);
+	}, [safeUserLeaves]);
 
 	useEffect(() => {
-		if (userLeaves) {
-			setLeaves(formatedDataForCalendar(userLeaves));
+		if (safeUserLeaves && safeUserLeaves.length > 0) {
+			setLeaves(formatedDataForCalendar(safeUserLeaves));
+		} else {
+			setLeaves([]);
 		}
-	}, [userLeaves]);
+	}, [safeUserLeaves]);
 
-	console.log("User leaves fetched:", userLeaves);
+	console.log("User leaves fetched:", safeUserLeaves);
 	console.log("Formatted leaves for calendar:", leaves);
 	const onSelect = (date) => setSelectedDate(date);
 
@@ -335,6 +343,32 @@ export const Time = () => {
 	};
 
 	if(isLoadingLeaves || isLoading) return <div>Loading leaves...</div>;
+
+	if(leavesError) {
+		return (
+			<PageWrapper>
+				<Header>
+					<Breadcrumbs
+						items={[
+							{ label: "Dashboard", path: "/" },
+							{ label: "Absences & Télétravail" },
+						]}
+					/>
+					<h1>Gestion des Absences</h1>
+				</Header>
+				<ScrollableContent>
+					<div style={{ padding: '40px', textAlign: 'center' }}>
+						<Alert
+							message="Erreur"
+							description={leavesError.message || 'Erreur lors du chargement des données'}
+							type="error"
+							showIcon
+						/>
+					</div>
+				</ScrollableContent>
+			</PageWrapper>
+		);
+	}
 
 	return (
 	<PageWrapper>
@@ -430,7 +464,7 @@ export const Time = () => {
 						selectedDate={selectedDate}
 						onSelect={onSelect}
 					/>
-					<TableStyle dataSource={userLeaves} columns={columns} pagination={false} scroll={{ y: 450 }} />
+					<TableStyle dataSource={safeUserLeaves} columns={columns} pagination={false} scroll={{ y: 450 }} />
 				</MainContent>
 			</Content>
 			<Modal

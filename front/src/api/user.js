@@ -1,4 +1,5 @@
 import { getToken } from "../utils/getToken";
+import { checkAuthError } from "../utils/handleAuthError";
 
 export const userApi = {
 
@@ -11,6 +12,11 @@ export const userApi = {
 				"Authorization": `Bearer ${getToken()}`,
 			},
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
 		const result = await response.json();
 		console.log("response", result);
 		return result;
@@ -26,6 +32,11 @@ export const userApi = {
 			},
 			body: JSON.stringify(data),
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
 		const result = await response.json();
 		console.log("response", result);
 		return result;
