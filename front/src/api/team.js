@@ -1,5 +1,6 @@
 import { formatTeamDataForTableGetAllTeam,formatTeamDataForTableGetTeamById } from "../utils/formatedData";
 import { getToken } from "../utils/getToken";
+import { checkAuthError } from "../utils/handleAuthError";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -12,6 +13,10 @@ export const teamApi = {
 				"Authorization": `Bearer ${getToken()}`,
 			},
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
 		
 		if (response.ok) {
 			return  formatTeamDataForTableGetAllTeam(await response.json());
@@ -28,6 +33,10 @@ export const teamApi = {
 				"Authorization": `Bearer ${getToken()}`,
 			},
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
 		
 		if (response.ok) {
 			return  formatTeamDataForTableGetTeamById(await response.json());
@@ -46,6 +55,10 @@ export const teamApi = {
 			},
 			body: JSON.stringify(data),
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
 		
 		return await response.json();
 	},
@@ -60,6 +73,11 @@ export const teamApi = {
 			},
 			body: JSON.stringify(data),
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
 		if (!response.ok) {
 			const error = await response.json();
 			throw new Error(error.message || "Failed to update team");
@@ -76,6 +94,11 @@ export const teamApi = {
 				"Authorization": `Bearer ${getToken()}`,
 			},
 		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
 		console.log("Delete response status:", response);
 		
 		return await response.json();
