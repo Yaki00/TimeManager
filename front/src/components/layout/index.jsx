@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { RightOutlined, LeftOutlined } from '@ant-design/icons';
 import { TitleLayout } from './Title.jsx';
 import { MenuLayout } from './Menu.jsx';
+import { WorkButton } from '../WorkButton.jsx';
 import { useLocation } from 'react-router';
 
 const { Content, Sider } = Layout;
@@ -47,6 +48,9 @@ export const LayoutComponent = ({ children }) => {
 
 				<div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 					<MenuLayout collapsed={collapsed} />
+					
+					<WorkButton collapsed={collapsed} />
+					
 					<div style={{ textAlign: 'center', paddingBottom: 16, paddingTop: 10 }}>
 						<Button
 							type="text"
