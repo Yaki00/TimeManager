@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { DashboardOutlined, FieldTimeOutlined, SettingOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { DashboardOutlined, FieldTimeOutlined, SettingOutlined, FileSearchOutlined, TeamOutlined } from '@ant-design/icons';
 import { getRoles } from './getRoles';
 
 const getItem = (
@@ -21,6 +21,7 @@ const allItems = [
 	getItem('Dashboard', <DashboardOutlined />, '/'),
 	getItem('Time', <FieldTimeOutlined />, '/time'),
 	getItem('Teams', <SettingOutlined />, '/teams', ['Manager', 'responsable']),
+	getItem('Effectif', <TeamOutlined />, '/effectif', ['Manager', 'responsable']),
 	getItem('Recherche', <FileSearchOutlined />, '/search-user', ['responsable']),
 ];
 

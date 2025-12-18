@@ -11,6 +11,7 @@ import {
   countUsersByRole,
   countUsersByContractType,
   updateRoleUserById as updateRoleSvc,
+  updateUserTeams as updateUserTeamsSvc,
 } from "./service.js";
 
 import { asyncHandler } from "../../core/async.js";
@@ -29,6 +30,7 @@ const TEXTS = {
   ROLE_REQUIRED: "Rôle requis",
   IMPOSSIBLE_TO_CHANGE_OWN_ROLE: "Impossible de modifier son propre rôle",
   INVALID_ROLE: "Rôle invalide",
+  TEAMS_MUST_BE_ARRAY: "Les équipes doivent être un tableau d'IDs",
 };
 
 export const getAllUsers = asyncHandler(async (req, res) => {
@@ -156,4 +158,31 @@ export const getCountUsersByContractType = asyncHandler(async (req, res) => {
 
   const sumUsers = await countUsersByContractType(contractType);
   res.status(200).json({ count: sumUsers });
+});
+
+export const updateUserTeams = asyncHandler(async (req, res) => {
+  console.log("updateUserTeams called with params:", req.params);
+  console.log("updateUserTeams called with body:", req.body);
+  
+  const id = Number.parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "INVALID_ID");
+
+  const { teams } = req.body;
+  
+  console.log("Teams received:", teams);
+  
+  // Valider que teams est un tableau (peut être vide)
+  if (teams !== undefined && !Array.isArray(teams)) {
+    throw badRequest(TEXTS.TEAMS_MUST_BE_ARRAY, "TEAMS_MUST_BE_ARRAY");
+  }
+
+  const teamIds = teams || [];
+  console.log("Team IDs to update:", teamIds);
+  
+  const user = await updateUserTeamsSvc(id, teamIds);
+  
+  if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
+
+  console.log("User teams updated successfully:", user.teams);
+  res.status(200).json(user);
 });

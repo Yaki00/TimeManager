@@ -13,10 +13,11 @@ import {
   getCountUsersByRole,
   getCountUsersByContractType,
   updateRoleUserById,
+  updateUserTeams,
 } from "./controller.js";
 
 import { requireAuth } from "../auth/middleware.js";
-import { requireResponsable } from "./middleware.js";
+import { requireResponsable, requireResponsableOrManager } from "./middleware.js";
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.get("/phone/:phoneNumber", requireAuth, getUserByPhoneNumber);
 router.get("/contract/:contractType", requireAuth, getUserByContractType);
 router.get("/:id", requireAuth, getUserById);
 router.patch("/:id/role", requireAuth, requireResponsable, updateRoleUserById);
+router.patch("/:id/teams", requireAuth, requireResponsableOrManager, updateUserTeams);
 router.put("/:id", requireAuth, updateUserById);
 router.delete("/:id", requireAuth, deleteUserById);
 

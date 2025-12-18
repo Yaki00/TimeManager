@@ -12,6 +12,8 @@ import { Teams } from './pages/Teams.jsx';
 import { TeamDetails } from './pages/TeamDetails.jsx';
 import { Time } from './pages/Time.jsx';
 import { Dashboard } from './pages/dashboard/index.jsx';
+import { Effectif } from './pages/Effectif.jsx';
+import { UserDetail } from './pages/UserDetail.jsx';
 
   const queryClient = new QueryClient()
 
@@ -27,6 +29,8 @@ createRoot(document.getElementById('root')).render(
 				<Route path="/teams" element={<LayoutComponent title="Teams"><Teams /></LayoutComponent>} />
 				<Route path="/teams/:id" element={<LayoutComponent title="Team Details"><TeamDetails /></LayoutComponent>} />
 				<Route path="/time" element={<LayoutComponent title="Gestion du temps"><Time /></LayoutComponent>} />
+				<Route path="/effectif" element={<LayoutComponent title="Effectif"><Effectif /></LayoutComponent>} />
+				<Route path="/effectif/:id" element={<LayoutComponent title="Détails utilisateur"><UserDetail /></LayoutComponent>} />
 			</Route>
 		</Routes>
 	</QueryClientProvider>
