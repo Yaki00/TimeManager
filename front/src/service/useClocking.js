@@ -108,13 +108,6 @@ export const useClocking = () => {
           clocking = existingClockings[0];
           previousWork = clocking.workTime || 0;
           previousBreak = clocking.breakTime || 0;
-
-          console.log("Clocking existant trouvé, accumulation des temps:", {
-            previousWork,
-            previousBreak,
-            firstArrival: clocking.firstArrival,
-            clockingId: clocking.id,
-          });
         } else {
           // Aucun clocking existant, en créer un nouveau avec firstArrival
           const clockingData = {
@@ -136,10 +129,6 @@ export const useClocking = () => {
           };
 
           clocking = await clockingApi.createClocking(clockingData);
-          console.log(
-            "Nouveau clocking créé avec firstArrival:",
-            formatTime(now)
-          );
         }
       } catch (error) {
         console.error(
@@ -194,12 +183,6 @@ export const useClocking = () => {
         todayData: null,
       };
       saveState(state);
-
-      console.log("État sauvegardé après démarrage:", {
-        previousWork,
-        previousBreak,
-        firstArrival: clocking.firstArrival,
-      });
     } catch (error) {
       console.error("Erreur lors du démarrage:", error);
     } finally {
@@ -312,15 +295,6 @@ export const useClocking = () => {
         totalHours: (finalWorkTime / 3600).toFixed(2), // Convertir secondes en heures
       };
 
-      console.log("Mise à jour du clocking avec accumulation:", {
-        sessionWorkTime: totalWorkTime,
-        sessionBreakTime: totalBreakTime,
-        previousWorkTime,
-        previousBreakTime,
-        finalWorkTime,
-        finalBreakTime,
-      });
-
       await clockingApi.updateClocking(currentClocking.id, updateData);
 
       // Sauvegarder les données de la journée pour consultation
@@ -419,12 +393,6 @@ export const useClocking = () => {
   // Obtenir le firstArrival depuis le clocking actuel ou todayData
   const getFirstArrival = () => {
     const arrival = currentClocking?.firstArrival || todayData?.firstArrival;
-    console.log("getFirstArrival appelé:", {
-      arrival,
-      type: typeof arrival,
-      currentClocking: currentClocking?.firstArrival,
-      todayData: todayData?.firstArrival,
-    });
     return arrival;
   };
 

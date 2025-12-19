@@ -143,17 +143,12 @@ export const Dashboard = () => {
 	const { data: teams, isLoading: isLoadingTeams } = useGetTeams();
 
 	const handleRequestAction = (requestId, action) => {
-		console.log(`Action ${action} sur la demande ${requestId}`);
 		alert(`Demande ${requestId} ${action === 'approve' ? 'approuvée' : 'refusée'}`);
 	};
 
 	const handleDateRangeChange = (dates) => {
 		if (dates) {
 			setDateRange(dates);
-			console.log('Période sélectionnée:', {
-				debut: dates[0].format('YYYY-MM-DD'),
-				fin: dates[1].format('YYYY-MM-DD')
-			});
 		}
 	};
 

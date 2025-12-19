@@ -8,7 +8,6 @@ export const clockingApi = {
 	 * Créer un nouveau pointage
 	 */
 	async createClocking(data) {
-		console.log("Creating clocking with data:", data);
 		const response = await fetch(API_URL, {
 			method: "POST",
 			headers: {
@@ -23,7 +22,6 @@ export const clockingApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
@@ -31,7 +29,6 @@ export const clockingApi = {
 	 * Récupérer les pointages d'un utilisateur pour une date
 	 */
 	async getClockingsByUserAndDate(userId, date) {
-		console.log("Fetching clockings for user:", userId, "date:", date);
 		const response = await fetch(`${API_URL}/user/${userId}/date/${date}`, {
 			method: "GET",
 			headers: {
@@ -45,7 +42,6 @@ export const clockingApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
@@ -53,7 +49,6 @@ export const clockingApi = {
 	 * Mettre à jour un pointage
 	 */
 	async updateClocking(clockingId, data) {
-		console.log("Updating clocking:", clockingId, "with data:", data);
 		const response = await fetch(`${API_URL}/${clockingId}`, {
 			method: "PATCH",
 			headers: {
@@ -68,7 +63,6 @@ export const clockingApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
@@ -79,7 +73,6 @@ export const clockingApi = {
 		const queryParams = new URLSearchParams(params).toString();
 		const url = `${API_URL}/user/${userId}${queryParams ? `?${queryParams}` : ''}`;
 		
-		console.log("Fetching user clockings:", url);
 		const response = await fetch(url, {
 			method: "GET",
 			headers: {
@@ -93,7 +86,6 @@ export const clockingApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
@@ -107,7 +99,6 @@ export const clockingApi = {
 		
 		const url = `${API_URL}/user/${userId}/stats${params.toString() ? `?${params.toString()}` : ''}`;
 		
-		console.log("Fetching user clocking stats:", url);
 		const response = await fetch(url, {
 			method: "GET",
 			headers: {
@@ -121,7 +112,6 @@ export const clockingApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 };

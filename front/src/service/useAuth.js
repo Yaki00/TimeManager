@@ -14,7 +14,6 @@ export const useAuth = () => {
 	const loginMutation = useMutation({
 		mutationFn: authApi.login,
 		onSuccess: (data) => {
-			console.log("Login successful:", data);
 			const userData = {
 				id: data.user.id,
 				firstName: data.user.firstName,
@@ -39,7 +38,6 @@ export const useAuth = () => {
 	const registerMutation = useMutation({
 		mutationFn: authApi.register,
 		onSuccess: (data) => {
-			console.log("Registration successful:", data);
 			
 		},
 		onError: (error) => {

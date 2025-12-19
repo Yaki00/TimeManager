@@ -46,7 +46,6 @@ export const teamApi = {
 	},
 
 	async createTeam(data) {
-		console.log("Creating team with data:", data);
 		const response = await fetch(`${BASE_URL}/teams`, {
 			method: "POST",
 			headers: {
@@ -64,7 +63,6 @@ export const teamApi = {
 	},
 
 	async updateTeam(data) {
-		console.log("Updating team with data:", data);
 		const response = await fetch(`${BASE_URL}/teams/${data.id}`, {
 			method: "PATCH",
 			headers: {
@@ -86,7 +84,6 @@ export const teamApi = {
 	},
 
 	async deleteTeam(id) {
-		console.log("Deleting team:", id);
 		const response = await fetch(`${BASE_URL}/teams/${id}`, {
 			method: "DELETE",
 			headers: {
@@ -98,8 +95,6 @@ export const teamApi = {
 		if (checkAuthError(response)) {
 			throw new Error("Session expirée. Redirection vers la connexion...");
 		}
-
-		console.log("Delete response status:", response);
 		
 		return await response.json();
 	},

@@ -9,7 +9,6 @@ export const authApi = {
 			body: JSON.stringify(data),
 		});
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
@@ -22,7 +21,6 @@ export const authApi = {
 			body: JSON.stringify(data),
 		});
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 

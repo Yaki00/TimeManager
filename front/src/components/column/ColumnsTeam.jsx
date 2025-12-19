@@ -41,7 +41,6 @@ export const columnsTeam = (handleDelete, isLoading) => [
 		key: 'members',
 		width: "30%",
 		render: (members) => (
-			console.log("Rendering members:", members) ||
 			members.map(member => (
 				member.firstName
 			)).join(", ")

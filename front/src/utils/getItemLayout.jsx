@@ -20,9 +20,9 @@ const getItem = (
 const allItems = [
 	getItem('Dashboard', <DashboardOutlined />, '/'),
 	getItem('Time', <FieldTimeOutlined />, '/time'),
-	getItem('Teams', <SettingOutlined />, '/teams', ['Manager', 'responsable']),
-	getItem('Effectif', <TeamOutlined />, '/effectif', ['Manager', 'responsable']),
-	getItem('Recherche', <FileSearchOutlined />, '/search-user', ['responsable']),
+	getItem('Teams', <SettingOutlined />, '/teams',),
+	getItem('Effectif', <TeamOutlined />, '/effectif', ),
+	getItem('Recherche', <FileSearchOutlined />, '/search-user', ),
 ];
 
 export const getFilteredItems = () => {

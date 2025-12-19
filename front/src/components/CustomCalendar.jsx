@@ -116,7 +116,6 @@ const DayCell = styled.div`
 
 export const CustomCalendar = ({ leaves = [], selectedDate, onSelect }) => {
 
-	console.log("Leaves in CustomCalendar:", leaves);
 	const [currentMonth, setCurrentMonth] = useState(selectedDate.startOf('month'));
 
 	const prevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
@@ -129,7 +128,6 @@ export const CustomCalendar = ({ leaves = [], selectedDate, onSelect }) => {
 	const dayCount = endDay.diff(startDay, 'day') + 1;
 
 	const calendarDays = Array.from({ length: dayCount }, (_, i) => startDay.add(i, 'day'));
-	console.log("Calendar Days:", calendarDays);
 
 	const isSameMonth = (date) => date.isSame(currentMonth, 'month');
 	const isSelected = (date) => date.isSame(selectedDate, 'day');

@@ -33,7 +33,6 @@ export const Profile = () => {
 				...values
 			}
 			const response = await updateUserAsync(newUser);
-			console.log('Response from updateUser:', response);
 			messageApi.success('Profile updated successfully!');
 			setEdited(false);
 		} catch (error) {
@@ -111,7 +110,6 @@ export const Profile = () => {
 					<Form
 						layout="vertical"
 						onFinish={(values) => {
-							console.log('Change Password Values:', values);
 							message.success('Password changed successfully!');
 						}}
 					>

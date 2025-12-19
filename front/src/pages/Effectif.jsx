@@ -251,15 +251,11 @@ export const Effectif = () => {
 				contractType: values.contractType,
 			};
 
-			console.log("Données du formulaire:", values);
-			console.log("Utilisateur sélectionné:", selectedUser);
-
 			// Mettre à jour les informations de base
 			await updateUserAsync(updateData);
 
 			// Si le rôle est modifié, appeler l'API spécifique
 			if (values.role && values.role !== selectedUser.role) {
-				console.log("Modification du rôle:", values.role);
 				await updateUserRoleAsync({ 
 					userId: selectedUser.id, 
 					role: values.role 
@@ -272,20 +268,11 @@ export const Effectif = () => {
 				const newTeamIds = [...values.teams].sort();
 				const hasChanged = JSON.stringify(currentTeamIds) !== JSON.stringify(newTeamIds);
 				
-				console.log("Équipes actuelles:", currentTeamIds);
-				console.log("Nouvelles équipes:", newTeamIds);
-				console.log("Équipes modifiées?", hasChanged);
-				
 				if (hasChanged) {
-					console.log("Appel API updateUserTeams avec:", { 
-						userId: selectedUser.id, 
-						teams: values.teams 
-					});
 					await updateUserTeamsAsync({ 
 						userId: selectedUser.id, 
 						teams: values.teams 
 					});
-					console.log("Équipes mises à jour avec succès!");
 				}
 			}
 

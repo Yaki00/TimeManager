@@ -195,7 +195,6 @@ export const WorkButton = ({ collapsed }) => {
   };
 
   const formatTimeSimple = (date) => {
-    console.log("formatTimeSimple reçu:", { date, type: typeof date });
 
     if (!date) return "--:--";
 

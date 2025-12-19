@@ -4,7 +4,6 @@ import { checkAuthError } from "../utils/handleAuthError";
 export const userApi = {
 
 	async getAllUsers() {
-		console.log("Fetching all users");
 		const response = await fetch ("http://localhost:3000/users", {
 			method: "GET",
 			headers: {
@@ -18,12 +17,10 @@ export const userApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
 	async updateUser(data) {
-		console.log("Updating user with data:", data);
 		const response = await fetch(`http://localhost:3000/users/${data.id}`, {
 			method: "PUT",
 			headers: {
@@ -38,12 +35,10 @@ export const userApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
 	async deleteUser(userId) {
-		console.log("Deleting user with ID:", userId);
 		const response = await fetch(`http://localhost:3000/users/${userId}`, {
 			method: "DELETE",
 			headers: {
@@ -61,12 +56,10 @@ export const userApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
 	async updateUserRole(userId, role) {
-		console.log("Updating user role:", userId, role);
 		const response = await fetch(`http://localhost:3000/users/${userId}/role`, {
 			method: "PATCH",
 			headers: {
@@ -81,12 +74,10 @@ export const userApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 
 	async updateUserTeams(userId, teams) {
-		console.log("Updating user teams:", userId, teams);
 		const response = await fetch(`http://localhost:3000/users/${userId}/teams`, {
 			method: "PATCH",
 			headers: {
@@ -101,7 +92,6 @@ export const userApi = {
 		}
 
 		const result = await response.json();
-		console.log("response", result);
 		return result;
 	},
 }

@@ -190,12 +190,10 @@ const onFinish = async (values) => {
 		id: state.id,
 	}
 	const response = await updateTeamAsync(data);
-	console.log("Update team response:", response);
 	setIsUpdateTeamModalOpen(false);
 }
 
 if(loadingTeams || loadingLeaves) return <div>Loading...</div>
-console.log("leavesData:", leavesData);
 
 
 	return (

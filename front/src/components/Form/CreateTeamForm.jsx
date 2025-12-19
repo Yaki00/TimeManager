@@ -20,7 +20,6 @@ export const CreateTeamForm = ({form, onFinish, initialValues}) => {
 	}, [users, userStore.id]);
 
 	if (loadingUsers || !users) return <div>Loading users...</div>;
-console.log("User list for team creation:", initialValues);
 	const formInitialValues = initialValues
 		? {
 				...initialValues,

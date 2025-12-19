@@ -176,7 +176,6 @@ export const Teams = () => {
 	}
 
 	const handleDelete = async (record) => {
-		console.log("Deleting team with ID:", record);
 		try {
 			await deleteTeamAsync(record.id);
 			message.success(`L'équipe "${record.teamName}" a été supprimée avec succès !`);

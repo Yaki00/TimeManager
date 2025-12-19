@@ -161,15 +161,10 @@ export const getCountUsersByContractType = asyncHandler(async (req, res) => {
 });
 
 export const updateUserTeams = asyncHandler(async (req, res) => {
-  console.log("updateUserTeams called with params:", req.params);
-  console.log("updateUserTeams called with body:", req.body);
-  
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) throw badRequest(TEXTS.ID_INVALID, "INVALID_ID");
 
   const { teams } = req.body;
-  
-  console.log("Teams received:", teams);
   
   // Valider que teams est un tableau (peut être vide)
   if (teams !== undefined && !Array.isArray(teams)) {
@@ -177,12 +172,10 @@ export const updateUserTeams = asyncHandler(async (req, res) => {
   }
 
   const teamIds = teams || [];
-  console.log("Team IDs to update:", teamIds);
   
   const user = await updateUserTeamsSvc(id, teamIds);
   
   if (!user) throw notFound(TEXTS.USER_NOT_FOUND, "USER_NOT_FOUND");
 
-  console.log("User teams updated successfully:", user.teams);
   res.status(200).json(user);
 });

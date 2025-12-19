@@ -8,9 +8,6 @@ export const useUsers = () => {
 		queryKey: ['users'],
 		queryFn: userApi.getAllUsers,
 		staleTime: 5 * 60 * 1000,
-		onSuccess: (data) => {
-			console.log("Fetched users:", data);
-		},
 		onError: (error) => {
 			console.error("Failed to fetch users:", error);
 		},

@@ -311,8 +311,6 @@ export const Time = () => {
 		}
 	}, [safeUserLeaves]);
 
-	console.log("User leaves fetched:", safeUserLeaves);
-	console.log("Formatted leaves for calendar:", leaves);
 	const onSelect = (date) => setSelectedDate(date);
 
 
@@ -331,7 +329,6 @@ export const Time = () => {
 				leaveType: value.leaveType,
 				dayLeave: dayjs(value.dateRange[1]).diff(dayjs(value.dateRange[0]), 'day') + 1,
 			});
-			console.log("Create leave response:", response);
 			if(response.status !== "error") {
 				const typeLabel = leaveTypeLabels[value.leaveType] || 'Demande';
 				message.success(`${typeLabel} demandé${value.leaveType === 'remote' ? '' : 'e'} du ${dayjs(value.dateRange[0]).format('DD/MM/YYYY')} au ${dayjs(value.dateRange[1]).format('DD/MM/YYYY')}`);
