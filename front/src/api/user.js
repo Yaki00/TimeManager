@@ -94,4 +94,21 @@ export const userApi = {
 		const result = await response.json();
 		return result;
 	},
+
+	async getCurrentUser() {
+		const response = await fetch("http://localhost:3000/users/me/info", {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${getToken()}`,
+			},
+		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
+		const result = await response.json();
+		return result;
+	},
 }

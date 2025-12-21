@@ -34,9 +34,29 @@ const userSelect = {
 };
 
 export async function findUserById(id) {
+  // Récupérer l'utilisateur avec ses équipes (via belongs)
   const user = await prisma.user.findUnique({
     where: { id },
-    select: userSelectWithDeleted,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      phoneNumber: true,
+      contractType: true,
+      deletedAt: true,
+      belongs: {
+        select: {
+          team: {
+            select: {
+              id: true,
+              teamName: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   // Retourner null si l'utilisateur n'existe pas ou est supprimé
@@ -44,9 +64,32 @@ export async function findUserById(id) {
     return null;
   }
 
-  // Retirer deletedAt du résultat final pour ne pas l'exposer
-  const { deletedAt, ...userWithoutDeletedAt } = user;
-  return userWithoutDeletedAt;
+  // Récupérer aussi les équipes dont l'utilisateur est propriétaire
+  const ownedTeams = await prisma.team.findMany({
+    where: { ownerId: id },
+    select: {
+      id: true,
+      teamName: true,
+    },
+  });
+
+  // Retirer deletedAt du résultat final et transformer belongs en teams
+  const { deletedAt, belongs, ...userWithoutDeletedAt } = user;
+  
+  // Combiner les équipes où l'utilisateur est membre et celles dont il est propriétaire
+  const memberTeams = belongs?.map((b) => b.team) || [];
+  const allUserTeams = [
+    ...memberTeams,
+    // Ajouter les équipes dont il est propriétaire mais pas encore dans memberTeams
+    ...ownedTeams.filter(
+      (ownedTeam) => !memberTeams.some((memberTeam) => memberTeam.id === ownedTeam.id)
+    ),
+  ];
+
+  return {
+    ...userWithoutDeletedAt,
+    teams: allUserTeams,
+  };
 }
 
 export async function findAllUsers({ skip = 0, take = 50 } = {}) {

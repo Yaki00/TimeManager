@@ -1,7 +1,7 @@
 import { Input, Select, Modal, Form, message } from "antd";
 import { SearchOutlined, UserOutlined, FilterOutlined } from '@ant-design/icons';
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import styled from 'styled-components';
 import { Breadcrumbs } from "../utils/Breadcrumb";
 import { useUsers, useUpdateUser, useDeleteUser, useUpdateUserRole, useUpdateUserTeams } from "../service/useUser";
@@ -113,6 +113,7 @@ const StatsContainer = styled.div`
 
 export const Effectif = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { users, loadingUsers } = useUsers();
 	const { data: teamsData, isLoading: loadingTeams } = useGetTeams();
 	const { updateUserAsync, loadingUpdateUser } = useUpdateUser();
@@ -214,7 +215,7 @@ export const Effectif = () => {
 	];
 
 	const handleDetail = (user) => {
-		navigate(`/effectif/${user.id}`);
+		navigate(`/effectif/${user.id}`, { state: { from: location.pathname } });
 	};
 
 	const handleEdit = (user) => {

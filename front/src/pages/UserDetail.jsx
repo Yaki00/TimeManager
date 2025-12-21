@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import { Card, Tag, Spin, Row, Col, Statistic, Progress, Avatar, Divider } from "antd";
 import { ArrowLeftOutlined, EditOutlined, ClockCircleOutlined, CheckCircleOutlined, WarningOutlined, CalendarOutlined, UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
@@ -183,8 +183,29 @@ const getContractTypeLabel = (type) => {
 export const UserDetail = () => {
 	const { id } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { users, loadingUsers } = useUsers();
 	const { data: kpiData, isLoading: loadingKPIs } = useGetUserKPIs(parseInt(id));
+
+	// Déterminer la page précédente depuis le state de navigation ou utiliser l'historique
+	const getPreviousPath = () => {
+		// Si on vient du dashboard ou d'une autre page, utiliser l'historique
+		if (location.state?.from) {
+			return location.state.from;
+		}
+		// Sinon, utiliser navigate(-1) pour revenir à la page précédente
+		return null;
+	};
+
+	const handleGoBack = () => {
+		const previousPath = getPreviousPath();
+		if (previousPath) {
+			navigate(previousPath);
+		} else {
+			// Utiliser l'historique du navigateur pour revenir à la page précédente
+			navigate(-1);
+		}
+	};
 
 	if (loadingUsers) {
 		return (
@@ -214,8 +235,8 @@ export const UserDetail = () => {
 				<ScrollableContent>
 					<Card>
 						<p>L'utilisateur demandé n'existe pas ou a été supprimé.</p>
-						<ButtonStyle onClick={() => navigate('/effectif')}>
-							Retour à la liste
+						<ButtonStyle onClick={handleGoBack}>
+							Retour
 						</ButtonStyle>
 					</Card>
 				</ScrollableContent>
@@ -236,7 +257,7 @@ export const UserDetail = () => {
 				<HeaderActions>
 					<ButtonStyle 
 						icon={<ArrowLeftOutlined />}
-						onClick={() => navigate('/effectif')}
+						onClick={handleGoBack}
 					>
 						Retour
 					</ButtonStyle>

@@ -35,6 +35,7 @@ import { Space, Button } from "antd";
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { useGetResponsableKPIs } from "../../service/useKpi";
 import { useGetManagerKPIs } from "../../service/useKpi";
+import { useUserStore } from "../../zustand/store";
 
 const RequestsCard = styled(KPICard)`
   margin-top: 24px;
@@ -234,6 +235,10 @@ const TopRankingGrid = styled.div`
 `;
 
 export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
+  const user = useUserStore((state) => state.user);
+  const userRole = user?.role;
+  const isResponsable = userRole === "Responsable";
+  
   const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
 
@@ -241,7 +246,9 @@ export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
     data: responsableData,
     isLoading: isLoadingResponsable,
     error: errorResponsable,
-  } = useGetResponsableKPIs(startDate, endDate);
+  } = useGetResponsableKPIs(startDate, endDate, {
+    enabled: isResponsable,
+  });
   const {
     data: managerData,
     isLoading: isLoadingManager,
@@ -249,8 +256,23 @@ export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
   } = useGetManagerKPIs(
     selectedTeam ? parseInt(selectedTeam) : null,
     startDate,
-    endDate
+    endDate,
+    {
+      enabled: isResponsable && !!selectedTeam,
+    }
   );
+
+  // Si l'utilisateur n'est pas Responsable, afficher un message
+  if (!isResponsable) {
+    return (
+      <Alert
+        message="Accès refusé"
+        description="Vous n'avez pas les permissions nécessaires pour accéder à cette vue. Cette vue est réservée aux Responsables uniquement."
+        type="warning"
+        showIcon
+      />
+    );
+  }
 
   if (isLoadingResponsable || isLoadingManager) {
     return (
@@ -267,15 +289,23 @@ export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
     );
   }
 
+  // Gérer les erreurs 403 de manière gracieuse
   if (errorResponsable || errorManager) {
+    const errorMessage = errorResponsable?.message || errorManager?.message;
+    if (errorMessage?.includes('403') || errorMessage?.includes('Forbidden')) {
+      return (
+        <Alert
+          message="Accès refusé"
+          description="Vous n'avez pas les permissions nécessaires pour accéder à ces données."
+          type="warning"
+          showIcon
+        />
+      );
+    }
     return (
       <Alert
         message="Erreur"
-        description={
-          errorResponsable?.message ||
-          errorManager?.message ||
-          "Erreur lors du chargement des données"
-        }
+        description={errorMessage || "Erreur lors du chargement des données"}
         type="error"
         showIcon
       />
