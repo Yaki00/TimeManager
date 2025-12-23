@@ -4,24 +4,26 @@ import { Link } from "react-router";
 import { useDeleteTeam } from "../../service/useTeam";
 
 
-const Action = ({ record, handleDelete, isLoading }) => {
+const Action = ({ record, handleDelete, isLoading, userRole }) => {
 
 
 	return (<div style={{ display: 'flex', gap: 8 }}>
 			<Link to={`/teams/${record.id}`} state={{ id: record.id }}>
 				<Button type="primary" icon={<EyeOutlined />}></Button>
 			</Link>
-			<Button 
-				type="primary" 
-				danger 
-				icon={<DeleteOutlined />} 
-				onClick={() => handleDelete(record)}
-				loading={isLoading}
-			></Button>
+			{userRole === "Responsable" && (
+				<Button 
+					type="primary" 
+					danger 
+					icon={<DeleteOutlined />} 
+					onClick={() => handleDelete(record)}
+					loading={isLoading}
+				></Button>
+			)}
 		</div>
 	);
 }
-export const columnsTeam = (handleDelete, isLoading) => [
+export const columnsTeam = (handleDelete, isLoading, userRole) => [
 	{
 		title: 'ID',
 		dataIndex: 'id',
@@ -57,7 +59,7 @@ export const columnsTeam = (handleDelete, isLoading) => [
 		key: 'action',
 		width: "10%",
 		render: (_, record) => (
-			<Action record={record}  handleDelete={handleDelete} isLoading={isLoading} />
+			<Action record={record}  handleDelete={handleDelete} isLoading={isLoading} userRole={userRole} />
 		),
 	}
 ];
