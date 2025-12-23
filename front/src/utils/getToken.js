@@ -1,4 +1,4 @@
-import { useUserStore } from "../zustand/store"
+import { useUserStore } from "@/zustand/store"
 import CryptoJS from 'crypto-js';
 
 /**
@@ -6,23 +6,23 @@ import CryptoJS from 'crypto-js';
  * @returns {string|null} Le token déchiffré ou null
  */
 export const getToken = () => {
-	const token = useUserStore.getState().user?.token;
-	if (!token) {
-		return null;
-	}
+  const token = useUserStore.getState().user?.token;
+  if (!token) {
+    return null;
+  }
 	
-	try {
-		const decryptToken = CryptoJS.AES.decrypt(token, 'your-secret-key').toString(CryptoJS.enc.Utf8);
+  try {
+    const decryptToken = CryptoJS.AES.decrypt(token, 'your-secret-key').toString(CryptoJS.enc.Utf8);
 		
-		// Si le décryptage échoue ou retourne une chaîne vide, le token est invalide
-		if (!decryptToken || decryptToken.trim() === '') {
-			return null;
-		}
+    // Si le décryptage échoue ou retourne une chaîne vide, le token est invalide
+    if (!decryptToken || decryptToken.trim() === '') {
+      return null;
+    }
 		
-		return decryptToken;
-	} catch (error) {
-		// Erreur de décryptage, token invalide
-		console.error("Erreur de décryptage du token:", error);
-		return null;
-	}
+    return decryptToken;
+  } catch (error) {
+    // Erreur de décryptage, token invalide
+    console.error("Erreur de décryptage du token:", error);
+    return null;
+  }
 }

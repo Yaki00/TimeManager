@@ -1,6 +1,6 @@
 import styled, { keyframes } from 'styled-components';
-import { useAuth } from '../../service/useAuth';
-import { RegisterForm } from '../../components/form/RegisterForm';
+import { useAuth } from '@/service/useAuth';
+import { RegisterForm } from '@/components/from/RegisterForm';
 import { useNavigate } from 'react-router';
 import { message } from 'antd';
 
@@ -115,71 +115,71 @@ const Card = styled.div`
 `;
 
 export const Register = () => {
-	const { loadingRegister, registerAsync: RegisterMutation } = useAuth();
-	const [messageApi, contextHolder] = message.useMessage();
-	const navigate = useNavigate();
+  const { loadingRegister, registerAsync: RegisterMutation } = useAuth();
+  const [messageApi, contextHolder] = message.useMessage();
+  const navigate = useNavigate();
 
-	const onFinish = async (values) => {
-		try {
-			const response = await RegisterMutation(values);
-			if (response.user) {
-				messageApi.open({
-					type: 'success',
-					content: 'Inscription réussie ! Connectez-vous à présent.',
-				});
-				navigate('/login');
-			} else {
-				messageApi.open({
-					type: 'error',
-					content: response.error || "Échec de l'inscription. Réessayez.",
-				});
-			}
-		} catch (error) {
-			console.error('Register error:', error);
-			messageApi.open({
-				type: 'error',
-				content: "Une erreur s'est produite lors de l'inscription.",
-			});
-		}
-	};
+  const onFinish = async (values) => {
+    try {
+      const response = await RegisterMutation(values);
+      if (response.user) {
+        messageApi.open({
+          type: 'success',
+          content: 'Inscription réussie ! Connectez-vous à présent.',
+        });
+        navigate('/login');
+      } else {
+        messageApi.open({
+          type: 'error',
+          content: response.error || "Échec de l'inscription. Réessayez.",
+        });
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      messageApi.open({
+        type: 'error',
+        content: "Une erreur s'est produite lors de l'inscription.",
+      });
+    }
+  };
 
-	return (
-		<Page>
-			{contextHolder}
+  return (
+    <Page>
+      {contextHolder}
 
-			<LeftPanel>
-				<div className="content">
-					<h1>
-						Rejoignez <span className="highlight">Time Manager</span>
-					</h1>
-					<p>
-						Créez votre compte et commencez à maîtriser votre emploi du temps, vos priorités et vos objectifs dès aujourd’hui.
-					</p>
-				</div>
-				<div className="image-container">
-					<img
-						src="/Schedule-amico.svg"
-						alt="Illustration inscription"
-						className="image"
-					/>
-				</div>
-			</LeftPanel>
+      <LeftPanel>
+        <div className="content">
+          <h1>
+            Rejoignez <span className="highlight">Time Manager</span>
+          </h1>
+          <p>
+            Créez votre compte et commencez à maîtriser votre emploi du temps, vos priorités et vos objectifs dès aujourd’hui.
+          </p>
+        </div>
+        <div className="image-container">
+          <img
+            src="/Schedule-amico.svg"
+            alt="Illustration inscription"
+            className="image"
+          />
+        </div>
+      </LeftPanel>
 
-			<RightPanel>
-				<Card>
-					<svg
-						fill="none"
-						viewBox="0 0 48 48"
-						xmlns="http://www.w3.org/2000/svg"
-						className="icon-logo"
-					>
-						<path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" />
-					</svg>
-					<h2>Inscription</h2>
-					<p>Créez votre compte Time Manager</p>
-					<RegisterForm onFinish={onFinish} loading={loadingRegister} />
-				</Card>
-			</RightPanel>
-		</Page>
-	);
+      <RightPanel>
+        <Card>
+          <svg
+            fill="none"
+            viewBox="0 0 48 48"
+            xmlns="http://www.w3.org/2000/svg"
+            className="icon-logo"
+          >
+            <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" />
+          </svg>
+          <h2>Inscription</h2>
+          <p>Créez votre compte Time Manager</p>
+          <RegisterForm onFinish={onFinish} loading={loadingRegister} />
+        </Card>
+      </RightPanel>
+    </Page>
+  );
 };

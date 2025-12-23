@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, message, Divider, Spin, Card, Avatar } from 'antd';
 import { UserOutlined, EditOutlined, LockOutlined } from '@ant-design/icons';
-import { useUserStore } from '../zustand/store';
+import { useUserStore } from '@/zustand/store';
 import styled from 'styled-components';
-import { useUpdateUser } from '../service/useUser';
+import { useUpdateUser } from '@/service/useUser';
 
 const PageWrapper = styled.div`
 	height: 100vh;
@@ -20,142 +20,142 @@ const ScrollableContent = styled.div`
 `;
 
 export const Profile = () => {
-	const [edited, setEdited] = useState(false);
-	const data = useUserStore((state) => state.user);
-	const [messageApi, contextHolder] = message.useMessage();
+  const [edited, setEdited] = useState(false);
+  const data = useUserStore((state) => state.user);
+  const [messageApi, contextHolder] = message.useMessage();
 
-	const { updateUserAsync, loadingUpdateUser } = useUpdateUser();
+  const { updateUserAsync, loadingUpdateUser } = useUpdateUser();
 
-	const onFinish = async (values) => {
-		try {
-			const newUser = {
-				id: data.id,
-				...values
-			}
-			const response = await updateUserAsync(newUser);
-			messageApi.success('Profile updated successfully!');
-			setEdited(false);
-		} catch (error) {
-			console.error('Error updating user:', error);
-			messageApi.error('Failed to update profile. Please try again.');
-		}
-	}
+  const onFinish = async (values) => {
+    try {
+      const newUser = {
+        id: data.id,
+        ...values
+      }
+      await updateUserAsync(newUser);
+      messageApi.success('Profile updated successfully!');
+      setEdited(false);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      messageApi.error('Failed to update profile. Please try again.');
+    }
+  }
 
-	if (!data)
-		return (
-			<Centered>
-				<Spin size="large" />
-			</Centered>
-		);
+  if (!data)
+    return (
+      <Centered>
+        <Spin size="large" />
+      </Centered>
+    );
 
-	return (
-		<PageWrapper>
-			{contextHolder}
-			<ScrollableContent>
-			<PageContainer>
-				<HeaderCard>
-					<Avatar size={100} icon={<UserOutlined />} />
-					<HeaderInfo>
-						<h1>
-						{data.firstName} {data.lastName}
-					</h1>
-					<p>{data.email}</p>
-					<RoleTag>{data.role}</RoleTag>
-				</HeaderInfo>
-			</HeaderCard>
+  return (
+    <PageWrapper>
+      {contextHolder}
+      <ScrollableContent>
+        <PageContainer>
+          <HeaderCard>
+            <Avatar size={100} icon={<UserOutlined />} />
+            <HeaderInfo>
+              <h1>
+                {data.firstName} {data.lastName}
+              </h1>
+              <p>{data.email}</p>
+              <RoleTag>{data.role}</RoleTag>
+            </HeaderInfo>
+          </HeaderCard>
 
-			<Divider />
+          <Divider />
 
-			<ContentWrapper>
-				<StyledCard title={<><EditOutlined /> Edit Profile</>}>
-					<Form
-						layout="vertical"
-						onFinish={onFinish}
-						initialValues={{
-							firstName: data.firstName,
-							lastName: data.lastName,
-							email: data.email,
-							phoneNumber: data.phoneNumber,
-							role: data.role,
-						}}
-					>
-						<Form.Item label="First Name" name="firstName">
-							<Input disabled={!edited} />
-						</Form.Item>
-						<Form.Item label="Last Name" name="lastName">
-							<Input disabled={!edited} />
-						</Form.Item>
-						<Form.Item label="Email" name="email">
-							<Input disabled={!edited} />
-						</Form.Item>
-						<Form.Item label="Phone Number" name="phoneNumber">
-							<Input disabled={!edited} />
-						</Form.Item>
-						<Form.Item label="Role" name="role">
-							<Input disabled />
-						</Form.Item>
+          <ContentWrapper>
+            <StyledCard title={<><EditOutlined /> Edit Profile</>}>
+              <Form
+                layout="vertical"
+                onFinish={onFinish}
+                initialValues={{
+                  firstName: data.firstName,
+                  lastName: data.lastName,
+                  email: data.email,
+                  phoneNumber: data.phoneNumber,
+                  role: data.role,
+                }}
+              >
+                <Form.Item label="First Name" name="firstName">
+                  <Input disabled={!edited} />
+                </Form.Item>
+                <Form.Item label="Last Name" name="lastName">
+                  <Input disabled={!edited} />
+                </Form.Item>
+                <Form.Item label="Email" name="email">
+                  <Input disabled={!edited} />
+                </Form.Item>
+                <Form.Item label="Phone Number" name="phoneNumber">
+                  <Input disabled={!edited} />
+                </Form.Item>
+                <Form.Item label="Role" name="role">
+                  <Input disabled />
+                </Form.Item>
 
-						<ButtonRow>
-							<Button type="primary" htmlType="submit" disabled={!edited} loading={loadingUpdateUser}>
-								Save Changes
-							</Button>
-							<Button onClick={() => setEdited(!edited)} type="default" disabled={loadingUpdateUser}>
-								{edited ? 'Cancel' : 'Edit'}
-							</Button>
-						</ButtonRow>
-					</Form>
-				</StyledCard>
+                <ButtonRow>
+                  <Button type="primary" htmlType="submit" disabled={!edited} loading={loadingUpdateUser}>
+                    Save Changes
+                  </Button>
+                  <Button onClick={() => setEdited(!edited)} type="default" disabled={loadingUpdateUser}>
+                    {edited ? 'Cancel' : 'Edit'}
+                  </Button>
+                </ButtonRow>
+              </Form>
+            </StyledCard>
 
-				<StyledCard title={<><LockOutlined /> Change Password</>}>
-					<Form
-						layout="vertical"
-						onFinish={(values) => {
-							message.success('Password changed successfully!');
-						}}
-					>
-						<Form.Item
-							label="Current Password"
-							name="currentPassword"
-							rules={[{ required: true, message: 'Please input your current password!' }]}
-						>
-							<Input.Password />
-						</Form.Item>
-						<Form.Item
-							label="New Password"
-							name="newPassword"
-							rules={[{ required: true, message: 'Please input your new password!' }]}
-						>
-							<Input.Password />
-						</Form.Item>
-						<Form.Item
-							label="Confirm New Password"
-							name="confirmNewPassword"
-							dependencies={['newPassword']}
-							rules={[
-								{ required: true, message: 'Please confirm your new password!' },
-								({ getFieldValue }) => ({
-									validator(_, value) {
-										if (!value || getFieldValue('newPassword') === value) {
-											return Promise.resolve();
-										}
-										return Promise.reject(new Error('The two passwords do not match!'));
-									},
-								}),
-							]}
-						>
-							<Input.Password />
-						</Form.Item>
+            <StyledCard title={<><LockOutlined /> Change Password</>}>
+              <Form
+                layout="vertical"
+                onFinish={() => {
+                  message.success('Password changed successfully!');
+                }}
+              >
+                <Form.Item
+                  label="Current Password"
+                  name="currentPassword"
+                  rules={[{ required: true, message: 'Please input your current password!' }]}
+                >
+                  <Input.Password />
+                </Form.Item>
+                <Form.Item
+                  label="New Password"
+                  name="newPassword"
+                  rules={[{ required: true, message: 'Please input your new password!' }]}
+                >
+                  <Input.Password />
+                </Form.Item>
+                <Form.Item
+                  label="Confirm New Password"
+                  name="confirmNewPassword"
+                  dependencies={['newPassword']}
+                  rules={[
+                    { required: true, message: 'Please confirm your new password!' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue('newPassword') === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error('The two passwords do not match!'));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password />
+                </Form.Item>
 
-						<Button type="primary" htmlType="submit" block>
-							Change Password
-						</Button>
-					</Form>
-				</StyledCard>
-			</ContentWrapper>
-		</PageContainer>
-			</ScrollableContent>
-		</PageWrapper>
-	);
+                <Button type="primary" htmlType="submit" block>
+                  Change Password
+                </Button>
+              </Form>
+            </StyledCard>
+          </ContentWrapper>
+        </PageContainer>
+      </ScrollableContent>
+    </PageWrapper>
+  );
 };
 
 const PageContainer = styled.div`

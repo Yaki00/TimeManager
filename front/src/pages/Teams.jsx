@@ -1,16 +1,16 @@
 import { Button, Input , Modal, Form, message } from "antd";
 import { SearchOutlined, AppstoreOutlined, UnorderedListOutlined, PlusOutlined } from '@ant-design/icons';
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import styled from 'styled-components';
-import { Breadcrumbs } from "../utils/Breadcrumb";
-import { CreateTeamForm } from "../components/form/CreateTeamForm";
-import { ButtonStyle } from "../utils/ButtonStyle";
-import { useUserStore } from "../zustand/store";
-import { useCreateTeam, useDeleteTeam, useGetTeams } from "../service/useTeam";
-import { TeamCard } from "../components/TeamCard";
-import { columnsTeam } from "../components/column/ColumnsTeam";
-import { TableStyle } from "../utils/TableStyle";
-import { Header, PageWrapper, ScrollableContent } from "../utils/layoutStyle";
+import { Breadcrumbs } from "@/utils/Breadcrumb";
+import { CreateTeamForm } from "@/components/from/CreateTeamForm";
+import { ButtonStyle } from "@/utils/ButtonStyle";
+import { useUserStore } from "@/zustand/store";
+import { useCreateTeam, useDeleteTeam, useGetTeams } from "@/service/useTeam";
+import { TeamCard } from "@/components/TeamCard";
+import { columnsTeam } from "@/components/column/ColumnsTeam";
+import { TableStyle } from "@/utils/TableStyle";
+import { Header, PageWrapper, ScrollableContent } from "@/utils/layoutStyle";
 
 const ToolbarContainer = styled.div`
   display: flex;
@@ -101,231 +101,233 @@ const StatItem = styled.div`
 `;
 
 export const Teams = () => {
-	const preference = useUserStore((state) => state.user.preferences.filterTeams);
-	const setPreferences = useUserStore((state) => state.setPreferences);
-	const user = useUserStore((state) => state.user);
+  const preference = useUserStore((state) => state.user.preferences.filterTeams);
+  const setPreferences = useUserStore((state) => state.setPreferences);
+  const user = useUserStore((state) => state.user);
 	
-	const { data: teamsData, isLoading: loadingTeams } = useGetTeams();
+  const { data: teamsData, isLoading: loadingTeams } = useGetTeams();
 	
-	const [searchTerm, setSearchTerm] = useState("");
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-	const [teamToDelete, setTeamToDelete] = useState(null);
-	const [form] = Form.useForm();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [form] = Form.useForm();
 
-	const { createTeamAsync, isLoading } = useCreateTeam();
-	const {deleteTeamAsync, isLoading: isDeleting} = useDeleteTeam();
-
-
-	const filteredTeams = useMemo(() => {
-		if (!teamsData) return [];
-		if (!searchTerm) return teamsData;
-		return teamsData.filter(team => 
-			team.teamName.toLowerCase().includes(searchTerm.toLowerCase())
-		);
-	}, [teamsData, searchTerm]);
-
-	if (loadingTeams) return <div>Chargement des équipes...</div>;
-	if (!teamsData) return <div>Aucune équipe trouvée.</div>;
+  const { createTeamAsync } = useCreateTeam();
+  const {deleteTeamAsync, isLoading: isDeleting} = useDeleteTeam();
 
 
-	const onFinish = async (values) => {
-		try {
-			const newTeam = {
-				ownerId: user.id,
-				teamName: values.teamName,
-				description: values.description,
-				members: 
+  const filteredTeams = useMemo(() => {
+    if (!teamsData) return [];
+    if (!searchTerm) return teamsData;
+    return teamsData.filter(team => 
+      team.teamName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [teamsData, searchTerm]);
+
+  if (loadingTeams) return <div>Chargement des équipes...</div>;
+  if (!teamsData) return <div>Aucune équipe trouvée.</div>;
+
+
+  const onFinish = async (values) => {
+    try {
+      const newTeam = {
+        ownerId: user.id,
+        teamName: values.teamName,
+        description: values.description,
+        members: 
 					values.members.map(memberId => ({
-						userId: memberId,
-						isLead: false,
+					  userId: memberId,
+					  isLead: false,
 					}))
-			};
-			await createTeamAsync(newTeam);
-			message.success(`L'équipe "${values.teamName}" a été créée avec succès!`);
-			form.resetFields(); 
-			setIsModalOpen(false);
-		} catch (error) {
-			message.error(error);
-		}
-	};
+      };
+      await createTeamAsync(newTeam);
+      message.success(`L'équipe "${values.teamName}" a été créée avec succès!`);
+      form.resetFields(); 
+      setIsModalOpen(false);
+    } catch (error) {
+      message.error(error);
+    }
+  };
 
-	const showModal = () => {
-		setIsModalOpen(true);
-	};
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
 
-	const handleCancel = () => {
-		form.resetFields();
-		setIsModalOpen(false);
-	};
+  const handleCancel = () => {
+    form.resetFields();
+    setIsModalOpen(false);
+  };
 
-	const toggleView = () => {
-		const newPreference = preference === "card" ? "table" : "card";
-		setPreferences({ filterTeams: newPreference });
-	};
+  const toggleView = () => {
+    const newPreference = preference === "card" ? "table" : "card";
+    setPreferences({ filterTeams: newPreference });
+  };
 
-	const handleSearch = (e) => {
-		const value = e.target.value;
-		setSearchTerm(value);
-	}
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+  }
 
-	const Footer = () => {
-		return (
-				<StatItem>
-					Total des équipes : <span>{filteredTeams.length}</span>
-				</StatItem>
-		);
-	}
+  const Footer = () => {
+    return (
+      <StatItem>
+        Total des équipes : <span>{filteredTeams.length}</span>
+      </StatItem>
+    );
+  }
 
-	const handleDelete = (record) => {
-		setTeamToDelete(record);
-		setIsDeleteModalOpen(true);
-	};
+  const handleDelete = (record) => {
+    setTeamToDelete(record);
+    setIsDeleteModalOpen(true);
+  };
 
-	const confirmDelete = async () => {
-		if (!teamToDelete) return;
+  const confirmDelete = async () => {
+    if (!teamToDelete) return;
 		
-		try {
-			await deleteTeamAsync(teamToDelete.id);
-			message.success(`L'équipe "${teamToDelete.teamName}" a été supprimée avec succès !`);
-			setIsDeleteModalOpen(false);
-			setTeamToDelete(null);
-		} catch (error) {
-			message.error("Échec de la suppression de l'équipe. Veuillez réessayer.");
-		}
-	};
+    try {
+      await deleteTeamAsync(teamToDelete.id);
+      message.success(`L'équipe "${teamToDelete.teamName}" a été supprimée avec succès !`);
+      setIsDeleteModalOpen(false);
+      setTeamToDelete(null);
+    } catch {
+      message.error("Échec de la suppression de l'équipe. Veuillez réessayer.");
+    }
+  };
 
-	const cancelDelete = () => {
-		setIsDeleteModalOpen(false);
-		setTeamToDelete(null);
-	};
+  const cancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setTeamToDelete(null);
+  };
 
-	const columnsTeams = columnsTeam(handleDelete, isDeleting, user.role);
+  const columnsTeams = columnsTeam(handleDelete, isDeleting, user.role);
 
-	return (
-		<PageWrapper>
-			<Header>
-				<Breadcrumbs
-					items={[
-						{ label: "Dashboard", path: "/" },
-						{ label: "Teams" },
-					]}
-				/>
-				<h1>Gestion des Équipes</h1>
-				<ToolbarContainer>
-					<LeftActions>
-						<SearchContainer>
-							<Input
-								prefix={<SearchOutlined style={{ color: '#64748b' }} />}
-								placeholder="Rechercher une équipe..."
-								onChange={handleSearch}
-								allowClear
-							/>
-						</SearchContainer>
-						<ViewToggleGroup>
-							<ViewButton
-								icon={<AppstoreOutlined />}
-								$active={preference === "card"}
-								onClick={() => preference !== "card" && toggleView()}
-							/>
-							<ViewButton
-								icon={<UnorderedListOutlined />}
-								$active={preference === "table"}
-								onClick={() => preference !== "table" && toggleView()}
-							/>
-						</ViewToggleGroup>
-					</LeftActions>
-					<ButtonStyle
-						type="primary"
-						icon={<PlusOutlined />}
-						onClick={showModal}
-					>
-						Créer une équipe
-					</ButtonStyle>
-				</ToolbarContainer>
-			</Header>
-			<ScrollableContent>
-				<Modal
-					title={
-						<span style={{ 
-							fontWeight: 700, 
-							fontSize: 20,
-							background: 'linear-gradient(135deg, #9191fa 0%, #C0C0F6 100%)',
-							WebkitBackgroundClip: 'text',
-							WebkitTextFillColor: 'transparent',
-							backgroundClip: 'text'
-						}}>
-							Création d'une nouvelle équipe
-						</span>
-					}
-					destroyOnHidden={true}
-					open={isModalOpen}
-					onCancel={handleCancel}
-					centered
-					footer={null}
-					width={650}
-					styles={{
-						body: {
-							background: "linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%)",
-							borderRadius: 12,
-							padding: "32px 24px"
-						}
-					}}
-				>
-					<CreateTeamForm 
-						form={form}
-						onFinish={onFinish}
-					/>
-				</Modal>
-				<Modal
-					title={
-						<span style={{ 
-							fontWeight: 700, 
-							fontSize: 20,
-							color: '#ff4d4f'
-						}}>
-							Confirmer la suppression
-						</span>
-					}
-					open={isDeleteModalOpen}
-					onOk={confirmDelete}
-					onCancel={cancelDelete}
-					okText="Supprimer"
-					cancelText="Annuler"
-					okButtonProps={{ danger: true, loading: isDeleting }}
-					centered
-					width={500}
-					styles={{
-						body: {
-							padding: "24px"
-						}
-					}}
-				>
-					<p style={{ fontSize: 16, marginBottom: 8 }}>
-						Êtes-vous sûr de vouloir supprimer l'équipe <strong>"{teamToDelete?.teamName}"</strong> ?
-					</p>
-					<p style={{ fontSize: 14, color: '#8c8c8c', margin: 0 }}>
-						Cette action est irréversible et supprimera définitivement l'équipe et toutes ses données associées.
-					</p>
-				</Modal>
-				{preference === "card" ? (
-					<CardsGrid>
-						{filteredTeams.map(team => (
-							<TeamCard key={team.id} team={team} handleDelete={handleDelete} userRole={user.role}/>
-						))}
-					</CardsGrid>
-				) : (
-					<div style={{margin:"24px 0"}}>
-						<TableStyle 
-							columns={columnsTeams} 
-							dataSource={filteredTeams} 
-							pagination={false}
-							footer={() => <Footer />}
-							scroll={{ y: 450 }}
-						/>
-					</div>
-				)}
-			</ScrollableContent>
-		</PageWrapper>
-	);
+  return (
+    <PageWrapper>
+      <Header>
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", path: "/" },
+            { label: "Teams" },
+          ]}
+        />
+        <h1>Gestion des Équipes</h1>
+        <ToolbarContainer>
+          <LeftActions>
+            <SearchContainer>
+              <Input
+                prefix={<SearchOutlined style={{ color: '#64748b' }} />}
+                placeholder="Rechercher une équipe..."
+                onChange={handleSearch}
+                allowClear
+              />
+            </SearchContainer>
+            <ViewToggleGroup>
+              <ViewButton
+                icon={<AppstoreOutlined />}
+                $active={preference === "card"}
+                onClick={() => preference !== "card" && toggleView()}
+              />
+              <ViewButton
+                icon={<UnorderedListOutlined />}
+                $active={preference === "table"}
+                onClick={() => preference !== "table" && toggleView()}
+              />
+            </ViewToggleGroup>
+          </LeftActions>
+          <ButtonStyle
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={showModal}
+          >
+            Créer une équipe
+          </ButtonStyle>
+        </ToolbarContainer>
+      </Header>
+      <ScrollableContent>
+        <Modal
+          title={
+            <span style={{ 
+              fontWeight: 700, 
+              fontSize: 20,
+              background: 'linear-gradient(135deg, #9191fa 0%, #C0C0F6 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              {"Création d'une nouvelle équipe"}
+            </span>
+          }
+          destroyOnHidden={true}
+          open={isModalOpen}
+          onCancel={handleCancel}
+          centered
+          footer={null}
+          width={650}
+          styles={{
+            body: {
+              background: "linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%)",
+              borderRadius: 12,
+              padding: "32px 24px"
+            }
+          }}
+        >
+          <CreateTeamForm 
+            form={form}
+            onFinish={onFinish}
+          />
+        </Modal>
+        <Modal
+          title={
+            <span style={{ 
+              fontWeight: 700, 
+              fontSize: 20,
+              color: '#ff4d4f'
+            }}>
+              Confirmer la suppression
+            </span>
+          }
+          open={isDeleteModalOpen}
+          onOk={confirmDelete}
+          onCancel={cancelDelete}
+          okText="Supprimer"
+          cancelText="Annuler"
+          okButtonProps={{ danger: true, loading: isDeleting }}
+          centered
+          width={500}
+          styles={{
+            body: {
+              padding: "24px"
+            }
+          }}
+        >
+          <p style={{ fontSize: 16, marginBottom: 8 }}>
+            {"Êtes-vous sûr de vouloir supprimer l'équipe "}
+            <strong>{`"${teamToDelete?.teamName}"`}</strong>
+            {" ?"}
+          </p>
+          <p style={{ fontSize: 14, color: '#8c8c8c', margin: 0 }}>
+            {"Cette action est irréversible et supprimera définitivement l'équipe et toutes ses données associées."}
+          </p>
+        </Modal>
+        {preference === "card" ? (
+          <CardsGrid>
+            {filteredTeams.map(team => (
+              <TeamCard key={team.id} team={team} handleDelete={handleDelete} userRole={user.role}/>
+            ))}
+          </CardsGrid>
+        ) : (
+          <div style={{margin:"24px 0"}}>
+            <TableStyle 
+              columns={columnsTeams} 
+              dataSource={filteredTeams} 
+              pagination={false}
+              footer={() => <Footer />}
+              scroll={{ y: 450 }}
+            />
+          </div>
+        )}
+      </ScrollableContent>
+    </PageWrapper>
+  );
 }

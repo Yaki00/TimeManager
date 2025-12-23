@@ -117,14 +117,16 @@ describe("Leave Controller", () => {
 
   afterAll(async () => {
     // Nettoyer les données de test
-    await prisma.belongs.deleteMany({
-      where: {
-        teamId: testTeam.id,
-      },
-    });
-    await prisma.team.delete({
-      where: { id: testTeam.id },
-    });
+    if (testTeam?.id) {
+      await prisma.belongs.deleteMany({
+        where: {
+          teamId: testTeam.id,
+        },
+      });
+      await prisma.team.deleteMany({
+        where: { id: testTeam.id },
+      });
+    }
     await prisma.user.deleteMany({
       where: {
         email: {
@@ -303,6 +305,59 @@ describe("Leave Controller", () => {
 
   describe("GET /leaves", () => {
     beforeEach(async () => {
+      // S'assurer que les utilisateurs existent et ne sont pas supprimés
+      // Recharger les utilisateurs depuis la base de données pour obtenir les IDs à jour
+      const john = await prisma.user.findUnique({ 
+        where: { email: "test-employer@example.com" },
+        select: { id: true, deletedAt: true }
+      });
+      const mike = await prisma.user.findUnique({ 
+        where: { email: "test-manager@example.com" },
+        select: { id: true, deletedAt: true }
+      });
+      
+      if (!john || john.deletedAt) {
+        // Recréer l'utilisateur si nécessaire
+        const pw = await bcrypt.hash("Secret123!", 10);
+        const updatedJohn = await prisma.user.upsert({
+          where: { email: "test-employer@example.com" },
+          update: { deletedAt: null },
+          create: {
+            email: "test-employer@example.com",
+            password: pw,
+            firstName: "John",
+            lastName: "Employer",
+            role: "Employer",
+            contractType: "H35",
+            phoneNumber: "0600000001",
+          },
+        });
+        employerJohn.id = updatedJohn.id;
+      } else {
+        employerJohn.id = john.id;
+      }
+      
+      if (!mike || mike.deletedAt) {
+        // Recréer l'utilisateur si nécessaire
+        const pw = await bcrypt.hash("Secret123!", 10);
+        const updatedMike = await prisma.user.upsert({
+          where: { email: "test-manager@example.com" },
+          update: { deletedAt: null },
+          create: {
+            email: "test-manager@example.com",
+            password: pw,
+            firstName: "Mike",
+            lastName: "Manager",
+            role: "Manager",
+            contractType: "H35",
+            phoneNumber: "0600000002",
+          },
+        });
+        managerMike.id = updatedMike.id;
+      } else {
+        managerMike.id = mike.id;
+      }
+
       // Créer quelques congés de test
       await prisma.leave.createMany({
         data: [

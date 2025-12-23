@@ -14,7 +14,7 @@ import {
   LogoutOutlined,
   FieldTimeOutlined,
 } from "@ant-design/icons";
-import { useClocking } from "../service/useClocking";
+import { useClocking } from "@/service/useClocking";
 
 const { Text } = Typography;
 
@@ -39,10 +39,10 @@ const StatusIndicator = styled.div`
   }};
   border: 1px solid
     ${(props) => {
-      if (props.$isWorking && !props.$isPaused) return "#b7eb8f";
-      if (props.$isPaused) return "#ffd591";
-      return "#d9d9d9";
-    }};
+    if (props.$isWorking && !props.$isPaused) return "#b7eb8f";
+    if (props.$isPaused) return "#ffd591";
+    return "#d9d9d9";
+  }};
 `;
 
 const StatusDot = styled.div`

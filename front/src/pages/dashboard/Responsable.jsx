@@ -28,14 +28,14 @@ import {
   StatsGrid,
   DashboardGrid,
   ChartContainer,
-} from "../../utils/dashboardStyle";
-import { TableStyle } from "../../utils/TableStyle";
-import { TagStyle } from "../../utils/TagStyle";
+} from "@/utils/dashboardStyle";
+import { TableStyle } from "@/utils/TableStyle";
+import { TagStyle } from "@/utils/TagStyle";
 import { Space, Button } from "antd";
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
-import { useGetResponsableKPIs } from "../../service/useKpi";
-import { useGetManagerKPIs } from "../../service/useKpi";
-import { useUserStore } from "../../zustand/store";
+import { useGetResponsableKPIs } from "@/service/useKpi";
+import { useGetManagerKPIs } from "@/service/useKpi";
+import { useUserStore } from "@/zustand/store";
 
 const RequestsCard = styled(KPICard)`
   margin-top: 24px;
@@ -54,7 +54,7 @@ const RequestsCard = styled(KPICard)`
 
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
-const columns = [
+const getColumns = (onRequestAction) => [
   {
     title: "Membre",
     dataIndex: "member",
@@ -163,20 +163,20 @@ const RankingItem = styled.div`
   border-radius: 10px;
   border: 1px solid
     ${(props) => {
-      if (props.rank === 1) return "#FFD700";
-      if (props.rank === 2) return "#C0C0C0";
-      if (props.rank === 3) return "#CD7F32";
-      return "#e2e8f0";
-    }};
+    if (props.rank === 1) return "#FFD700";
+    if (props.rank === 2) return "#C0C0C0";
+    if (props.rank === 3) return "#CD7F32";
+    return "#e2e8f0";
+  }};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
   border-left: 4px solid
     ${(props) => {
-      if (props.rank === 1) return "#FFD700";
-      if (props.rank === 2) return "#C0C0C0";
-      if (props.rank === 3) return "#CD7F32";
-      return "#cbd5e1";
-    }};
+    if (props.rank === 1) return "#FFD700";
+    if (props.rank === 2) return "#C0C0C0";
+    if (props.rank === 3) return "#CD7F32";
+    return "#cbd5e1";
+  }};
 
   &:hover {
     transform: translateX(4px);
@@ -325,9 +325,9 @@ export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
   const avgProcessingTime =
     kpiData.processingTime?.length > 0
       ? (
-          kpiData.processingTime.reduce((sum, item) => sum + item.days, 0) /
+        kpiData.processingTime.reduce((sum, item) => sum + item.days, 0) /
           kpiData.processingTime.length
-        ).toFixed(1)
+      ).toFixed(1)
       : 0;
 
   return (
@@ -480,7 +480,7 @@ export const Responsable = ({ selectedTeam, dateRange, onRequestAction }) => {
       <RequestsCard>
         <h3>Demandes des Managers</h3>
         <TableStyle
-          columns={columns}
+          columns={getColumns(onRequestAction)}
           dataSource={currentTeamData.requests || []}
           pagination={false}
           locale={{

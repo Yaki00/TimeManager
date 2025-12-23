@@ -3,6 +3,7 @@ name: CI
 
 # Définit les événements qui déclenchent l'exécution du workflow
 # Le workflow s'exécute sur les push et pull requests vers les branches main et development
+# workflow_dispatch permet de déclencher manuellement le workflow depuis l'interface GitHub
 on:
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - development
+  workflow_dispatch:
 
 # Définit les différents jobs qui s'exécutent en parallèle
 jobs:
@@ -53,40 +55,54 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Configure Node.js version 20 et active le cache npm pour accélérer les installations
-      # Le cache utilise package-lock.json pour détecter les changements de dépendances
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Configure Docker Buildx pour le build multi-plateforme et le cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build l'image Docker backend avec le stage "test"
+      # Le stage test contient toutes les dépendances nécessaires pour les tests
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v5
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: back/package-lock.json
+          context: ./back
+          target: test
+          push: false
+          load: true
+          tags: backend-test:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # Installe les dépendances backend de manière reproductible (npm ci)
-      # npm ci installe exactement les versions spécifiées dans package-lock.json
-      - name: Install dependencies (Backend)
-        working-directory: ./back
-        run: npm ci
-
-      # Génère le client Prisma à partir du schéma Prisma
+      # Génère le client Prisma à partir du schéma Prisma dans le conteneur
       # Nécessaire pour que le code puisse interagir avec la base de données
       - name: Generate Prisma Client
-        working-directory: ./back
-        run: npm run prisma:generate
+        run: |
+          docker run --rm \
+            --network host \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
+            backend-test:latest \
+            npm run prisma:generate
 
       # Applique le schéma Prisma à la base de données PostgreSQL
       # Crée les tables et la structure de la base de données pour les tests
       - name: Push database schema
-        working-directory: ./back
-        run: npm run prisma:push
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app?schema=test
+        run: |
+          docker run --rm \
+            --network host \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
+            backend-test:latest \
+            npm run prisma:push
 
       # Exécute la suite de tests backend avec génération du rapport de couverture
       # Les tests utilisent Vitest et génèrent un rapport au format lcov
+      # Le volume permet de récupérer le rapport de couverture après l'exécution
       - name: Run tests with coverage
-        working-directory: ./back
-        run: npm run test:coverage
+        run: |
+          docker run --rm \
+            --network host \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
+            -v ${{ github.workspace }}/back/coverage:/app/coverage \
+            backend-test:latest \
+            npm run test:coverage
 
       # Upload le rapport de couverture vers Codecov (service externe)
       # Permet de visualiser l'évolution de la couverture de code dans le temps
@@ -108,22 +124,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: front/package-lock.json
+      # Configure Docker Buildx pour le build multi-plateforme et le cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Install dependencies (Frontend)
-        working-directory: ./front
-        run: npm ci
+      # Build l'image Docker frontend
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./front
+          push: false
+          load: true
+          tags: frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Exécute ESLint pour détecter les erreurs et problèmes de style dans le code
       # Le build échouera si ESLint trouve des erreurs
+      # Le code est déjà copié dans l'image lors du build Docker
       - name: Run ESLint
-        working-directory: ./front
-        run: npm run lint
+        run: |
+          docker run --rm \
+            frontend:latest \
+            npm run lint
 
   # Job 3: Compilation du frontend pour vérifier qu'il n'y a pas d'erreurs de build
   frontend-build:
@@ -134,19 +157,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: front/package-lock.json
+      # Configure Docker Buildx pour le build multi-plateforme et le cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Install dependencies (Frontend)
-        working-directory: ./front
-        run: npm ci
+      # Build l'image Docker frontend
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./front
+          push: false
+          load: true
+          tags: frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Compile le frontend avec Vite pour vérifier qu'il n'y a pas d'erreurs de compilation
       # Génère les fichiers de production dans le dossier dist/
+      # Le code est déjà copié dans l'image lors du build Docker
       - name: Build frontend
-        working-directory: ./front
-        run: npm run build
+        run: |
+          docker run --rm \
+            frontend:latest \
+            npm run build

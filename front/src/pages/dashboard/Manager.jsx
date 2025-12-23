@@ -24,10 +24,10 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router";
-import { useGetManagerKPIs } from "../../service/useKpi";
-import { useGetTeamById } from "../../service/useTeam";
-import { warningApi } from "../../api/warning";
-import { useUserStore } from "../../zustand/store";
+import { useGetManagerKPIs } from "@/service/useKpi";
+import { useGetTeamById } from "@/service/useTeam";
+import { warningApi } from "@/api/warning";
+import { useUserStore } from "@/zustand/store";
 import {
   BarChart,
   Bar,
@@ -49,9 +49,9 @@ import {
   WideKPICard,
   DashboardGrid,
   ChartContainer,
-} from "../../utils/dashboardStyle";
-import { TableStyle } from "../../utils/TableStyle";
-import { TagStyle } from "../../utils/TagStyle";
+} from "@/utils/dashboardStyle";
+import { TableStyle } from "@/utils/TableStyle";
+import { TagStyle } from "@/utils/TagStyle";
 
 dayjs.locale("fr");
 
@@ -87,7 +87,7 @@ const RequestsCard = styled(KPICard)`
 
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
-const columns = [
+const getColumns = (onRequestAction) => [
   {
     title: "Membre",
     dataIndex: "member",
@@ -520,7 +520,7 @@ export const Manager = ({ selectedTeam, dateRange, onRequestAction }) => {
         <RequestsCard>
           <h3>Demandes des Membres</h3>
           <TableStyle
-            columns={columns}
+            columns={getColumns(onRequestAction)}
             dataSource={currentTeamData.requests || []}
             pagination={false}
             locale={{
@@ -554,7 +554,7 @@ export const Manager = ({ selectedTeam, dateRange, onRequestAction }) => {
 
             return (
               <RequestsCard>
-                <h3>Membres de l'équipe</h3>
+                <h3>{"Membres de l'équipe"}</h3>
                 <TableStyle
                   columns={[
                     {
