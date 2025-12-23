@@ -109,6 +109,8 @@ export const Teams = () => {
 	
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [teamToDelete, setTeamToDelete] = useState(null);
 	const [form] = Form.useForm();
 
 	const { createTeamAsync, isLoading } = useCreateTeam();
@@ -175,16 +177,30 @@ export const Teams = () => {
 		);
 	}
 
-	const handleDelete = async (record) => {
+	const handleDelete = (record) => {
+		setTeamToDelete(record);
+		setIsDeleteModalOpen(true);
+	};
+
+	const confirmDelete = async () => {
+		if (!teamToDelete) return;
+		
 		try {
-			await deleteTeamAsync(record.id);
-			message.success(`L'équipe "${record.teamName}" a été supprimée avec succès !`);
+			await deleteTeamAsync(teamToDelete.id);
+			message.success(`L'équipe "${teamToDelete.teamName}" a été supprimée avec succès !`);
+			setIsDeleteModalOpen(false);
+			setTeamToDelete(null);
 		} catch (error) {
 			message.error("Échec de la suppression de l'équipe. Veuillez réessayer.");
 		}
 	};
 
-	const columnsTeams = columnsTeam(handleDelete, isDeleting);
+	const cancelDelete = () => {
+		setIsDeleteModalOpen(false);
+		setTeamToDelete(null);
+	};
+
+	const columnsTeams = columnsTeam(handleDelete, isDeleting, user.role);
 
 	return (
 		<PageWrapper>
@@ -261,10 +277,41 @@ export const Teams = () => {
 						onFinish={onFinish}
 					/>
 				</Modal>
+				<Modal
+					title={
+						<span style={{ 
+							fontWeight: 700, 
+							fontSize: 20,
+							color: '#ff4d4f'
+						}}>
+							Confirmer la suppression
+						</span>
+					}
+					open={isDeleteModalOpen}
+					onOk={confirmDelete}
+					onCancel={cancelDelete}
+					okText="Supprimer"
+					cancelText="Annuler"
+					okButtonProps={{ danger: true, loading: isDeleting }}
+					centered
+					width={500}
+					styles={{
+						body: {
+							padding: "24px"
+						}
+					}}
+				>
+					<p style={{ fontSize: 16, marginBottom: 8 }}>
+						Êtes-vous sûr de vouloir supprimer l'équipe <strong>"{teamToDelete?.teamName}"</strong> ?
+					</p>
+					<p style={{ fontSize: 14, color: '#8c8c8c', margin: 0 }}>
+						Cette action est irréversible et supprimera définitivement l'équipe et toutes ses données associées.
+					</p>
+				</Modal>
 				{preference === "card" ? (
 					<CardsGrid>
 						{filteredTeams.map(team => (
-							<TeamCard key={team.id} team={team} handleDelete={handleDelete}/>
+							<TeamCard key={team.id} team={team} handleDelete={handleDelete} userRole={user.role}/>
 						))}
 					</CardsGrid>
 				) : (

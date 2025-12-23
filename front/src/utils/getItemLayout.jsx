@@ -22,7 +22,6 @@ const allItems = [
 	getItem('Time', <FieldTimeOutlined />, '/time'),
 	getItem('Teams', <SettingOutlined />, '/teams',),
 	getItem('Effectif', <TeamOutlined />, '/effectif', ),
-	getItem('Recherche', <FileSearchOutlined />, '/search-user', ),
 ];
 
 export const getFilteredItems = () => {
@@ -32,4 +31,5 @@ export const getFilteredItems = () => {
 	return allItems.filter(item => item.roles.includes(userRole));
 };
 
+// Ne pas exporter items comme constante, mais comme fonction pour éviter les problèmes de timing
 export const items = getFilteredItems();
