@@ -100,6 +100,7 @@ jobs:
           docker run --rm \
             --network host \
             -e DATABASE_URL="${{ env.DATABASE_URL }}" \
+            -e NODE_ENV=test \
             -v ${{ github.workspace }}/back/coverage:/app/coverage \
             backend-test:latest \
             npm run test:coverage
