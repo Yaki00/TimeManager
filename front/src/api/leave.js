@@ -61,4 +61,30 @@ export const leaveApi = {
 
     return await response.json();
   },
+
+  async deleteLeave(leaveId) {
+    const token = getToken();
+    if (!token) {
+      checkAuthError({ status: 401 });
+      throw new Error("Token manquant");
+    }
+
+    const response = await fetch(`${BASE_URL}/leaves/${leaveId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (checkAuthError(response)) {
+      throw new Error("Session expirée. Redirection vers la connexion...");
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`);
+    }
+
+    return { success: true };
+  },
 };
