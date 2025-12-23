@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { DatePicker, Select } from "antd";
+import { DatePicker, Select, Button, message, Dropdown } from "antd";
+import { DownloadOutlined, DownOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import {
@@ -17,10 +18,32 @@ import { useUserStore } from "../../zustand/store";
 import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { userApi } from "../../api/user";
+import { Link } from "react-router-dom";
+import { useGetResponsableKPIs, useGetManagerKPIs, useGetCurrentUserKPIs } from "../../service/useKpi";
+import { exportResponsableKPIs, exportManagerKPIs, exportUserKPIs, EXPORT_FORMATS } from "../../utils/exportKpi";
 
 dayjs.locale("fr");
 
 const { RangePicker } = DatePicker;
+
+const TeamTextLink = styled(Link)`
+	color: #4F46E5;
+	text-decoration: none;
+	font-weight: 600;
+	margin-left: 8px;
+	transition: all 0.2s ease;
+
+	&:hover {
+		color: #4338ca;
+		text-decoration: underline;
+	}
+`;
+
+const TeamTextNoTeam = styled.span`
+	color: #94a3b8;
+	font-style: italic;
+	margin-left: 8px;
+`;
 
 const ViewSwitcher = styled.div`
   display: flex;
@@ -138,6 +161,41 @@ const DateRangeSelector = styled.div`
   }
 `;
 
+const ExportButtonWrapper = styled.div`
+  .ant-btn {
+    background: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 6px 16px;
+    height: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    &:hover {
+      background: #fafafa;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      color: #1e293b;
+    }
+
+    &:focus {
+      background: white;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+      color: #1e293b;
+    }
+
+    .anticon {
+      color: #64748b;
+    }
+  }
+`;
+
 export const Dashboard = () => {
   const user = useUserStore((state) => state.user);
   const userRole = user?.role;
@@ -174,6 +232,37 @@ export const Dashboard = () => {
     queryKey: ["currentUser"],
     queryFn: () => userApi.getCurrentUser(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Préparer les dates pour les KPI
+  const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
+  const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
+
+  // Récupérer les données KPI selon la vue active
+  const {
+    data: responsableKpiData,
+    isLoading: isLoadingResponsableKpi,
+  } = useGetResponsableKPIs(startDate, endDate, {
+    enabled: activeView === "responsable" && isResponsable,
+  });
+
+  const {
+    data: managerKpiData,
+    isLoading: isLoadingManagerKpi,
+  } = useGetManagerKPIs(
+    selectedTeam ? parseInt(selectedTeam) : null,
+    startDate,
+    endDate,
+    {
+      enabled: activeView === "manager" && isManagerOrResponsable && !!selectedTeam,
+    }
+  );
+
+  const {
+    data: userKpiData,
+    isLoading: isLoadingUserKpi,
+  } = useGetCurrentUserKPIs(startDate, endDate, {
+    enabled: activeView === "user",
   });
 
   // Forcer le rafraîchissement si les équipes ne sont pas présentes
@@ -292,6 +381,40 @@ export const Dashboard = () => {
     }
   };
 
+  // Fonction pour exporter les KPI selon la vue active et le format
+  const handleExportKPIs = (format) => {
+    try {
+      if (activeView === "responsable" && isResponsable) {
+        if (!responsableKpiData) {
+          message.warning("Aucune donnée disponible pour l'export");
+          return;
+        }
+        exportResponsableKPIs(responsableKpiData, startDate, endDate, format);
+        message.success(`Export des KPI Responsable (${format.toUpperCase()}) réussi`);
+      } else if (activeView === "manager" && isManagerOrResponsable) {
+        if (!managerKpiData || !selectedTeam) {
+          message.warning("Veuillez sélectionner une équipe et attendre le chargement des données");
+          return;
+        }
+        const selectedTeamData = availableTeams.find(
+          (team) => team.id.toString() === selectedTeam
+        );
+        const teamName = selectedTeamData?.teamName || "Equipe";
+        exportManagerKPIs(managerKpiData, teamName, startDate, endDate, format);
+        message.success(`Export des KPI Manager (${format.toUpperCase()}) réussi`);
+      } else if (activeView === "user") {
+        if (!userKpiData) {
+          message.warning("Aucune donnée disponible pour l'export");
+          return;
+        }
+        exportUserKPIs(userKpiData, startDate, endDate, format);
+        message.success(`Export des KPI Utilisateur (${format.toUpperCase()}) réussi`);
+      }
+    } catch (error) {
+      message.error("Erreur lors de l'export: " + error.message);
+    }
+  };
+
   const rangePresets = [
     {
       label: "Aujourd'hui",
@@ -379,6 +502,25 @@ export const Dashboard = () => {
                 Vue Utilisateur
               </ViewButton>
             </ViewSwitcher>
+            
+            {/* Afficher le nom de l'équipe pour la vue Utilisateur */}
+            {activeView === "user" && (
+              <span style={{ fontSize: "14px", color: "#64748b" }}>
+                Équipe :
+                {isLoadingCurrentUser ? (
+                  <span style={{ marginLeft: "8px" }}>...</span>
+                ) : currentUserData?.teams && currentUserData.teams.length > 0 ? (
+                  <TeamTextLink 
+                    to={`/teams/${currentUserData.teams[0].id}`}
+                    state={{ id: currentUserData.teams[0].id }}
+                  >
+                    {currentUserData.teams[0].teamName}
+                  </TeamTextLink>
+                ) : (
+                  <TeamTextNoTeam>Aucune équipe</TeamTextNoTeam>
+                )}
+              </span>
+            )}
 
             {activeView === "manager" && (
               <>
@@ -459,17 +601,54 @@ export const Dashboard = () => {
               </>
             )}
           </div>
-          <DateRangeSelector>
-            <label>Période :</label>
-            <RangePicker
-              value={dateRange}
-              onChange={handleDateRangeChange}
-              presets={rangePresets}
-              format="DD/MM/YYYY"
-              placeholder={["Date début", "Date fin"]}
-              style={{ minWidth: "280px" }}
-            />
-          </DateRangeSelector>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <DateRangeSelector>
+              <label>Période :</label>
+              <RangePicker
+                value={dateRange}
+                onChange={handleDateRangeChange}
+                presets={rangePresets}
+                format="DD/MM/YYYY"
+                placeholder={["Date début", "Date fin"]}
+                style={{ minWidth: "280px" }}
+              />
+            </DateRangeSelector>
+            <ExportButtonWrapper>
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: EXPORT_FORMATS.CSV,
+                      label: "Exporter en CSV",
+                      icon: <DownloadOutlined />,
+                      onClick: () => handleExportKPIs(EXPORT_FORMATS.CSV),
+                    },
+                    {
+                      key: EXPORT_FORMATS.PDF,
+                      label: "Exporter en PDF",
+                      icon: <DownloadOutlined />,
+                      onClick: () => handleExportKPIs(EXPORT_FORMATS.PDF),
+                    },
+                    {
+                      key: EXPORT_FORMATS.JSON,
+                      label: "Exporter en JSON",
+                      icon: <DownloadOutlined />,
+                      onClick: () => handleExportKPIs(EXPORT_FORMATS.JSON),
+                    },
+                  ],
+                }}
+                disabled={
+                  (activeView === "responsable" && isLoadingResponsableKpi) ||
+                  (activeView === "manager" && (isLoadingManagerKpi || !selectedTeam)) ||
+                  (activeView === "user" && isLoadingUserKpi)
+                }
+              >
+                <Button>
+                  <DownloadOutlined /> Exporter les KPI <DownOutlined />
+                </Button>
+              </Dropdown>
+            </ExportButtonWrapper>
+          </div>
         </div>
       </Header>
       <ScrollableContent>
