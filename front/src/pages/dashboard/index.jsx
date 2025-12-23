@@ -519,15 +519,15 @@ export const Dashboard = () => {
                   <span style={{ marginLeft: "8px" }}>...</span>
                 ) : currentUserData?.teams &&
                   currentUserData.teams.length > 0 ? (
-                  <TeamTextLink
-                    to={`/teams/${currentUserData.teams[0].id}`}
-                    state={{ id: currentUserData.teams[0].id }}
-                  >
-                    {currentUserData.teams[0].teamName}
-                  </TeamTextLink>
-                ) : (
-                  <TeamTextNoTeam>Aucune équipe</TeamTextNoTeam>
-                )}
+                    <TeamTextLink
+                      to={`/teams/${currentUserData.teams[0].id}`}
+                      state={{ id: currentUserData.teams[0].id }}
+                    >
+                      {currentUserData.teams[0].teamName}
+                    </TeamTextLink>
+                  ) : (
+                    <TeamTextNoTeam>Aucune équipe</TeamTextNoTeam>
+                  )}
               </span>
             )}
 
@@ -591,22 +591,22 @@ export const Dashboard = () => {
                   !isLoadingTeams &&
                   !isLoadingCurrentUser &&
                   currentUserData && (
-                    <TeamSelector>
-                      <label>Équipe :</label>
-                      <span
-                        style={{
-                          padding: "6px 16px",
-                          background: "#fef3c7",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          color: "#92400e",
-                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                        }}
-                      >
-                        Aucune équipe assignée
-                      </span>
-                    </TeamSelector>
-                  )}
+                  <TeamSelector>
+                    <label>Équipe :</label>
+                    <span
+                      style={{
+                        padding: "6px 16px",
+                        background: "#fef3c7",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        color: "#92400e",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      Aucune équipe assignée
+                    </span>
+                  </TeamSelector>
+                )}
               </>
             )}
           </div>

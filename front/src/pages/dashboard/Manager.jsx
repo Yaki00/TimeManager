@@ -283,11 +283,11 @@ export const Manager = ({ selectedTeam, dateRange, onRequestAction }) => {
           <StatValue>
             {currentTeamData.hoursWorked?.length > 0
               ? (
-                  currentTeamData.hoursWorked.reduce(
-                    (acc, curr) => acc + curr.hours,
-                    0
-                  ) / currentTeamData.hoursWorked.length
-                ).toFixed(1)
+                currentTeamData.hoursWorked.reduce(
+                  (acc, curr) => acc + curr.hours,
+                  0
+                ) / currentTeamData.hoursWorked.length
+              ).toFixed(1)
               : 0}
             h
           </StatValue>
