@@ -44,3 +44,22 @@ export const useCreateLeave = () => {
 		error: createLeaveMutation.error,
 	};
 }
+
+export const useDeleteLeave = () => {
+	const queryClient = useQueryClient();
+
+	const deleteLeaveMutation = useMutation({
+		mutationFn: (leaveId) => leaveApi.deleteLeave(leaveId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['leaves'] });
+		},
+	});
+
+	return {
+		deleteLeaveAsync: deleteLeaveMutation.mutateAsync,
+		isLoading: deleteLeaveMutation.isLoading,
+		isSuccess: deleteLeaveMutation.isSuccess,
+		isError: deleteLeaveMutation.isError,
+		error: deleteLeaveMutation.error,
+	};
+}

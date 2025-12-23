@@ -4,25 +4,28 @@ import { kpiApi } from '../api/kpi';
 /**
  * Hook pour récupérer les KPI Responsable
  */
-export const useGetResponsableKPIs = (startDate, endDate) => {
+export const useGetResponsableKPIs = (startDate, endDate, options = {}) => {
   return useQuery({
     queryKey: ['kpi', 'responsable', startDate, endDate],
     queryFn: () => kpiApi.getResponsableKPIs(startDate, endDate),
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: 1,
+    enabled: options.enabled !== false,
+    ...options,
   });
 };
 
 /**
  * Hook pour récupérer les KPI Manager d'une équipe
  */
-export const useGetManagerKPIs = (teamId, startDate, endDate) => {
+export const useGetManagerKPIs = (teamId, startDate, endDate, options = {}) => {
   return useQuery({
     queryKey: ['kpi', 'manager', teamId, startDate, endDate],
     queryFn: () => kpiApi.getManagerKPIs(teamId, startDate, endDate),
-    enabled: !!teamId,
+    enabled: options.enabled !== false && !!teamId,
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: 1,
+    ...options,
   });
 };
 

@@ -19,7 +19,6 @@ export const getToken = () => {
 			return null;
 		}
 		
-		console.log("Current user token:", decryptToken);
 		return decryptToken;
 	} catch (error) {
 		// Erreur de décryptage, token invalide

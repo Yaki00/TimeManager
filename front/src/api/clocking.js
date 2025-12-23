@@ -1,28 +1,15 @@
 import { getToken } from "../utils/getToken";
 import { checkAuthError } from "../utils/handleAuthError";
 
-export const userApi = {
+const API_URL = "http://localhost:3000/clockings";
 
-	async getAllUsers() {
-		const response = await fetch ("http://localhost:3000/users", {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${getToken()}`,
-			},
-		});
-
-		if (checkAuthError(response)) {
-			throw new Error("Session expirée. Redirection vers la connexion...");
-		}
-
-		const result = await response.json();
-		return result;
-	},
-
-	async updateUser(data) {
-		const response = await fetch(`http://localhost:3000/users/${data.id}`, {
-			method: "PUT",
+export const clockingApi = {
+	/**
+	 * Créer un nouveau pointage
+	 */
+	async createClocking(data) {
+		const response = await fetch(API_URL, {
+			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				"Authorization": `Bearer ${getToken()}`,
@@ -38,65 +25,11 @@ export const userApi = {
 		return result;
 	},
 
-	async deleteUser(userId) {
-		const response = await fetch(`http://localhost:3000/users/${userId}`, {
-			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${getToken()}`,
-			},
-		});
-
-		if (checkAuthError(response)) {
-			throw new Error("Session expirée. Redirection vers la connexion...");
-		}
-
-		if (response.status === 204) {
-			return { success: true };
-		}
-
-		const result = await response.json();
-		return result;
-	},
-
-	async updateUserRole(userId, role) {
-		const response = await fetch(`http://localhost:3000/users/${userId}/role`, {
-			method: "PATCH",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${getToken()}`,
-			},
-			body: JSON.stringify({ role }),
-		});
-
-		if (checkAuthError(response)) {
-			throw new Error("Session expirée. Redirection vers la connexion...");
-		}
-
-		const result = await response.json();
-		return result;
-	},
-
-	async updateUserTeams(userId, teams) {
-		const response = await fetch(`http://localhost:3000/users/${userId}/teams`, {
-			method: "PATCH",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${getToken()}`,
-			},
-			body: JSON.stringify({ teams }),
-		});
-
-		if (checkAuthError(response)) {
-			throw new Error("Session expirée. Redirection vers la connexion...");
-		}
-
-		const result = await response.json();
-		return result;
-	},
-
-	async getCurrentUser() {
-		const response = await fetch("http://localhost:3000/users/me/info", {
+	/**
+	 * Récupérer les pointages d'un utilisateur pour une date
+	 */
+	async getClockingsByUserAndDate(userId, date) {
+		const response = await fetch(`${API_URL}/user/${userId}/date/${date}`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
@@ -111,4 +44,75 @@ export const userApi = {
 		const result = await response.json();
 		return result;
 	},
-}
+
+	/**
+	 * Mettre à jour un pointage
+	 */
+	async updateClocking(clockingId, data) {
+		const response = await fetch(`${API_URL}/${clockingId}`, {
+			method: "PATCH",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${getToken()}`,
+			},
+			body: JSON.stringify(data),
+		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
+		const result = await response.json();
+		return result;
+	},
+
+	/**
+	 * Récupérer les pointages d'un utilisateur
+	 */
+	async getUserClockings(userId, params = {}) {
+		const queryParams = new URLSearchParams(params).toString();
+		const url = `${API_URL}/user/${userId}${queryParams ? `?${queryParams}` : ''}`;
+		
+		const response = await fetch(url, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${getToken()}`,
+			},
+		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
+		const result = await response.json();
+		return result;
+	},
+
+	/**
+	 * Récupérer les statistiques de pointage
+	 */
+	async getUserClockingStats(userId, startDate, endDate) {
+		const params = new URLSearchParams();
+		if (startDate) params.append('startDate', startDate);
+		if (endDate) params.append('endDate', endDate);
+		
+		const url = `${API_URL}/user/${userId}/stats${params.toString() ? `?${params.toString()}` : ''}`;
+		
+		const response = await fetch(url, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${getToken()}`,
+			},
+		});
+
+		if (checkAuthError(response)) {
+			throw new Error("Session expirée. Redirection vers la connexion...");
+		}
+
+		const result = await response.json();
+		return result;
+	},
+};
+

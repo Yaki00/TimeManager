@@ -1,7 +1,7 @@
 import { Menu,Avatar, Popover, Button } from 'antd';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { items } from '../../utils/getItemLayout.jsx';
+import { getFilteredItems } from '../../utils/getItemLayout.jsx';
 import { useUserStore } from '../../zustand/store.js';
 import { useNavigate,useLocation } from 'react-router';
 
@@ -40,14 +40,16 @@ export const MenuLayout = ({ collapsed }) => {
 		useUserStore.getState().logout();
 		navigate("/login");
 	};
- const selectedKey = location.pathname === "/profile" ? [] : [location.pathname];
+	const selectedKey = location.pathname === "/profile" ? [] : [location.pathname];
+	const menuItems = getFilteredItems();
+	
 	return (
 		<>
 			<MenuStyle
 				mode="inline"
 				defaultSelectedKeys={['1']}
-				items={items}
-		selectedKeys={selectedKey}
+				items={menuItems}
+				selectedKeys={selectedKey}
 				style={{ flex: 1, borderRight: 'none' }}
 			/>
 			<Profile>

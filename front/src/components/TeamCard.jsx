@@ -150,7 +150,7 @@ const DeleteButton = styled(Button)`
 `;
 
 
-export const TeamCard = ({ team, handleDelete }) => {
+export const TeamCard = ({ team, handleDelete, userRole }) => {
 	return (
 		<CardContainer>
 			<CardStyle>
@@ -200,17 +200,19 @@ export const TeamCard = ({ team, handleDelete }) => {
 							Voir l'équipe
 						</ButtonStyle>
 					</Link>
-					<Tooltip title="Supprimer l'équipe">
-						<DeleteButton 
-							type="primary" 
-							danger 
-							icon={<DeleteOutlined />}
-							onClick={(e) => {
-								e.preventDefault();
-								handleDelete(team);
-							}}
-						/>
-					</Tooltip>
+					{userRole === "Responsable" && (
+						<Tooltip title="Supprimer l'équipe">
+							<DeleteButton 
+								type="primary" 
+								danger 
+								icon={<DeleteOutlined />}
+								onClick={(e) => {
+									e.preventDefault();
+									handleDelete(team);
+								}}
+							/>
+						</Tooltip>
+					)}
 				</CardFooter>
 			</CardStyle>
 		</CardContainer>

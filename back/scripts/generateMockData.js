@@ -118,6 +118,22 @@ function generateName() {
   return { firstName, lastName };
 }
 
+// Générer une URL d'avatar
+function generateAvatarUrl(firstName, lastName) {
+  // Utilise DiceBear API pour générer des avatars aléatoires
+  const styles = ["avataaars", "bottts", "micah", "personas", "initials"];
+  const style = styles[Math.floor(Math.random() * styles.length)];
+  const seed = `${firstName}-${lastName}`.toLowerCase();
+  return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
+}
+
+// Générer une date aléatoire dans le passé
+function generatePastDate(daysBack) {
+  const date = new Date();
+  date.setDate(date.getDate() - Math.floor(Math.random() * daysBack));
+  return date;
+}
+
 // Créer un utilisateur mock
 async function createMockUser(index) {
   const { firstName, lastName } = generateName();
@@ -128,6 +144,7 @@ async function createMockUser(index) {
     CONTRACT_TYPES[Math.floor(Math.random() * CONTRACT_TYPES.length)];
 
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, ROUNDS);
+  const avatarUrl = generateAvatarUrl(firstName, lastName);
 
   return prisma.user.create({
     data: {
@@ -138,9 +155,14 @@ async function createMockUser(index) {
       phoneNumber,
       role,
       contractType,
+      avatarUrl,
+      totalWarningPoints: Math.floor(Math.random() * 5), // Entre 0 et 4 points
       totalPayeLeave: Math.floor(Math.random() * 20) + 5, // Entre 5 et 25 jours
       totalRemote: Math.floor(Math.random() * 3), // Entre 0 et 2
-      monthlyLeaveGain: Math.floor(Math.random() * 3) + 1.5, // Entre 1.5 et 4.5
+      weeklyLeaveLimit: Math.floor(Math.random() * 2) + 2, // Entre 2 et 3
+      lastWeekReset: generatePastDate(7),
+      monthlyLeaveGain: (Math.random() * 3 + 1.5).toFixed(1), // Entre 1.5 et 4.5
+      lastMonthlyReset: generatePastDate(30),
     },
   });
 }
@@ -185,18 +207,37 @@ async function createMockLeaves(userId, count = 3) {
   const leaves = [];
   const now = new Date();
 
+  // S'assurer que tous les types de congés et statuts sont représentés
+  const statuses = ["Pending", "Approved", "Refused"];
+  const types = ["Absence", "PaidLeave", "Training", "Remote"];
+
   for (let i = 0; i < count; i++) {
     const startDate = new Date(now);
+    // Étaler les congés sur les 6 derniers mois et 3 mois à venir
     startDate.setDate(
-      startDate.getDate() + Math.floor(Math.random() * 180) - 90
-    ); // Entre -90 et +90 jours
+      startDate.getDate() + Math.floor(Math.random() * 270) - 180
+    ); // Entre -180 et +90 jours
 
     const duration = Math.floor(Math.random() * 5) + 1; // Entre 1 et 5 jours
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + duration);
 
-    const statuses = ["Pending", "Approved", "Refused"];
-    const types = ["Absence", "PaidLeave", "Training", "Remote"];
+    // Garantir la diversité des types et statuts
+    const type =
+      i < types.length
+        ? types[i]
+        : types[Math.floor(Math.random() * types.length)];
+    const status =
+      i < statuses.length
+        ? statuses[i]
+        : statuses[Math.floor(Math.random() * statuses.length)];
+
+    const justifications = {
+      PaidLeave: "Congé payé pour vacances",
+      Absence: "Absence pour raisons personnelles",
+      Training: "Formation professionnelle",
+      Remote: "Télétravail pour raisons de santé",
+    };
 
     const leave = await prisma.leave.create({
       data: {
@@ -204,11 +245,9 @@ async function createMockLeaves(userId, count = 3) {
         startDate,
         endDate,
         daysLeave: duration,
-        justification: `Congé mock ${i + 1} - ${
-          types[Math.floor(Math.random() * types.length)]
-        }`,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        type: types[Math.floor(Math.random() * types.length)],
+        justification: justifications[type] || `Congé mock ${i + 1}`,
+        status,
+        type,
       },
     });
 
@@ -216,6 +255,225 @@ async function createMockLeaves(userId, count = 3) {
   }
 
   return leaves;
+}
+
+// Créer des pointages mock
+async function createMockClockings(userId, count = 60) {
+  const clockings = [];
+  const now = new Date();
+  const weekDays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  // Générer des pointages sur les 6 derniers mois (environ 120 jours ouvrables)
+  let daysBack = 0;
+  let clockingsCreated = 0;
+
+  while (clockingsCreated < count && daysBack < 180) {
+    const clockingDate = new Date(now);
+    clockingDate.setDate(clockingDate.getDate() - daysBack);
+
+    const dayOfWeek = clockingDate.getDay();
+
+    // Ne pas générer de pointages pour le weekend (sauf rare exception)
+    if ((dayOfWeek !== 0 && dayOfWeek !== 6) || Math.random() > 0.95) {
+      const weekDay = weekDays[(dayOfWeek + 6) % 7]; // Ajuster pour que Lundi = 0
+
+      // Génère des heures de travail réalistes avec variabilité
+      const startHour = 7 + Math.floor(Math.random() * 3); // Entre 7h et 9h
+      const startMinute = Math.floor(Math.random() * 60);
+      const firstArrival = new Date(1970, 0, 1, startHour, startMinute);
+
+      const workDuration = 6.5 + Math.random() * 4; // Entre 6.5h et 10.5h
+      const endHour = startHour + Math.floor(workDuration);
+      const endMinute = startMinute + Math.floor((workDuration % 1) * 60);
+      const lastDeparture = new Date(1970, 0, 1, endHour, endMinute);
+
+      const workTimeMinutes = Math.floor(workDuration * 60);
+      const breakTime = 15 + Math.floor(Math.random() * 60); // Entre 15 et 75 min
+      const totalHours = ((workTimeMinutes - breakTime) / 60).toFixed(2);
+
+      const clocking = await prisma.clocking.create({
+        data: {
+          userId,
+          clockingDate,
+          firstArrival,
+          lastDeparture,
+          workTime: workTimeMinutes,
+          breakTime,
+          totalHours,
+          weekDay,
+        },
+      });
+
+      clockings.push(clocking);
+      clockingsCreated++;
+    }
+
+    daysBack++;
+  }
+
+  return clockings;
+}
+
+// Créer des avertissements mock
+async function createMockWarnings(userId, createdById, count = 3) {
+  const warnings = [];
+  const statuses = ["Alert", "Late", "UnjustifiedAbsence"];
+  const descriptionsByStatus = {
+    Late: [
+      "Retard de 15 minutes sans justification",
+      "Retard de 30 minutes - transport en retard",
+      "Retard répété cette semaine",
+      "Arrivée tardive sans prévenir",
+    ],
+    UnjustifiedAbsence: [
+      "Absence injustifiée d'une journée",
+      "Absence sans prévenir le manager",
+      "Absence non justifiée documentée",
+      "Journée d'absence non déclarée",
+    ],
+    Alert: [
+      "Comportement inapproprié en réunion",
+      "Non-respect des règles de sécurité",
+      "Manquement aux procédures internes",
+      "Alerte sur la qualité du travail",
+    ],
+  };
+
+  for (let i = 0; i < count; i++) {
+    // Étaler les warnings sur les 6 derniers mois
+    const date = generatePastDate(180);
+
+    // Garantir que tous les types de warnings sont représentés
+    const status =
+      i < statuses.length
+        ? statuses[i]
+        : statuses[Math.floor(Math.random() * statuses.length)];
+
+    const statusDescriptions = descriptionsByStatus[status];
+    const description =
+      statusDescriptions[Math.floor(Math.random() * statusDescriptions.length)];
+
+    const warning = await prisma.warning.create({
+      data: {
+        userId,
+        createdById,
+        status,
+        description,
+        date,
+      },
+    });
+
+    warnings.push(warning);
+  }
+
+  return warnings;
+}
+
+// Créer des notifications mock
+async function createMockNotifications(userIds, count = 5) {
+  const notifications = [];
+  const statuses = ["Present", "Late", "Warning"];
+
+  const notificationTemplates = [
+    {
+      status: "Present",
+      title: "Pointage validé",
+      message: "Votre pointage d'aujourd'hui a été enregistré avec succès",
+    },
+    {
+      status: "Present",
+      title: "Rappel de pointage",
+      message: "N'oubliez pas de pointer votre départ en fin de journée",
+    },
+    {
+      status: "Late",
+      title: "Retard signalé",
+      message: "Un retard a été enregistré sur votre pointage du jour",
+    },
+    {
+      status: "Late",
+      title: "Alerte horaire",
+      message: "Vous avez dépassé l'horaire prévu sans justification",
+    },
+    {
+      status: "Warning",
+      title: "Avertissement reçu",
+      message:
+        "Un avertissement a été ajouté à votre dossier. Veuillez consulter les détails.",
+    },
+    {
+      status: "Warning",
+      title: "Alerte importante",
+      message:
+        "Votre manager souhaite vous rencontrer concernant votre présence",
+    },
+    {
+      status: "Present",
+      title: "Validation de congé",
+      message: "Votre demande de congé a été approuvée par votre manager",
+    },
+    {
+      status: "Warning",
+      title: "Congé refusé",
+      message:
+        "Votre demande de congé a été refusée. Contactez votre manager pour plus d'informations.",
+    },
+    {
+      status: "Present",
+      title: "Réunion d'équipe",
+      message: "Réunion d'équipe prévue demain à 10h en salle de conférence",
+    },
+    {
+      status: "Present",
+      title: "Mise à jour",
+      message:
+        "Nouvelles directives disponibles sur l'intranet de l'entreprise",
+    },
+  ];
+
+  for (let i = 0; i < count; i++) {
+    // Étaler les notifications sur les 2 derniers mois
+    const date = generatePastDate(60);
+
+    const template = notificationTemplates[i % notificationTemplates.length];
+
+    const notification = await prisma.notification.create({
+      data: {
+        title: template.title,
+        message: template.message,
+        status: template.status,
+        date,
+        isRead: Math.random() > 0.4, // 60% de chances d'être lues
+      },
+    });
+
+    // Assigner la notification à des utilisateurs aléatoires (1 à 8 personnes)
+    const numReceivers = Math.floor(Math.random() * 8) + 1;
+    const receivers = userIds
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.min(numReceivers, userIds.length));
+
+    for (const receiverId of receivers) {
+      await prisma.receive.create({
+        data: {
+          userId: receiverId,
+          notificationId: notification.id,
+        },
+      });
+    }
+
+    notifications.push(notification);
+  }
+
+  return notifications;
 }
 
 // Fonction principale
@@ -269,47 +527,168 @@ async function generateMockData() {
     const managers = users.filter(
       (u) => u.role === "Manager" || u.role === "Responsable"
     );
+    const employers = users.filter((u) => u.role === "Employer");
 
-    for (let i = 0; i < Math.min(teamCount, managers.length); i++) {
-      const owner = managers[i];
+    // S'assurer qu'il y a suffisamment d'équipes pour les managers
+    const teamsToCreate = Math.max(
+      Math.min(teamCount, managers.length),
+      Math.ceil(employers.length / 5)
+    );
+
+    for (let i = 0; i < teamsToCreate; i++) {
+      const owner = managers[i % managers.length];
       const team = await createMockTeam(owner.id, i + 1);
       teams.push(team);
-
-      // Ajouter des membres à l'équipe
-      const membersToAdd = users
-        .filter((u) => u.id !== owner.id)
-        .slice(0, Math.floor(Math.random() * 5) + 2); // Entre 2 et 6 membres
-
-      for (const member of membersToAdd) {
-        await prisma.belongs.create({
-          data: {
-            teamId: team.id,
-            userId: member.id,
-            isLead: Math.random() > 0.8, // 20% de chance d'être lead
-          },
-        });
-      }
-
-      console.log(
-        `   Équipe "${team.teamName}" créée avec ${membersToAdd.length} membres`
-      );
     }
     console.log(`${teams.length} équipes créées\n`);
 
-    // Créer les congés
+    // Assigner les membres aux équipes
+    console.log("Assignation des membres aux équipes...");
+    const usersWithoutTeam = [...employers];
+    const userTeamCount = new Map(); // Pour suivre le nombre d'équipes par utilisateur
+
+    // Initialiser le compteur
+    employers.forEach((emp) => userTeamCount.set(emp.id, 0));
+
+    // Première passe : s'assurer que chaque employer a au moins une équipe
+    for (const employer of employers) {
+      const randomTeam = teams[Math.floor(Math.random() * teams.length)];
+      await prisma.belongs.create({
+        data: {
+          teamId: randomTeam.id,
+          userId: employer.id,
+          isLead: Math.random() > 0.8, // 20% de chance d'être lead
+        },
+      });
+      userTeamCount.set(employer.id, 1);
+    }
+
+    // Deuxième passe : ajouter des membres supplémentaires aux équipes
+    for (const team of teams) {
+      const additionalMembers = Math.floor(Math.random() * 3); // 0 à 2 membres supplémentaires
+
+      for (let j = 0; j < additionalMembers; j++) {
+        const availableUsers = users.filter(
+          (u) =>
+            u.id !== team.ownerId &&
+            (userTeamCount.get(u.id) || 0) < 3 && // Max 3 équipes par personne
+            u.role === "Employer"
+        );
+
+        if (availableUsers.length > 0) {
+          const member =
+            availableUsers[Math.floor(Math.random() * availableUsers.length)];
+
+          // Vérifier si l'utilisateur n'est pas déjà dans cette équipe
+          const existingBelong = await prisma.belongs.findUnique({
+            where: {
+              teamId_userId: {
+                teamId: team.id,
+                userId: member.id,
+              },
+            },
+          });
+
+          if (!existingBelong) {
+            await prisma.belongs.create({
+              data: {
+                teamId: team.id,
+                userId: member.id,
+                isLead: Math.random() > 0.8,
+              },
+            });
+            userTeamCount.set(
+              member.id,
+              (userTeamCount.get(member.id) || 0) + 1
+            );
+          }
+        }
+      }
+    }
+
+    // Afficher un résumé des équipes
+    for (const team of teams) {
+      const memberCount = await prisma.belongs.count({
+        where: { teamId: team.id },
+      });
+      console.log(`   Équipe "${team.teamName}" avec ${memberCount} membres`);
+    }
+    console.log("Assignation terminée\n");
+
+    // Créer les congés (avec diversité des types et statuts)
     console.log("Création des congés...");
     let totalLeaves = 0;
     for (const user of users) {
-      const leaves = await createMockLeaves(user.id, leavesPerUser);
+      // S'assurer qu'il y a au moins 4 congés pour avoir tous les types
+      const leavesCount = Math.max(leavesPerUser, 4);
+      const leaves = await createMockLeaves(user.id, leavesCount);
       totalLeaves += leaves.length;
     }
     console.log(`${totalLeaves} congés créés\n`);
+
+    // Créer les pointages (sur les 6 derniers mois)
+    console.log("Création des pointages (6 derniers mois)...");
+    let totalClockings = 0;
+    for (const user of users) {
+      // Générer entre 40 et 80 pointages par utilisateur (simule une présence variable)
+      const clockingsCount = Math.floor(Math.random() * 40) + 40;
+      const clockings = await createMockClockings(user.id, clockingsCount);
+      totalClockings += clockings.length;
+
+      if ((users.indexOf(user) + 1) % 10 === 0) {
+        console.log(
+          `   ${users.indexOf(user) + 1}/${users.length} utilisateurs traités`
+        );
+      }
+    }
+    console.log(`${totalClockings} pointages créés\n`);
+
+    // Créer les avertissements
+    console.log("Création des avertissements...");
+    let totalWarnings = 0;
+    const responsables = users.filter((u) => u.role === "Responsable");
+
+    if (responsables.length === 0) {
+      console.log("   Aucun responsable trouvé, avertissements non créés\n");
+    } else {
+      for (const user of users) {
+        // ~50% des utilisateurs non-responsables ont des avertissements
+        if (Math.random() > 0.5 && user.role !== "Responsable") {
+          // 1 à 4 avertissements pour avoir tous les types représentés
+          const warningsCount = Math.floor(Math.random() * 3) + 1;
+          const createdBy =
+            responsables[Math.floor(Math.random() * responsables.length)].id;
+
+          const warnings = await createMockWarnings(
+            user.id,
+            createdBy,
+            warningsCount
+          );
+          totalWarnings += warnings.length;
+        }
+      }
+      console.log(`${totalWarnings} avertissements créés\n`);
+    }
+
+    // Créer les notifications (tous types de statuts)
+    console.log("Création des notifications...");
+    const userIds = users.map((u) => u.id);
+    // Créer au moins 10 notifications pour couvrir tous les types
+    const notificationsCount = Math.max(Math.floor(users.length * 0.8), 10);
+    const notifications = await createMockNotifications(
+      userIds,
+      notificationsCount
+    );
+    console.log(`${notifications.length} notifications créées\n`);
 
     console.log("Génération terminée avec succès !");
     console.log(`\nRésumé:`);
     console.log(`   - ${users.length} utilisateurs créés`);
     console.log(`   - ${teams.length} équipes créées`);
     console.log(`   - ${totalLeaves} congés créés`);
+    console.log(`   - ${totalClockings} pointages créés`);
+    console.log(`   - ${totalWarnings} avertissements créés`);
+    console.log(`   - ${notifications.length} notifications créées`);
     console.log(`\nPour vous connecter, utilisez:`);
     console.log(`   Email: ${MOCK_PREFIX}user0@example.com`);
     console.log(`   Mot de passe: ${DEFAULT_PASSWORD}`);

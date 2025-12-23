@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { DashboardOutlined, FieldTimeOutlined, SettingOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { DashboardOutlined, FieldTimeOutlined, SettingOutlined, FileSearchOutlined, TeamOutlined } from '@ant-design/icons';
 import { getRoles } from './getRoles';
 
 const getItem = (
@@ -20,8 +20,8 @@ const getItem = (
 const allItems = [
 	getItem('Dashboard', <DashboardOutlined />, '/'),
 	getItem('Time', <FieldTimeOutlined />, '/time'),
-	getItem('Teams', <SettingOutlined />, '/teams', ['Manager', 'responsable']),
-	getItem('Recherche', <FileSearchOutlined />, '/search-user', ['responsable']),
+	getItem('Teams', <SettingOutlined />, '/teams',),
+	getItem('Effectif', <TeamOutlined />, '/effectif', ),
 ];
 
 export const getFilteredItems = () => {
@@ -31,4 +31,5 @@ export const getFilteredItems = () => {
 	return allItems.filter(item => item.roles.includes(userRole));
 };
 
+// Ne pas exporter items comme constante, mais comme fonction pour éviter les problèmes de timing
 export const items = getFilteredItems();

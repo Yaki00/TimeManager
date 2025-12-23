@@ -25,7 +25,6 @@ export const useCreateTeam = () => {
 	const createTeamMutation = useMutation({
 		mutationFn: (data) => teamApi.createTeam(data),
 		onSuccess: (newTeam) => {
-			console.log("Team created:", newTeam);
 			queryClient.invalidateQueries({ queryKey: ['teams'] });
 			
 		},
