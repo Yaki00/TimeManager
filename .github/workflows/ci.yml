@@ -1,9 +1,6 @@
-# Nom du workflow qui apparaîtra dans l'interface GitHub Actions
+# Nom du workflow dans GitHub Actions
 name: CI
 
-# Définit les événements qui déclenchent l'exécution du workflow
-# Le workflow s'exécute sur les push et pull requests vers les branches main et development
-# workflow_dispatch permet de déclencher manuellement le workflow depuis l'interface GitHub
 on:
   push:
     branches:
@@ -15,268 +12,120 @@ on:
       - development
   workflow_dispatch:
 
-# Définit les différents jobs qui s'exécutent en parallèle
 jobs:
-  # Job 1: Exécution des tests backend avec couverture de code
+  # =========================
+  # JOB 1 - BACKEND TESTS
+  # =========================
   backend-tests:
-    name: Tests Backend
-    # Utilise un runner Ubuntu (machine virtuelle Linux)
+    name: Tests Backend (Postgres + Prisma + Vitest Coverage)
     runs-on: ubuntu-latest
 
-    # Configure un service PostgreSQL comme conteneur Docker pour les tests
-    # Ce service est disponible uniquement pendant l'exécution de ce job
     services:
       postgres:
-        # Image Docker PostgreSQL version 16
         image: postgres:16
-        # Variables d'environnement pour configurer la base de données
         env:
           POSTGRES_USER: app
           POSTGRES_PASSWORD: app
           POSTGRES_DB: app
-        # Options de healthcheck pour s'assurer que PostgreSQL est prêt avant de lancer les tests
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U app -d app"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
-        # Expose le port 5432 de PostgreSQL sur le runner
+          --health-retries 10
         ports:
           - 5432:5432
 
-    # Variables d'environnement disponibles pour toutes les étapes de ce job
     env:
       NODE_ENV: test
-      # URL de connexion à la base de données PostgreSQL du service
       DATABASE_URL: postgresql://app:app@localhost:5432/app?schema=test
 
-    # Étapes séquentielles exécutées dans ce job
+    defaults:
+      run:
+        working-directory: back
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Configure Docker Buildx pour le build multi-plateforme et le cache
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Build l'image Docker backend avec le stage "test"
-      # Le stage test contient toutes les dépendances nécessaires pour les tests
-      - name: Build backend Docker image
-        uses: docker/build-push-action@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          context: ./back
-          target: test
-          push: false
-          load: true
-          tags: backend-test:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          node-version: 20
+          cache: npm
+          cache-dependency-path: back/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Vérification PostgreSQL..."
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U app -d app && echo "Postgres OK" && exit 0
+            echo "Postgres pas prêt... ($i/30)"
+            sleep 2
+          done
+          echo "ERREUR: Postgres ne répond pas"
+          exit 1
         env:
-          BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
-          BUILDKIT_STEP_LOG_MAX_SPEED: 100000000
+          PGPASSWORD: app
 
-      # Vérifie que l'image Docker est bien construite
-      - name: Verify Docker image
-        run: |
-          echo "Vérification de l'image Docker backend-test..."
-          docker images | grep backend-test || (echo "ERREUR: Image backend-test introuvable" && exit 1)
-          echo "SUCCES: Image Docker backend-test trouvée"
-
-      # Génère le client Prisma à partir du schéma Prisma dans le conteneur
-      # Nécessaire pour que le code puisse interagir avec la base de données
       - name: Generate Prisma Client
-        run: |
-          echo "Génération du client Prisma..."
-          docker run --rm \
-            --network host \
-            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
-            backend-test:latest \
-            npm run prisma:generate
-          echo "SUCCES: Client Prisma généré avec succès"
+        run: npm run prisma:generate
 
-      # Vérifie que PostgreSQL est accessible
-      - name: Verify PostgreSQL connection
-        run: |
-          echo "Vérification de la connexion PostgreSQL..."
-          echo "DATABASE_URL: ${{ env.DATABASE_URL }}"
-          timeout 10 bash -c 'until pg_isready -h localhost -p 5432 -U app; do sleep 1; done' || (echo "ERREUR: PostgreSQL n'est pas accessible" && exit 1)
-          echo "SUCCES: PostgreSQL est accessible"
+      - name: Push database schema (Prisma)
+        run: npm run prisma:push
 
-      # Applique le schéma Prisma à la base de données PostgreSQL
-      # Crée les tables et la structure de la base de données pour les tests
-      - name: Push database schema
-        run: |
-          echo "Application du schéma Prisma à la base de données..."
-          docker run --rm \
-            --network host \
-            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
-            backend-test:latest \
-            npm run prisma:push
-          echo "SUCCES: Schéma Prisma appliqué avec succès"
-
-      # Vérifie les dépendances et la configuration avant les tests
-      - name: Verify test setup
-        run: |
-          echo "Vérification de la configuration des tests..."
-          docker run --rm \
-            --network host \
-            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
-            -e NODE_ENV=test \
-            backend-test:latest \
-            sh -c "echo 'Node version:' && node --version && echo 'NPM version:' && npm --version && echo 'NODE_ENV:' && echo \$NODE_ENV && echo 'DATABASE_URL:' && echo \$DATABASE_URL && echo 'Scripts disponibles:' && npm run"
-          echo "SUCCES: Configuration vérifiée"
-
-      # Exécute la suite de tests backend avec génération du rapport de couverture
-      # Les tests utilisent Vitest et génèrent un rapport au format lcov
-      # Le volume permet de récupérer le rapport de couverture après l'exécution
       - name: Run tests with coverage
-        run: |
-          echo "Exécution des tests backend avec couverture..."
-          echo "DATABASE_URL: ${{ env.DATABASE_URL }}"
-          echo "NODE_ENV: test"
-          docker run --rm \
-            --network host \
-            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
-            -e NODE_ENV=test \
-            -v ${{ github.workspace }}/back/coverage:/app/coverage \
-            backend-test:latest \
-            npm run test:coverage || (echo "ERREUR: Les tests ont échoué" && exit 1)
-          echo "SUCCES: Tests terminés avec succès"
+        run: npm run test:coverage
 
-      # Affiche le résumé de la couverture de code
       - name: Display coverage summary
         if: always()
         run: |
-          echo "Résumé de la couverture de code:"
-          if [ -f ./back/coverage/lcov.info ]; then
-            echo "SUCCES: Fichier de couverture généré"
-            head -20 ./back/coverage/lcov.info || echo "AVERTISSEMENT: Impossible de lire le fichier de couverture"
+          echo "Résumé de la couverture :"
+          if [ -f ./coverage/lcov.info ]; then
+            echo "OK: lcov.info généré"
+            head -20 ./coverage/lcov.info || true
           else
-            echo "ERREUR: Fichier de couverture non trouvé"
-            ls -la ./back/coverage/ || echo "AVERTISSEMENT: Dossier coverage non trouvé"
+            echo "ERREUR: lcov.info introuvable"
+            ls -la ./coverage || true
           fi
 
-      # Upload le rapport de couverture vers Codecov (service externe)
-      # Permet de visualiser l'évolution de la couverture de code dans le temps
-      - name: Upload coverage reports
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./back/coverage/lcov.info
           flags: backend
           name: backend-coverage
-          # Ne fait pas échouer le CI si l'upload échoue (optionnel)
           fail_ci_if_error: false
 
-  # Job 2: Vérification de la qualité du code frontend avec ESLint
-  frontend-lint:
-    name: Lint Frontend
+  # =========================
+  # JOB 2 - FRONTEND (LINT + BUILD)
+  # =========================
+  frontend:
+    name: Frontend (Lint + Build)
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: front
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Configure Docker Buildx pour le build multi-plateforme et le cache
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Build l'image Docker frontend
-      - name: Build frontend Docker image
-        uses: docker/build-push-action@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          context: ./front
-          push: false
-          load: true
-          tags: frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-        env:
-          BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
-          BUILDKIT_STEP_LOG_MAX_SPEED: 100000000
+          node-version: 20
+          cache: npm
+          cache-dependency-path: front/package-lock.json
 
-      # Vérifie que l'image Docker est bien construite
-      - name: Verify Docker image
-        run: |
-          echo "Vérification de l'image Docker frontend..."
-          docker images | grep frontend || (echo "ERREUR: Image frontend introuvable" && exit 1)
-          echo "SUCCES: Image Docker frontend trouvée"
+      - name: Install dependencies
+        run: npm ci
 
-      # Vérifie que ESLint est installé
-      - name: Verify ESLint installation
-        run: |
-          echo "Vérification de l'installation d'ESLint..."
-          docker run --rm \
-            frontend:latest \
-            sh -c "echo 'Node version:' && node --version && echo 'NPM version:' && npm --version && echo 'ESLint version:' && npx eslint --version || echo 'ERREUR: ESLint non trouvé' && echo 'Dépendances installées:' && npm list eslint 2>/dev/null || echo 'AVERTISSEMENT: ESLint non trouvé dans node_modules'"
-          echo "SUCCES: Vérification terminée"
-
-      # Exécute ESLint pour détecter les erreurs et problèmes de style dans le code
-      # Le build échouera si ESLint trouve des erreurs
-      # Le code est déjà copié dans l'image lors du build Docker
       - name: Run ESLint
-        run: |
-          echo "Exécution d'ESLint sur le code frontend..."
-          docker run --rm \
-            frontend:latest \
-            npm run lint || (echo "ERREUR: ESLint a trouvé des erreurs" && exit 1)
-          echo "SUCCES: ESLint terminé sans erreurs"
+        run: npm run lint
 
-  # Job 3: Compilation du frontend pour vérifier qu'il n'y a pas d'erreurs de build
-  frontend-build:
-    name: Build Frontend
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Configure Docker Buildx pour le build multi-plateforme et le cache
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Build l'image Docker frontend
-      - name: Build frontend Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./front
-          push: false
-          load: true
-          tags: frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-        env:
-          BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
-          BUILDKIT_STEP_LOG_MAX_SPEED: 100000000
-
-      # Vérifie que l'image Docker est bien construite
-      - name: Verify Docker image
-        run: |
-          echo "Vérification de l'image Docker frontend..."
-          docker images | grep frontend || (echo "ERREUR: Image frontend introuvable" && exit 1)
-          echo "SUCCES: Image Docker frontend trouvée"
-
-      # Vérifie que Vite est installé
-      - name: Verify Vite installation
-        run: |
-          echo "Vérification de l'installation de Vite..."
-          docker run --rm \
-            frontend:latest \
-            sh -c "echo 'Node version:' && node --version && echo 'NPM version:' && npm --version && echo 'Vite version:' && npx vite --version || echo 'ERREUR: Vite non trouvé'"
-          echo "SUCCES: Vérification terminée"
-
-      # Compile le frontend avec Vite pour vérifier qu'il n'y a pas d'erreurs de compilation
-      # Génère les fichiers de production dans le dossier dist/
-      # Le code est déjà copié dans l'image lors du build Docker
-      - name: Build frontend
-        run: |
-          echo "Compilation du frontend avec Vite..."
-          docker run --rm \
-            frontend:latest \
-            npm run build || (echo "ERREUR: La compilation a échoué" && exit 1)
-          echo "SUCCES: Compilation terminée avec succès"
+      - name: Build Frontend (Vite)
+        run: npm run build
