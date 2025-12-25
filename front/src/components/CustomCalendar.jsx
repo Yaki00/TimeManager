@@ -99,12 +99,12 @@ const DayCell = styled.div`
 		left: 8px;
 		font-size: 11px;
 		background: ${(p) => {
-			if (!p.leaveColor) return 'transparent';
-			if (p.leaveColor === 'green') return '#00c48c';
-			if (p.leaveColor === 'orange') return '#ff9f43';
-			if (p.leaveColor === 'red') return '#ee5a6f';
-			return '#00c48c';
-		}};
+    if (!p.leaveColor) return 'transparent';
+    if (p.leaveColor === 'green') return '#00c48c';
+    if (p.leaveColor === 'orange') return '#ff9f43';
+    if (p.leaveColor === 'red') return '#ee5a6f';
+    return '#00c48c';
+  }};
 		color: white;
 		padding: 3px 8px;
 		border-radius: 12px;
@@ -114,71 +114,71 @@ const DayCell = styled.div`
 	}
 `;
 
-export const CustomCalendar = ({ leaves = [], selectedDate, onSelect }) => {
+export const CustomCalendar = ({ leaves = [], selectedDate }) => {
 
-	const [currentMonth, setCurrentMonth] = useState(selectedDate.startOf('month'));
+  const [currentMonth, setCurrentMonth] = useState(selectedDate.startOf('month'));
 
-	const prevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
-	const nextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
+  const prevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
+  const nextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
 
-	const monthYearLabel = currentMonth.format('MMMM YYYY');
+  const monthYearLabel = currentMonth.format('MMMM YYYY');
 
-	const startDay = currentMonth.startOf('month').startOf('week');
-	const endDay = currentMonth.endOf('month').endOf('week');
-	const dayCount = endDay.diff(startDay, 'day') + 1;
+  const startDay = currentMonth.startOf('month').startOf('week');
+  const endDay = currentMonth.endOf('month').endOf('week');
+  const dayCount = endDay.diff(startDay, 'day') + 1;
 
-	const calendarDays = Array.from({ length: dayCount }, (_, i) => startDay.add(i, 'day'));
+  const calendarDays = Array.from({ length: dayCount }, (_, i) => startDay.add(i, 'day'));
 
-	const isSameMonth = (date) => date.isSame(currentMonth, 'month');
-	const isSelected = (date) => date.isSame(selectedDate, 'day');
+  const isSameMonth = (date) => date.isSame(currentMonth, 'month');
+  const isSelected = (date) => date.isSame(selectedDate, 'day');
 	
-	const getLeaveInfo = (date) => {
-		const leave = leaves.find((l) => l.date === date.format('YYYY-MM-DD'));
-		return leave || null;
-	};
+  const getLeaveInfo = (date) => {
+    const leave = leaves.find((l) => l.date === date.format('YYYY-MM-DD'));
+    return leave || null;
+  };
 
-	return (
-		<CalendarWrapper>
-			<CustomHeader>
-				<ArrowButton onClick={prevMonth}>
-					<LeftOutlined />
-				</ArrowButton>
-				<div className="month-year">{monthYearLabel}</div>
-				<ArrowButton onClick={nextMonth}>
-					<RightOutlined />
-				</ArrowButton>
-			</CustomHeader>
+  return (
+    <CalendarWrapper>
+      <CustomHeader>
+        <ArrowButton onClick={prevMonth}>
+          <LeftOutlined />
+        </ArrowButton>
+        <div className="month-year">{monthYearLabel}</div>
+        <ArrowButton onClick={nextMonth}>
+          <RightOutlined />
+        </ArrowButton>
+      </CustomHeader>
 
-			<WeekRow>
-				{[, 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
-					<div key={d}>{d}</div>
-				))}
-			</WeekRow>
+      <WeekRow>
+        {['', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
+          <div key={d}>{d}</div>
+        ))}
+      </WeekRow>
 
-			<DayGrid>
-				{calendarDays.map((day) => {
-					const leaveInfo = getLeaveInfo(day);
-					const statusLabel = leaveInfo?.status === 'Accepte' ? 'Approuvé' : 
+      <DayGrid>
+        {calendarDays.map((day) => {
+          const leaveInfo = getLeaveInfo(day);
+          const statusLabel = leaveInfo?.status === 'Accepte' ? 'Approuvé' : 
 														 leaveInfo?.status === 'EnAttente' ? 'En attente' : 
 														 leaveInfo?.status === 'Refuse' ? 'Refusé' : null;
-					return (
-						<Tooltip 
-							key={day.toString()} 
-							title={leaveInfo ? `${statusLabel} - ${leaveInfo.type}` : null}
-						>
-							<DayCell
-								isSelected={isSelected(day)}
-								isSameMonth={isSameMonth(day)}
-								leaveColor={leaveInfo?.color}
-								// onClick={() => isSameMonth(day) && onSelect(day)}
-							>
-								<span className="date-number">{day.date()}</span>
-								{leaveInfo && <span className="leave-badge">{statusLabel}</span>}
-							</DayCell>
-						</Tooltip>
-					);
-				})}
-			</DayGrid>
-		</CalendarWrapper>
-	);
+          return (
+            <Tooltip 
+              key={day.toString()} 
+              title={leaveInfo ? `${statusLabel} - ${leaveInfo.type}` : null}
+            >
+              <DayCell
+                isSelected={isSelected(day)}
+                isSameMonth={isSameMonth(day)}
+                leaveColor={leaveInfo?.color}
+                // onClick={() => isSameMonth(day) && onSelect(day)}
+              >
+                <span className="date-number">{day.date()}</span>
+                {leaveInfo && <span className="leave-badge">{statusLabel}</span>}
+              </DayCell>
+            </Tooltip>
+          );
+        })}
+      </DayGrid>
+    </CalendarWrapper>
+  );
 };

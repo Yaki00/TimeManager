@@ -1,6 +1,6 @@
 import styled, { keyframes } from 'styled-components';
-import { useAuth } from '../../service/useAuth';
-import { LoginForm } from '../../components/form/LoginForm';
+import { useAuth } from '@/service/useAuth';
+import { LoginForm } from '@/components/from/LoginForm';
 import { useNavigate } from 'react-router';
 
 const gradientMove = keyframes`
@@ -116,53 +116,53 @@ const Card = styled.div`
 `;
 
 export const Login = () => {
-	const { loadingLogin, mutateAsync: LoginMutation } = useAuth();
-	const navigate = useNavigate();
+  const { loadingLogin, mutateAsync: LoginMutation } = useAuth();
+  const navigate = useNavigate();
 
-	const onFinish = async (values) => {
-		try {
-			const response = await LoginMutation(values);
-			navigate('/');
-		} catch (error) {
-			console.error('Login error:', error);
-		}
-	};
+  const onFinish = async (values) => {
+    try {
+      await LoginMutation(values);
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
 
-	return (
-		<Page>
-			<LeftPanel>
-				<div className="content">
-					<h1>
-						Gérez votre <span className="highlight">temps</span> intelligemment.
-					</h1>
-					<p>
-						Time Manager vous aide à planifier, suivre et optimiser votre journée pour atteindre vos objectifs sans stress.
-					</p>
-				</div>
-				<div className="image-container">
-					<img
-						src="/Schedule-amico.svg"
-						alt="Illustration Time Management"
-						className="image"
-					/>
-				</div>
-			</LeftPanel>
+  return (
+    <Page>
+      <LeftPanel>
+        <div className="content">
+          <h1>
+            Gérez votre <span className="highlight">temps</span> intelligemment.
+          </h1>
+          <p>
+            Time Manager vous aide à planifier, suivre et optimiser votre journée pour atteindre vos objectifs sans stress.
+          </p>
+        </div>
+        <div className="image-container">
+          <img
+            src="/Schedule-amico.svg"
+            alt="Illustration Time Management"
+            className="image"
+          />
+        </div>
+      </LeftPanel>
 
-			<RightPanel>
-				<Card>
-					<svg
-						fill="none"
-						viewBox="0 0 48 48"
-						xmlns="http://www.w3.org/2000/svg"
-						className="icon-logo"
-					>
-						<path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" />
-					</svg>
-					<h2>Connexion</h2>
-					<p>Connectez-vous à votre compte Time Manager</p>
-					<LoginForm onFinish={onFinish} loading={loadingLogin} />
-				</Card>
-			</RightPanel>
-		</Page>
-	);
+      <RightPanel>
+        <Card>
+          <svg
+            fill="none"
+            viewBox="0 0 48 48"
+            xmlns="http://www.w3.org/2000/svg"
+            className="icon-logo"
+          >
+            <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" />
+          </svg>
+          <h2>Connexion</h2>
+          <p>Connectez-vous à votre compte Time Manager</p>
+          <LoginForm onFinish={onFinish} loading={loadingLogin} />
+        </Card>
+      </RightPanel>
+    </Page>
+  );
 };

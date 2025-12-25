@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { kpiApi } from '../api/kpi';
+import { kpiApi } from '@/api/kpi';
 
 /**
  * Hook pour récupérer les KPI Responsable

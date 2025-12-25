@@ -1,48 +1,52 @@
-import React, { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { DatePicker, Select, Button, message, Dropdown } from "antd";
 import { DownloadOutlined, DownOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
-import {
-  Header,
-  PageWrapper,
-  ScrollableContent,
-} from "../../utils/layoutStyle";
-import { Breadcrumbs } from "../../utils/Breadcrumb";
+import { Header, PageWrapper, ScrollableContent } from "@/utils/layoutStyle";
+import { Breadcrumbs } from "@/utils/Breadcrumb";
 import { Responsable } from "./Responsable";
 import { Manager } from "./Manager";
 import { Employer } from "./Employer";
-import { useGetTeams } from "../../service/useTeam";
-import { useUserStore } from "../../zustand/store";
-import { useEffect, useMemo } from "react";
+import { useGetTeams } from "@/service/useTeam";
+import { useUserStore } from "@/zustand/store";
 import { useQuery } from "@tanstack/react-query";
-import { userApi } from "../../api/user";
+import { userApi } from "@/api/user";
 import { Link } from "react-router-dom";
-import { useGetResponsableKPIs, useGetManagerKPIs, useGetCurrentUserKPIs } from "../../service/useKpi";
-import { exportResponsableKPIs, exportManagerKPIs, exportUserKPIs, EXPORT_FORMATS } from "../../utils/exportKpi";
+import {
+  useGetResponsableKPIs,
+  useGetManagerKPIs,
+  useGetCurrentUserKPIs,
+} from "@/service/useKpi";
+import {
+  exportResponsableKPIs,
+  exportManagerKPIs,
+  exportUserKPIs,
+  EXPORT_FORMATS,
+} from "@/utils/exportKpi";
 
 dayjs.locale("fr");
 
 const { RangePicker } = DatePicker;
 
 const TeamTextLink = styled(Link)`
-	color: #4F46E5;
-	text-decoration: none;
-	font-weight: 600;
-	margin-left: 8px;
-	transition: all 0.2s ease;
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 8px;
+  transition: all 0.2s ease;
 
-	&:hover {
-		color: #4338ca;
-		text-decoration: underline;
-	}
+  &:hover {
+    color: #4338ca;
+    text-decoration: underline;
+  }
 `;
 
 const TeamTextNoTeam = styled.span`
-	color: #94a3b8;
-	font-style: italic;
-	margin-left: 8px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-left: 8px;
 `;
 
 const ViewSwitcher = styled.div`
@@ -239,31 +243,26 @@ export const Dashboard = () => {
   const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
 
   // Récupérer les données KPI selon la vue active
-  const {
-    data: responsableKpiData,
-    isLoading: isLoadingResponsableKpi,
-  } = useGetResponsableKPIs(startDate, endDate, {
-    enabled: activeView === "responsable" && isResponsable,
-  });
+  const { data: responsableKpiData, isLoading: isLoadingResponsableKpi } =
+    useGetResponsableKPIs(startDate, endDate, {
+      enabled: activeView === "responsable" && isResponsable,
+    });
 
-  const {
-    data: managerKpiData,
-    isLoading: isLoadingManagerKpi,
-  } = useGetManagerKPIs(
-    selectedTeam ? parseInt(selectedTeam) : null,
-    startDate,
-    endDate,
-    {
-      enabled: activeView === "manager" && isManagerOrResponsable && !!selectedTeam,
-    }
-  );
+  const { data: managerKpiData, isLoading: isLoadingManagerKpi } =
+    useGetManagerKPIs(
+      selectedTeam ? parseInt(selectedTeam) : null,
+      startDate,
+      endDate,
+      {
+        enabled:
+          activeView === "manager" && isManagerOrResponsable && !!selectedTeam,
+      }
+    );
 
-  const {
-    data: userKpiData,
-    isLoading: isLoadingUserKpi,
-  } = useGetCurrentUserKPIs(startDate, endDate, {
-    enabled: activeView === "user",
-  });
+  const { data: userKpiData, isLoading: isLoadingUserKpi } =
+    useGetCurrentUserKPIs(startDate, endDate, {
+      enabled: activeView === "user",
+    });
 
   // Forcer le rafraîchissement si les équipes ne sont pas présentes
   useEffect(() => {
@@ -390,10 +389,14 @@ export const Dashboard = () => {
           return;
         }
         exportResponsableKPIs(responsableKpiData, startDate, endDate, format);
-        message.success(`Export des KPI Responsable (${format.toUpperCase()}) réussi`);
+        message.success(
+          `Export des KPI Responsable (${format.toUpperCase()}) réussi`
+        );
       } else if (activeView === "manager" && isManagerOrResponsable) {
         if (!managerKpiData || !selectedTeam) {
-          message.warning("Veuillez sélectionner une équipe et attendre le chargement des données");
+          message.warning(
+            "Veuillez sélectionner une équipe et attendre le chargement des données"
+          );
           return;
         }
         const selectedTeamData = availableTeams.find(
@@ -401,14 +404,18 @@ export const Dashboard = () => {
         );
         const teamName = selectedTeamData?.teamName || "Equipe";
         exportManagerKPIs(managerKpiData, teamName, startDate, endDate, format);
-        message.success(`Export des KPI Manager (${format.toUpperCase()}) réussi`);
+        message.success(
+          `Export des KPI Manager (${format.toUpperCase()}) réussi`
+        );
       } else if (activeView === "user") {
         if (!userKpiData) {
           message.warning("Aucune donnée disponible pour l'export");
           return;
         }
         exportUserKPIs(userKpiData, startDate, endDate, format);
-        message.success(`Export des KPI Utilisateur (${format.toUpperCase()}) réussi`);
+        message.success(
+          `Export des KPI Utilisateur (${format.toUpperCase()}) réussi`
+        );
       }
     } catch (error) {
       message.error("Erreur lors de l'export: " + error.message);
@@ -502,23 +509,24 @@ export const Dashboard = () => {
                 Vue Utilisateur
               </ViewButton>
             </ViewSwitcher>
-            
+
             {/* Afficher le nom de l'équipe pour la vue Utilisateur */}
             {activeView === "user" && (
               <span style={{ fontSize: "14px", color: "#64748b" }}>
                 Équipe :
                 {isLoadingCurrentUser ? (
                   <span style={{ marginLeft: "8px" }}>...</span>
-                ) : currentUserData?.teams && currentUserData.teams.length > 0 ? (
-                  <TeamTextLink 
-                    to={`/teams/${currentUserData.teams[0].id}`}
-                    state={{ id: currentUserData.teams[0].id }}
-                  >
-                    {currentUserData.teams[0].teamName}
-                  </TeamTextLink>
-                ) : (
-                  <TeamTextNoTeam>Aucune équipe</TeamTextNoTeam>
-                )}
+                ) : currentUserData?.teams &&
+                  currentUserData.teams.length > 0 ? (
+                    <TeamTextLink
+                      to={`/teams/${currentUserData.teams[0].id}`}
+                      state={{ id: currentUserData.teams[0].id }}
+                    >
+                      {currentUserData.teams[0].teamName}
+                    </TeamTextLink>
+                  ) : (
+                    <TeamTextNoTeam>Aucune équipe</TeamTextNoTeam>
+                  )}
               </span>
             )}
 
@@ -582,22 +590,22 @@ export const Dashboard = () => {
                   !isLoadingTeams &&
                   !isLoadingCurrentUser &&
                   currentUserData && (
-                    <TeamSelector>
-                      <label>Équipe :</label>
-                      <span
-                        style={{
-                          padding: "6px 16px",
-                          background: "#fef3c7",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          color: "#92400e",
-                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                        }}
-                      >
-                        Aucune équipe assignée
-                      </span>
-                    </TeamSelector>
-                  )}
+                  <TeamSelector>
+                    <label>Équipe :</label>
+                    <span
+                      style={{
+                        padding: "6px 16px",
+                        background: "#fef3c7",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        color: "#92400e",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      Aucune équipe assignée
+                    </span>
+                  </TeamSelector>
+                )}
               </>
             )}
           </div>
@@ -639,7 +647,8 @@ export const Dashboard = () => {
                 }}
                 disabled={
                   (activeView === "responsable" && isLoadingResponsableKpi) ||
-                  (activeView === "manager" && (isLoadingManagerKpi || !selectedTeam)) ||
+                  (activeView === "manager" &&
+                    (isLoadingManagerKpi || !selectedTeam)) ||
                   (activeView === "user" && isLoadingUserKpi)
                 }
               >

@@ -19,24 +19,24 @@ const TitleSideStyle = styled.div`
 `;
 
 export const TitleLayout = ({ collapsed }) => {
-	return (
-		<TitleSideStyle $collapsed={collapsed}>
-			{!collapsed ? 
-			<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-			<div style={{ height: '30px', width: '30px'}}>
-					<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-						<path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="#9191fa"></path>
-					</svg>
-				</div>
-				<h2>Time Master</h2> 
-				</div>
-			: 
-				<div style={{ height: '30px', width: '30px'}}>
-					<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-						<path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="#9191fa"></path>
-					</svg>
-				</div>
-			}
-		</TitleSideStyle>
-	)
+  return (
+    <TitleSideStyle $collapsed={collapsed}>
+      {!collapsed ? 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ height: '30px', width: '30px'}}>
+            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="#9191fa"></path>
+            </svg>
+          </div>
+          <h2>Time Master</h2> 
+        </div>
+        : 
+        <div style={{ height: '30px', width: '30px'}}>
+          <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="#9191fa"></path>
+          </svg>
+        </div>
+      }
+    </TitleSideStyle>
+  )
 }

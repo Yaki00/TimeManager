@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import dayjs from "dayjs";
-import { CustomCalendar } from "../components/CustomCalendar";
+import { CustomCalendar } from "@/components/CustomCalendar";
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -18,19 +18,19 @@ import {
   Tag,
   Alert,
 } from "antd";
-import { Breadcrumbs } from "../utils/Breadcrumb";
+import { Breadcrumbs } from "@/utils/Breadcrumb";
 import {
   useCreateLeave,
   useGetLeavesByUserId,
   useDeleteLeave,
-} from "../service/useLeave";
+} from "@/service/useLeave";
 
-import { useUserStore } from "../zustand/store";
-import { formatedDataForCalendar } from "../utils/formatedData";
-import { CreateLeaveForm } from "../components/form/CreateLeaveForm";
-import { TableStyle } from "../utils/TableStyle";
-import { getColumns } from "../components/column/ColumnsLeave";
-import { PageWrapper, Header, ScrollableContent } from "../utils/layoutStyle";
+import { useUserStore } from "@/zustand/store";
+import { formatedDataForCalendar } from "@/utils/formatedData";
+import { CreateLeaveForm } from "@/components/from/CreateLeaveForm";
+import { TableStyle } from "@/utils/TableStyle";
+import { getColumns } from "@/components/column/ColumnsLeave";
+import { PageWrapper, Header, ScrollableContent } from "@/utils/layoutStyle";
 
 const Content = styled.div`
   display: flex;
@@ -234,7 +234,6 @@ export const Time = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [leaves, setLeaves] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newLeaveDate, setNewLeaveDate] = useState(null);
   const user = useUserStore((state) => state.user);
   const userId = user.id;
 
@@ -510,7 +509,7 @@ export const Time = () => {
                 backgroundClip: "text",
               }}
             >
-              Nouvelle demande d'absence
+              {"Nouvelle demande d'absence"}
             </span>
           }
           open={modalVisible}

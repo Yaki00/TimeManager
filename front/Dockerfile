@@ -1,5 +1,6 @@
 FROM node:20-slim
 WORKDIR /app
+ENV NPM_CONFIG_PRODUCTION=false
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 COPY . .

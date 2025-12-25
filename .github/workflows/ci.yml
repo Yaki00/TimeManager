@@ -1,8 +1,6 @@
-# Nom du workflow qui apparaîtra dans l'interface GitHub Actions
+# Nom du workflow dans GitHub Actions
 name: CI
 
-# Définit les événements qui déclenchent l'exécution du workflow
-# Le workflow s'exécute sur les push et pull requests vers les branches main et development
 on:
   push:
     branches:
@@ -12,97 +10,105 @@ on:
     branches:
       - main
       - development
+  workflow_dispatch:
 
-# Définit les différents jobs qui s'exécutent en parallèle
 jobs:
-  # Job 1: Exécution des tests backend avec couverture de code
+  # =========================
+  # JOB 1 - BACKEND TESTS
+  # =========================
   backend-tests:
-    name: Tests Backend
-    # Utilise un runner Ubuntu (machine virtuelle Linux)
+    name: Tests Backend (Postgres + Prisma + Vitest Coverage)
     runs-on: ubuntu-latest
 
-    # Configure un service PostgreSQL comme conteneur Docker pour les tests
-    # Ce service est disponible uniquement pendant l'exécution de ce job
     services:
       postgres:
-        # Image Docker PostgreSQL version 16
         image: postgres:16
-        # Variables d'environnement pour configurer la base de données
         env:
           POSTGRES_USER: app
           POSTGRES_PASSWORD: app
           POSTGRES_DB: app
-        # Options de healthcheck pour s'assurer que PostgreSQL est prêt avant de lancer les tests
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U app -d app"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
-        # Expose le port 5432 de PostgreSQL sur le runner
+          --health-retries 10
         ports:
           - 5432:5432
 
-    # Variables d'environnement disponibles pour toutes les étapes de ce job
     env:
       NODE_ENV: test
-      # URL de connexion à la base de données PostgreSQL du service
       DATABASE_URL: postgresql://app:app@localhost:5432/app?schema=test
 
-    # Étapes séquentielles exécutées dans ce job
+    defaults:
+      run:
+        working-directory: back
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Configure Node.js version 20 et active le cache npm pour accélérer les installations
-      # Le cache utilise package-lock.json pour détecter les changements de dépendances
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
+          cache: npm
           cache-dependency-path: back/package-lock.json
 
-      # Installe les dépendances backend de manière reproductible (npm ci)
-      # npm ci installe exactement les versions spécifiées dans package-lock.json
-      - name: Install dependencies (Backend)
-        working-directory: ./back
+      - name: Install dependencies
         run: npm ci
 
-      # Génère le client Prisma à partir du schéma Prisma
-      # Nécessaire pour que le code puisse interagir avec la base de données
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Vérification PostgreSQL..."
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U app -d app && echo "Postgres OK" && exit 0
+            echo "Postgres pas prêt... ($i/30)"
+            sleep 2
+          done
+          echo "ERREUR: Postgres ne répond pas"
+          exit 1
+        env:
+          PGPASSWORD: app
+
       - name: Generate Prisma Client
-        working-directory: ./back
         run: npm run prisma:generate
 
-      # Applique le schéma Prisma à la base de données PostgreSQL
-      # Crée les tables et la structure de la base de données pour les tests
-      - name: Push database schema
-        working-directory: ./back
+      - name: Push database schema (Prisma)
         run: npm run prisma:push
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app?schema=test
 
-      # Exécute la suite de tests backend avec génération du rapport de couverture
-      # Les tests utilisent Vitest et génèrent un rapport au format lcov
       - name: Run tests with coverage
-        working-directory: ./back
         run: npm run test:coverage
 
-      # Upload le rapport de couverture vers Codecov (service externe)
-      # Permet de visualiser l'évolution de la couverture de code dans le temps
-      - name: Upload coverage reports
+      - name: Display coverage summary
+        if: always()
+        run: |
+          echo "Résumé de la couverture :"
+          if [ -f ./coverage/lcov.info ]; then
+            echo "OK: lcov.info généré"
+            head -20 ./coverage/lcov.info || true
+          else
+            echo "ERREUR: lcov.info introuvable"
+            ls -la ./coverage || true
+          fi
+
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./back/coverage/lcov.info
           flags: backend
           name: backend-coverage
-          # Ne fait pas échouer le CI si l'upload échoue (optionnel)
           fail_ci_if_error: false
 
-  # Job 2: Vérification de la qualité du code frontend avec ESLint
-  frontend-lint:
-    name: Lint Frontend
+  # =========================
+  # JOB 2 - FRONTEND (LINT + BUILD)
+  # =========================
+  frontend:
+    name: Frontend (Lint + Build)
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: front
 
     steps:
       - name: Checkout code
@@ -111,42 +117,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
+          cache: npm
           cache-dependency-path: front/package-lock.json
 
-      - name: Install dependencies (Frontend)
-        working-directory: ./front
+      - name: Install dependencies
         run: npm ci
 
-      # Exécute ESLint pour détecter les erreurs et problèmes de style dans le code
-      # Le build échouera si ESLint trouve des erreurs
       - name: Run ESLint
-        working-directory: ./front
         run: npm run lint
 
-  # Job 3: Compilation du frontend pour vérifier qu'il n'y a pas d'erreurs de build
-  frontend-build:
-    name: Build Frontend
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: front/package-lock.json
-
-      - name: Install dependencies (Frontend)
-        working-directory: ./front
-        run: npm ci
-
-      # Compile le frontend avec Vite pour vérifier qu'il n'y a pas d'erreurs de compilation
-      # Génère les fichiers de production dans le dossier dist/
-      - name: Build frontend
-        working-directory: ./front
+      - name: Build Frontend (Vite)
         run: npm run build

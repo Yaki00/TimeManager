@@ -1,5 +1,5 @@
-import { getToken } from "../utils/getToken";
-import { checkAuthError } from "../utils/handleAuthError";
+import { getToken } from "@/utils/getToken";
+import { checkAuthError } from "@/utils/handleAuthError";
 
 const BASE_URL = "http://localhost:3000";
 

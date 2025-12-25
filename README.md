@@ -160,3 +160,68 @@ docker compose version
 ## 3/ Cloner projet
 
 git clone git@github.com:EpitechMscProPromo2027/T-DEV-700-project-PAR_8.git
+
+## Vérification du workflow CI
+
+### Vérification locale (avant de pousser sur GitHub)
+
+Pour tester localement que tout fonctionne avant de déclencher le workflow CI :
+
+**Job 1 - Tests Backend :**
+
+```bash
+# Utilise le service backend-tests défini dans compose.yaml
+# Assurez-vous que le dossier back/coverage existe avant de lancer
+docker compose run --rm backend-tests
+```
+
+**Job 2 - Lint Frontend :**
+
+```bash
+cd front
+docker build -t frontend .
+docker run --rm frontend npm run lint
+```
+
+**Job 3 - Build Frontend :**
+
+```bash
+cd front
+docker build -t frontend .
+docker run --rm frontend npm run build
+```
+
+### Vérification via GitHub Actions
+
+1. **Pousser le code sur les branches `main` ou `development` :**
+
+   ```bash
+   git add .github/workflows/ci.yml
+   git commit -m "Add CI workflow"
+   git push origin main  # ou development
+   ```
+
+2. **Vérifier dans GitHub :**
+
+   - Aller sur votre dépôt GitHub
+   - Onglet **"Actions"**
+   - Cliquer sur le workflow **"CI"** en cours
+   - Vérifier que les 3 jobs s'exécutent et sont verts (succès) :
+     - ✅ Tests Backend
+     - ✅ Lint Frontend
+     - ✅ Build Frontend
+
+3. **Déclenchement manuel (optionnel) :**
+   - GitHub → Actions → Sélectionner "CI" → **"Run workflow"**
+   - Choisir la branche et lancer
+
+### Commandes rapides de vérification
+
+```bash
+# Vérifier que le workflow est bien configuré
+cat .github/workflows/ci.yml
+
+# Tester les 3 jobs (nécessite Docker et PostgreSQL en cours d'exécution)
+docker compose run --rm backend-tests
+cd front && docker build -t frontend . && docker run --rm frontend npm run lint && docker run --rm frontend npm run build
+```

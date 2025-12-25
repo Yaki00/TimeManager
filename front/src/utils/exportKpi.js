@@ -556,8 +556,8 @@ export function exportManagerKPIs(
       { label: "Mois", key: "month" },
       ...(kpiData.contractCompliance[0]
         ? Object.keys(kpiData.contractCompliance[0])
-            .filter((key) => key !== "month")
-            .map((key) => ({ label: key, key }))
+          .filter((key) => key !== "month")
+          .map((key) => ({ label: key, key }))
         : []),
     ];
     sections.push(convertToCSV(kpiData.contractCompliance, headers));
@@ -773,8 +773,8 @@ export function exportManagerKPIs(
           { label: "Mois", key: "month" },
           ...(kpiData.contractCompliance[0]
             ? Object.keys(kpiData.contractCompliance[0])
-                .filter((key) => key !== "month")
-                .map((key) => ({ label: key, key }))
+              .filter((key) => key !== "month")
+              .map((key) => ({ label: key, key }))
             : []),
         ];
         const tableData6 = arrayToTableData(

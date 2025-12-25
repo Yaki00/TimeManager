@@ -1,14 +1,14 @@
-import { useUserStore } from '../zustand/store';
+import { useUserStore } from '@/zustand/store';
 
 /**
  * Gère les erreurs d'authentification en déconnectant l'utilisateur
  * et en le redirigeant vers la page de connexion
  */
 export const handleAuthError = () => {
-	const logout = useUserStore.getState().logout;
-	logout();
-	// Redirection vers la page de connexion
-	window.location.href = '/login';
+  const logout = useUserStore.getState().logout;
+  logout();
+  // Redirection vers la page de connexion
+  window.location.href = '/login';
 };
 
 /**
@@ -16,10 +16,10 @@ export const handleAuthError = () => {
  * et déclenche la déconnexion si nécessaire
  */
 export const checkAuthError = (response) => {
-	if (response.status === 401) {
-		handleAuthError();
-		return true;
-	}
-	return false;
+  if (response.status === 401) {
+    handleAuthError();
+    return true;
+  }
+  return false;
 };
 

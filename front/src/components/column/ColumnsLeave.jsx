@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Popconfirm } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { TagStyle } from "../../utils/TagStyle";
+import { TagStyle } from "@/utils/TagStyle";
 
 export const getColumns = (onDelete) => [
   {

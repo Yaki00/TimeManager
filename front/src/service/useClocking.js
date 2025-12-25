@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { clockingApi } from "../api/clocking";
-import { useUserStore } from "../zustand/store";
+import { clockingApi } from "@/api/clocking";
+import { useUserStore } from "@/zustand/store";
 
 /**
  * Hook personnalisé pour gérer l'état de clocking (prise de fonction)
@@ -354,15 +354,6 @@ export const useClocking = () => {
       2,
       "0"
     )}:${String(secs).padStart(2, "0")}`;
-  };
-
-  // Formater une date en HH:MM simple
-  const formatTimeSimple = (date) => {
-    if (!date) return "--:--";
-    const d = new Date(date);
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
   };
 
   // Calculer le temps actuel de pause en cours (si en pause) en secondes

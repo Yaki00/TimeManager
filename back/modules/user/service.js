@@ -77,7 +77,9 @@ export async function findUserById(id) {
   const { deletedAt, belongs, ...userWithoutDeletedAt } = user;
   
   // Combiner les équipes où l'utilisateur est membre et celles dont il est propriétaire
-  const memberTeams = belongs?.map((b) => b.team) || [];
+  const memberTeams = belongs
+    ?.map((b) => b.team)
+    .filter((team) => team !== null) || [];
   const allUserTeams = [
     ...memberTeams,
     // Ajouter les équipes dont il est propriétaire mais pas encore dans memberTeams
@@ -104,9 +106,13 @@ export async function findAllUsers({ skip = 0, take = 50 } = {}) {
   // Transformer les données pour avoir un format plus simple
   return users.map((user) => {
     const { belongs, ...userData } = user;
+    // Filtrer les équipes null (si une équipe a été supprimée mais la relation belongs existe encore)
+    const teams = belongs
+      ?.map((b) => b.team)
+      .filter((team) => team !== null) || [];
     return {
       ...userData,
-      teams: belongs?.map((b) => b.team) || [],
+      teams,
     };
   });
 }
@@ -159,9 +165,12 @@ export async function findByName(search) {
 
   return users.map((user) => {
     const { belongs, ...userData } = user;
+    const teams = belongs
+      ?.map((b) => b.team)
+      .filter((team) => team !== null) || [];
     return {
       ...userData,
-      teams: belongs?.map((b) => b.team) || [],
+      teams,
     };
   });
 }
@@ -178,9 +187,12 @@ export async function findByPhoneNumber(phoneNumber) {
 
   return users.map((user) => {
     const { belongs, ...userData } = user;
+    const teams = belongs
+      ?.map((b) => b.team)
+      .filter((team) => team !== null) || [];
     return {
       ...userData,
-      teams: belongs?.map((b) => b.team) || [],
+      teams,
     };
   });
 }
@@ -193,9 +205,12 @@ export async function findByContractType(contractType) {
 
   return users.map((user) => {
     const { belongs, ...userData } = user;
+    const teams = belongs
+      ?.map((b) => b.team)
+      .filter((team) => team !== null) || [];
     return {
       ...userData,
-      teams: belongs?.map((b) => b.team) || [],
+      teams,
     };
   });
 }
@@ -307,9 +322,12 @@ export async function updateUserTeams(userId, teamIds) {
     });
 
     const { belongs, ...userData } = user;
+    const teams = belongs
+      ?.map((b) => b.team)
+      .filter((team) => team !== null) || [];
     return {
       ...userData,
-      teams: belongs?.map((b) => b.team) || [],
+      teams,
     };
   });
 }
