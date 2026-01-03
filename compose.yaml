@@ -7,12 +7,7 @@ services:
     environment:
       - VITE_API_URL=http://localhost:3000
       - CHOKIDAR_USEPOLLING=1
-      - CHOKIDAR_INTERVAL=100
       - WATCHPACK_POLLING=true
-      - NODE_ENV=development
-      - NPM_CONFIG_PRODUCTION=false
-      - NPM_CONFIG_AUDIT=false
-      - NPM_CONFIG_FUND=false
     volumes:
       - ./front:/app
       - node_modules_front:/app/node_modules
@@ -20,16 +15,11 @@ services:
       - backend
     command: >-
       sh -lc '
-        set -e;
-        echo "Verification des dependances frontend...";
-        if [ -f package-lock.json ]; then 
-          echo "Tentative avec npm ci...";
-          npm ci --legacy-peer-deps || (echo "npm ci echoue, regeneration..." && rm -f package-lock.json && npm install --legacy-peer-deps);
-        else 
-          echo "Installation avec npm install...";
-          npm install --legacy-peer-deps;
-        fi;
-        echo "Dependances installees, demarrage de Vite...";
+        if [ -f package-lock.json ]; then
+          npm ci --legacy-peer-deps || (rm -f package-lock.json && npm install --legacy-peer-deps)
+        else
+          npm install --legacy-peer-deps
+        fi &&
         exec npm run dev -- --host 0.0.0.0 --port 5173'
   backend:
     build:
@@ -42,10 +32,6 @@ services:
       - ./back/.env.docker
     environment:
       - PORT=3000
-      - NODE_ENV=development
-      - NPM_CONFIG_PRODUCTION=false
-      - NPM_CONFIG_AUDIT=false
-      - NPM_CONFIG_FUND=false
     volumes:
       - ./back:/app
       - node_modules_back_backend:/app/node_modules
@@ -53,20 +39,12 @@ services:
       - "3000:3000"
     command: >-
       sh -lc '
-        set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          echo "Verification des dependances...";
-          if [ -f package-lock.json ]; then 
-            echo "Tentative avec npm ci...";
-            npm ci || (echo "npm ci echoue, regeneration..." && rm -f package-lock.json && npm install);
-          else 
-            echo "Installation avec npm install...";
-            npm install;
-          fi;
-          sha256sum package-lock.json > node_modules/.npmci.sha;
-        fi;
-        npx prisma db push --schema=prisma/schema.prisma;
-        npx prisma generate --schema=prisma/schema.prisma;
+          ([ -f package-lock.json ] && npm ci || npm install) &&
+          sha256sum package-lock.json > node_modules/.npmci.sha
+        fi &&
+        npx prisma db push --schema=prisma/schema.prisma &&
+        npx prisma generate --schema=prisma/schema.prisma &&
         exec npm run dev'
     healthcheck:
       test:
@@ -89,7 +67,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432" # utilisez 5433 sur l'hôte pour éviter les conflits locaux
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d app -h localhost || exit 1"]
       interval: 5s
@@ -109,11 +87,6 @@ services:
         condition: service_started
     env_file:
       - ./back/.env.docker
-    environment:
-      - NODE_ENV=development
-      - NPM_CONFIG_PRODUCTION=false
-      - NPM_CONFIG_AUDIT=false
-      - NPM_CONFIG_FUND=false
     volumes:
       - ./back:/app
       - node_modules_back_studio:/app/node_modules
@@ -121,29 +94,13 @@ services:
       - "5555:5555"
     command: >-
       sh -lc '
-        set -e;
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi;
-          sha256sum package-lock.json > node_modules/.npmci.sha;
-        fi;
-        npx prisma generate --schema=prisma/schema.prisma;
+          ([ -f package-lock.json ] && npm ci || npm install) &&
+          sha256sum package-lock.json > node_modules/.npmci.sha
+        fi &&
+        npx prisma generate --schema=prisma/schema.prisma &&
         exec npx prisma studio --schema=prisma/schema.prisma --port 5555 --hostname 0.0.0.0'
     # → Prisma Studio: http://localhost:5555
-
-  pgadmin:
-    image: dpage/pgadmin4
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    restart: unless-stopped
-    # → PostgreSQL: http://localhost:5050
 
   backend-tests:
     build:
@@ -156,77 +113,22 @@ services:
       - ./back/.env.docker
     environment:
       - NODE_ENV=test
-      - NPM_CONFIG_PRODUCTION=false
-      - NPM_CONFIG_AUDIT=false
-      - NPM_CONFIG_FUND=false
       - DATABASE_URL=postgresql://app:app@db:5432/app?schema=test
     volumes:
       - ./back:/app
       - ./back/coverage:/app/coverage
       - ./back/allure-results:/app/allure-results
       - node_modules_back_tests:/app/node_modules
-    command:
-      - sh
-      - -lc
-      - |
-        set -e;
-        echo "Verification des dependances...";
+    command: >-
+      sh -lc '
         if [ ! -f node_modules/.npmci.sha ] || ! sha256sum -c node_modules/.npmci.sha >/dev/null 2>&1; then
-          echo "Installation des dependances...";
-          if [ -f package-lock.json ]; then 
-            npm ci || (echo "npm ci echoue, utilisation de npm install..." && npm install);
-          else 
-            npm install;
-          fi;
-          sha256sum package-lock.json > node_modules/.npmci.sha;
-        fi;
-        echo "Configuration de la base de donnees...";
-        npx prisma db push --schema=prisma/schema.prisma --skip-generate;
-        echo "Creation des dossiers allure-results et coverage...";
-        mkdir -p allure-results coverage;
-        echo "Nettoyage des anciens resultats Allure pour forcer la regeneration...";
-        find allure-results -type f -name "*.json" -delete 2>/dev/null || true;
-        find allure-results -type f -name "*.txt" -delete 2>/dev/null || true;
-        echo "Lancement des tests avec couverture et Allure...";
-        npm run test:full;
-        echo "Verification des resultats Allure generes...";
-        sleep 2;
-        if [ -d allure-results ] && [ "$(find allure-results -type f -name '*.json' 2>/dev/null | wc -l)" -gt 0 ]; then
-          echo "Resultats Allure generes avec succes: $(find allure-results -type f -name '*.json' 2>/dev/null | wc -l) fichiers";
-        else
-          echo "ATTENTION: Aucun resultat Allure genere !";
-          echo "Contenu du dossier allure-results:";
-          ls -la allure-results/ || echo "Dossier vide ou inexistant";
-        fi;
-        echo "Tests termines. Verification du fichier de couverture...";
-        if [ -f coverage/lcov.info ]; then
-          echo "Fichier lcov.info cree avec succes !";
-          ls -lh coverage/lcov.info;
-          pwd;
-          echo "Forcer la synchronisation du systeme de fichiers...";
-          sync || true;
-          echo "Attente de 10 secondes pour garantir la synchronisation avec l'hote...";
-          sleep 10;
-          echo "Verification finale que le fichier existe toujours:";
-          if [ -f coverage/lcov.info ]; then
-            echo "SUCCESS: Le fichier lcov.info est present et devrait persister !";
-            ls -lh coverage/lcov.info;
-            echo "Contenu du dossier coverage:";
-            ls -la coverage/;
-          else
-            echo "ERREUR: Le fichier lcov.info a disparu !";
-            ls -la coverage/ || echo "Le dossier coverage n'existe pas";
-            exit 1;
-          fi;
-        else
-          echo "ATTENTION: Le fichier lcov.info n'a pas ete cree !";
-          ls -la coverage/ || echo "Le dossier coverage n'existe pas";
-          exit 1;
-        fi;
-        echo "IMPORTANT: Le dossier coverage doit exister sur l'hote pour persister.";
-        echo "Si le dossier coverage disparait, creez-le avant de lancer les tests:";
-        echo "  Windows: New-Item -ItemType Directory -Force -Path back\\coverage";
-        echo "  Linux/Mac: mkdir -p back/coverage";
+          ([ -f package-lock.json ] && npm ci || npm install) &&
+          sha256sum package-lock.json > node_modules/.npmci.sha
+        fi &&
+        npx prisma db push --schema=prisma/schema.prisma --skip-generate &&
+        mkdir -p allure-results coverage &&
+        find allure-results -type f \( -name "*.json" -o -name "*.txt" \) -delete 2>/dev/null || true &&
+        npm run test:full'
 
   sonarqube-db:
     image: postgres:15
@@ -253,7 +155,6 @@ services:
       SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonarqube
       SONAR_JDBC_USERNAME: sonar
       SONAR_JDBC_PASSWORD: sonar
-      #réduire l’empreinte mémoire
       SONAR_WEB_JAVAOPTS: "-Xms512m -Xmx512m"
     ports:
       - "9000:9000"
@@ -268,8 +169,6 @@ services:
       retries: 20
     restart: unless-stopped
 
-  # Lance l'analyse SonarQube en montant ton code (monorepo front/back)
-  # Utilisation: docker compose run --rm sonar-scanner
   sonar-scanner:
     image: sonarsource/sonar-scanner-cli:latest
     depends_on:
@@ -278,19 +177,12 @@ services:
     working_dir: /workspace
     environment:
       SONAR_HOST_URL: http://sonarqube:9000
-      # Token à générer dans l'UI SonarQube: http://localhost:9000/admin/security
       SONAR_TOKEN: ${SONAR_TOKEN:-}
     volumes:
       - ./:/workspace
     profiles:
       - tools
-    # La configuration est dans sonar-project.properties
 
-  # Service Allure Report pour visualiser les résultats de tests
-  # Utilisation:
-  #   1. Lancer les tests: docker compose run --rm backend-tests
-  #   2. Générer et servir le rapport: docker compose --profile tools up allure
-  #   3. Accéder au rapport: http://localhost:5051
   allure:
     image: "frankescobar/allure-docker-service:latest"
     user: root
@@ -301,38 +193,21 @@ services:
     environment:
       CHECK_RESULTS_EVERY_SECONDS: 3
       KEEP_HISTORY: 0
-    command: >
+    command: >-
       sh -c "
-        if [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; then
-          echo 'Aucun resultat de test trouve. Lancez d abord: docker compose run --rm backend-tests';
-          echo 'En attente de resultats...';
-          while [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; do
-            sleep 5
-          done
-        fi
-        echo '';
-        echo '========================================';
-        echo '  Allure Report est disponible sur:';
-        echo '  http://localhost:5051';
-        echo '';
-        echo '  Nombre de resultats trouves:';
-        ls -1 /app/allure-results/*.json 2>/dev/null | wc -l || echo '0';
-        echo '========================================';
-        echo '';
-        exec allure serve -h 0.0.0.0 -p 5050 /app/allure-results
-      "
+        while [ ! -d /app/allure-results ] || [ -z \"\$(ls -A /app/allure-results 2>/dev/null)\" ]; do
+          sleep 5
+        done &&
+        exec allure serve -h 0.0.0.0 -p 5050 /app/allure-results"
     profiles:
       - tools
-    # → Allure Report: http://localhost:5051
 
 volumes:
   pgdata:
-  node_modules:
   node_modules_front:
   node_modules_back_backend:
   node_modules_back_studio:
   node_modules_back_tests:
-  pgadmin_data:
   sonarqube_db_data:
   sonarqube_data:
   sonarqube_extensions:

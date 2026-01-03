@@ -16,7 +16,6 @@ docker compose up --build web
 - **Frontend:** http://localhost:5173
 - **API:** http://localhost:3000/ping
 - **Prisma Studio:** http://localhost:5555
-- **pgAdmin:** http://localhost:5050
 - **SonarQube:** http://localhost:9000
 - **Allure Report:** http://localhost:5051
 - **DATABASE:** PostgreSQL (port 5432)

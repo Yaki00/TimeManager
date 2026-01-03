@@ -106,7 +106,7 @@ describe("Auth Service", () => {
 
       const user = await createUser(userData);
 
-      expect(user).toBeTruthy();
+      expect(user).toBeTruthy(); // User should be created successfully
       expect(user.email).toBe(userData.email.toLowerCase());
       expect(user.firstName).toBe(userData.firstName);
       expect(user.lastName).toBe(userData.lastName);
