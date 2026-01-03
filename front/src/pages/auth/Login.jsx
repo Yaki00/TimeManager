@@ -2,6 +2,7 @@ import styled, { keyframes } from 'styled-components';
 import { useAuth } from '@/service/useAuth';
 import { LoginForm } from '@/components/from/LoginForm';
 import { useNavigate } from 'react-router';
+import { useState } from 'react';
 
 const gradientMove = keyframes`
 	0% { background-position: 0% 50%; }
@@ -115,16 +116,39 @@ const Card = styled.div`
 	}
 `;
 
+const ErrorMessage = styled.div`
+	background-color: #fff2f0;
+	border: 1px solid #ffccc7;
+	border-radius: 8px;
+	padding: 12px 16px;
+	margin-bottom: 20px;
+	color: #cf1322;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	animation: ${fadeInUp} 0.3s ease both;
+	
+	&::before {
+		content: "⚠";
+		font-size: 18px;
+	}
+`;
+
 export const Login = () => {
   const { loadingLogin, mutateAsync: LoginMutation } = useAuth();
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const onFinish = async (values) => {
+    setErrorMessage(null);
     try {
       await LoginMutation(values);
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
+      const message = error?.message || 'Une erreur est survenue lors de la connexion';
+      setErrorMessage(message);
     }
   };
 
@@ -160,6 +184,7 @@ export const Login = () => {
           </svg>
           <h2>Connexion</h2>
           <p>Connectez-vous à votre compte Time Manager</p>
+          {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
           <LoginForm onFinish={onFinish} loading={loadingLogin} />
         </Card>
       </RightPanel>
