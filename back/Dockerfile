@@ -25,3 +25,10 @@ CMD ["npm","run","dev"]
 FROM base AS test
 ENV NODE_ENV=test
 CMD ["npm","run","test"]
+
+FROM base AS production
+ENV NODE_ENV=production
+# Générer Prisma Client pour la production
+RUN npx prisma generate --schema=prisma/schema.prisma
+EXPOSE 3000
+CMD ["npm","start"]

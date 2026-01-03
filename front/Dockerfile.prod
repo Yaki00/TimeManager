@@ -1,0 +1,32 @@
+# Stage 1: Build
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package*.json ./
+
+# Installer les dépendances
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
+
+# Copier le code source
+COPY . .
+
+# Build de l'application
+RUN npm run build
+
+# Stage 2: Production avec nginx
+FROM nginx:alpine
+
+# Copier les fichiers buildés depuis le stage builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copier la configuration nginx (optionnel, utilise la config par défaut)
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# Exposer le port 80
+EXPOSE 80
+
+# Démarrer nginx
+CMD ["nginx", "-g", "daemon off;"]
+
