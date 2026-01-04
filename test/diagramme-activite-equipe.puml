@@ -1,0 +1,108 @@
+@startuml Diagramme d'Activité - Création d'une Équipe
+!theme plain
+
+start
+
+partition "Création de l'équipe" {
+  :Manager saisit les informations\nde l'équipe;
+  note right
+    - Nom de l'équipe
+    - Description
+  end note
+
+  :Envoi de la requête\nPOST /teams;
+
+  :Vérification de l'authentification\n(requireAuth);
+
+  if (Token JWT valide ?) then (non)
+    :Retourner erreur 401\nUnauthorized;
+    stop
+  else (oui)
+  endif
+
+  :Vérification du rôle\n(requireResponsableOrManager);
+
+  if (Manager ou Responsable ?) then (non)
+    :Retourner erreur 403\nForbidden;
+    stop
+  else (oui)
+  endif
+
+  :Validation des données\n(validateCreateTeam);
+
+  if (Données valides ?) then (non)
+    :Retourner erreur 400\nBad Request;
+    stop
+  else (oui)
+  endif
+
+  :Préparation des données\navec ownerId = req.user.id;
+
+  :Création de l'équipe\n(createTeam);
+
+  :INSERT INTO Team\n(teamName, description, id_owner);
+
+  :Équipe créée avec succès;
+
+  :Retourner réponse 201 Created\navec données de l'équipe;
+
+  :Affichage de la confirmation\nau manager;
+}
+
+partition "Ajout de membres (optionnel)" {
+  :Manager sélectionne des membres\nà ajouter;
+
+  :Envoi de la requête\nPATCH /teams/:id;
+
+  :Vérification de l'authentification;
+
+  if (Utilisateur authentifié ?) then (non)
+    :Retourner erreur 401;
+    stop
+  else (oui)
+  endif
+
+  :Vérification des permissions\n(canManageTeam);
+
+  :Récupération de l'équipe\n(findTeamById);
+
+  if (Équipe trouvée ?) then (non)
+    :Retourner erreur 404\nNot Found;
+    stop
+  else (oui)
+  endif
+
+  if (req.user.id = ownerId\nOU Manager/Responsable ?) then (non)
+    :Retourner erreur 403\nForbidden;
+    stop
+  else (oui)
+  endif
+
+  :Validation des données\n(validateUpdateTeam);
+
+  if (Données valides ?) then (non)
+    :Retourner erreur 400;
+    stop
+  else (oui)
+  endif
+
+  :Mise à jour de l'équipe\n(updateTeamById);
+
+  fork
+    :Pour chaque membre sélectionné;
+    :INSERT INTO Belongs\n(id_team, id_user);
+  fork again
+    :Mise à jour des permissions\nsi nécessaire;
+  end fork
+
+  :Équipe mise à jour avec succès;
+
+  :Retourner réponse 200 OK\navec équipe mise à jour;
+
+  :Affichage de la confirmation\nau manager;
+}
+
+stop
+
+@enduml
+

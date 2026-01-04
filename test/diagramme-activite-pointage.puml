@@ -1,0 +1,56 @@
+@startuml Diagramme d'Activité - Création d'un Pointage
+!theme plain
+
+start
+
+:Employé saisit les données\nde pointage;
+note right
+  - Date de pointage
+  - Heure d'arrivée (firstArrival)
+  - Heure de départ (lastDeparture)
+  - Temps de travail (workTime)
+  - Temps de pause (breakTime)
+end note
+
+:Envoi de la requête\nPOST /clocking;
+
+:Vérification de l'authentification\n(requireAuth);
+
+if (Token JWT valide ?) then (non)
+  :Retourner erreur 401\nUnauthorized;
+  stop
+else (oui)
+endif
+
+:Vérification des permissions\n(canCreateClocking);
+
+if (userId correspond à\nreq.user.id ?) then (non)
+  :Retourner erreur 403\nForbidden;
+  stop
+else (oui)
+endif
+
+:Validation des données\n(validateCreateClocking);
+
+if (Données valides ?) then (non)
+  :Retourner erreur 400\nBad Request;
+  stop
+else (oui)
+endif
+
+:Conversion des heures\n(timeStringToDateTime);
+
+:Création du pointage\n(createClocking);
+
+:INSERT INTO Clocking\n(userId, clockingDate, ...);
+
+:Pointage créé avec succès;
+
+:Retourner réponse 201 Created\navec données du pointage;
+
+:Affichage de la confirmation\nà l'employé;
+
+stop
+
+@enduml
+

@@ -1,0 +1,129 @@
+@startuml Diagramme d'Activité - Demande et Approbation de Congé
+!theme plain
+
+start
+
+partition "Création de la demande" {
+  :Employé saisit les informations\nde congé;
+  note right
+    - Date de début
+    - Date de fin
+    - Type de congé
+    - Justification
+  end note
+
+  :Envoi de la requête\nPOST /leaves;
+
+  :Vérification de l'authentification;
+
+  if (Utilisateur authentifié ?) then (non)
+    :Retourner erreur 401;
+    stop
+  else (oui)
+  endif
+
+  :Validation des données\n(validateCreate);
+
+  if (Données valides ?) then (non)
+    :Retourner erreur 400;
+    stop
+  else (oui)
+  endif
+
+  :Conversion des dates\n(toUTCDateOnly);
+
+  if (Date début > Date fin ?) then (oui)
+    :Retourner erreur 400\n"Dates invalides";
+    stop
+  else (non)
+  endif
+
+  :Calcul des jours ouvrés\n(computeBusinessDays);
+
+  if (Jours ouvrés > 0 ?) then (non)
+    :Retourner erreur 400\n"Aucun jour ouvré";
+    stop
+  else (oui)
+  endif
+
+  :Vérification des chevauchements\n(findOverlappingLeave);
+
+  if (Chevauchement détecté ?) then (oui)
+    :Retourner erreur 400\n"Période déjà occupée";
+    stop
+  else (non)
+  endif
+
+  :Création de la demande\n(createLeave);
+
+  :INSERT INTO Leave\n(status='Pending', ...);
+
+  :Envoi de notification\naux Managers/Responsables\n(notifyLeaveRequest);
+
+  :Retourner réponse 201 Created\navec demande créée;
+
+  :Affichage de la confirmation\nà l'employé;
+}
+
+partition "Approbation de la demande" {
+  :Manager consulte les demandes\nen attente;
+
+  :Sélection d'une demande\nà approuver/refuser;
+
+  :Envoi de la requête\nPATCH /leaves/:id/status;
+
+  :Vérification de l'authentification;
+
+  if (Utilisateur authentifié ?) then (non)
+    :Retourner erreur 401;
+    stop
+  else (oui)
+  endif
+
+  :Vérification du rôle\n(requireResponsableOrManager);
+
+  if (Manager ou Responsable ?) then (non)
+    :Retourner erreur 403\nForbidden;
+    stop
+  else (oui)
+  endif
+
+  :Récupération de la demande\n(findLeaveById);
+
+  if (Demande trouvée ?) then (non)
+    :Retourner erreur 404\nNot Found;
+    stop
+  else (oui)
+  endif
+
+  if (Statut = 'Pending' ?) then (non)
+    :Retourner erreur 400\n"Statut invalide";
+    stop
+  else (oui)
+  endif
+
+  if (Nouveau statut valide ?\n'Approved' ou 'Refused') then (non)
+    :Retourner erreur 400\n"Statut invalide";
+    stop
+  else (oui)
+  endif
+
+  :Mise à jour du statut\n(updateLeaveById);
+
+  :UPDATE Leave\nSET status = ?\nWHERE id = ?;
+
+  if (Statut = 'Approved' ?) then (oui)
+    :Envoi notification d'approbation\n(notifyLeaveApproved);
+  else (non)
+    :Envoi notification de refus\n(notifyLeaveRefused);
+  endif
+
+  :Retourner réponse 200 OK\navec demande mise à jour;
+
+  :Affichage de la confirmation\nau manager;
+}
+
+stop
+
+@enduml
+
