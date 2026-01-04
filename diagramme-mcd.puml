@@ -1,0 +1,144 @@
+@startuml MCD - Modèle Conceptuel de Données
+
+skinparam class {
+    FontSize 10
+}
+
+skinparam class<<association>> {
+    FontSize 9
+    FontStyle italic
+}
+
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam shadowing false
+
+hide stereotype
+
+' ============================================
+' ENTITÉS (Règles MCD : Identifiants soulignés)
+' ============================================
+
+class "USER" as User {
+    * <b><u>id_user</u></b>
+    --
+    first_name
+    last_name
+    <b><u>email</u></b> <<UNIQUE>>
+    phone_number
+    password
+    role
+    contract_type
+    avatar_url <<OPTIONNEL>>
+    total_warning_points
+    total_paye_leave
+    total_remote
+    weekly_leave_limit
+    last_week_reset <<OPTIONNEL>>
+    monthly_leave_gain
+    last_monthly_reset <<OPTIONNEL>>
+    created_at
+    updated_at
+    deleted_at <<OPTIONNEL>>
+}
+
+class "TEAM" as Team {
+    * <b><u>id_team</u></b>
+    --
+    team_name
+    description
+    created_at
+    updated_at
+}
+
+class "LEAVE" as Leave {
+    * <b><u>id_leave</u></b>
+    --
+    start_date
+    end_date
+    justification
+    status
+    days_leave
+    type
+    created_at
+    updated_at
+}
+
+class "CLOCKING" as Clocking {
+    * <b><u>id_clocking</u></b>
+    --
+    first_arrival <<OPTIONNEL>>
+    last_departure <<OPTIONNEL>>
+    work_time
+    break_time
+    clocking_date
+    total_hours
+    week_day
+    created_at
+    updated_at
+}
+
+class "WARNING" as Warning {
+    * <b><u>id_warning</u></b>
+    --
+    status
+    description
+    date
+    created_at
+    updated_at
+}
+
+class "NOTIFICATION" as Notification {
+    * <b><u>id_notification</u></b>
+    --
+    message
+    title
+    status
+    date
+    is_read
+    created_at
+    updated_at
+}
+
+' ============================================
+' ASSOCIATIONS (Règles MCD : Losanges/Bulles)
+' ============================================
+
+class "POSSEDE" as Possede <<association>>
+class "APPARTIENT_A" as AppartientA <<association>>
+class "DEMANDE" as Demande <<association>>
+class "ENREGISTRE" as Enregistre <<association>>
+class "RECOIT" as RecoitWarning <<association>>
+class "CREE" as Cree <<association>>
+
+' Associations USER - TEAM (possède / owner)
+User "0,n" -- Possede
+Possede -- "1,1" Team
+
+' Associations USER - TEAM (appartient à / many-to-many)
+User "0,n" -- AppartientA
+AppartientA -- "0,n" Team
+
+' Associations USER - LEAVE (demande)
+User "0,n" -- Demande
+Demande -- "1,1" Leave
+
+' Associations USER - CLOCKING (enregistre)
+User "0,n" -- Enregistre
+Enregistre -- "1,1" Clocking
+
+' Associations USER - WARNING (reçoit)
+User "0,n" -- RecoitWarning
+RecoitWarning -- "1,1" Warning
+
+' Associations USER - WARNING (crée)
+User "0,n" -- Cree
+Cree -- "1,1" Warning
+
+' Associations USER - NOTIFICATION (notification personnelle, sans table de jointure)
+User "0,n" -- "1,1" Notification
+User -[hidden]-> Notification
+
+
+
+@enduml

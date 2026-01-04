@@ -1,0 +1,141 @@
+@startuml
+
+skinparam class {
+    FontSize 10
+}
+
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam shadowing false
+
+' ============================================
+' TABLES (Règles MLD : Clés primaires et étrangères)
+' ============================================
+
+
+
+class "USER" as User {
+    * <b><u>id_user</u></b> : INTEGER <<PK>>
+    --
+    first_name : VARCHAR(255)
+    last_name : VARCHAR(255)
+    <b><u>email</u></b> : VARCHAR(255) <<UNIQUE>>
+    phone_number : VARCHAR(20)
+    password : VARCHAR(255)
+    role : ENUM(Role)
+    contract_type : ENUM(ContractType)
+    avatar_url : VARCHAR(255) <<NULL>>
+    total_warning_points : INTEGER
+    total_paye_leave : DECIMAL(8,1)
+    total_remote : INTEGER
+    weekly_leave_limit : INTEGER
+    last_week_reset : DATETIME <<NULL>>
+    monthly_leave_gain : DECIMAL(3,1)
+    last_monthly_reset : DATETIME <<NULL>>
+    created_at : DATETIME
+    updated_at : DATETIME
+    deleted_at : DATETIME <<NULL>>
+}
+
+class "TEAM" as Team {
+    * <b><u>id_team</u></b> : INTEGER <<PK>>
+    --
+    team_name : VARCHAR(255)
+    description : TEXT
+    id_owner : INTEGER <<FK>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+class "BELONGS" as Belongs {
+    * <b><u>id_team</u></b> : INTEGER <<PK, FK>>
+    * <b><u>id_user</u></b> : INTEGER <<PK, FK>>
+    --
+    joined_at : DATETIME
+    is_lead : BOOLEAN
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+class "LEAVE" as Leave {
+    * <b><u>id_leave</u></b> : INTEGER <<PK>>
+    --
+    start_date : DATE
+    end_date : DATE
+    justification : TEXT
+    status : ENUM(LeaveStatus)
+    days_leave : INTEGER
+    type : ENUM(LeaveType)
+    id_user : INTEGER <<FK>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+class "CLOCKING" as Clocking {
+    * <b><u>id_clocking</u></b> : INTEGER <<PK>>
+    --
+    first_arrival : TIME <<NULL>>
+    last_departure : TIME <<NULL>>
+    work_time : INTEGER
+    break_time : INTEGER
+    clocking_date : DATE
+    total_hours : DECIMAL(8,2)
+    week_day : ENUM(WeekDay)
+    id_user : INTEGER <<FK>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+class "WARNING" as Warning {
+    * <b><u>id_warning</u></b> : INTEGER <<PK>>
+    --
+    status : ENUM(WarningStatus)
+    description : TEXT
+    date : DATE
+    id_user : INTEGER <<FK>>
+    created_by_id : INTEGER <<FK, NOT NULL>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+class "NOTIFICATION" as Notification {
+    * <b><u>id_notification</u></b> : INTEGER <<PK>>
+    --
+    message : TEXT
+    title : VARCHAR(255)
+    status : ENUM(NotificationStatus)
+    date : DATE
+    is_read : BOOLEAN
+    id_user : INTEGER <<FK>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+
+
+' ============================================
+' RELATIONS (Règles MLD : Clés étrangères)
+' ============================================
+
+' TEAM -> USER (owner)
+User "1" <-- "0..*" Team : id_owner
+
+' BELONGS (jointure USER <-> TEAM)
+User "1" <-- "0..*" Belongs : id_user
+Team "1" <-- "0..*" Belongs : id_team
+
+' LEAVE -> USER
+User "1" <-- "0..*" Leave : id_user
+
+' CLOCKING -> USER
+User "1" <-- "0..*" Clocking : id_user
+
+' WARNING -> USER (reçoit)
+User "1" <-- "0..*" Warning : id_user
+
+' WARNING -> USER (crée)  (created_by_id not nullable)
+User "1" <-- "0..*" Warning : created_by_id
+
+' NOTIFICATION -> USER
+User "1" <-- "0..*" Notification : id_user
+@enduml

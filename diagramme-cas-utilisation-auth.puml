@@ -1,0 +1,56 @@
+@startuml Diagramme de Cas d'Utilisation - Authentification
+!theme plain
+
+left to right direction
+
+actor Utilisateur
+actor "Employé" as Employe
+actor "Manager" as Manager
+actor "Responsable" as Responsable
+
+rectangle "Système d'Authentification" {
+  usecase "Se connecter" as UC1
+  usecase "S'inscrire" as UC2
+  usecase "Rafraîchir le token" as UC3
+  usecase "Se déconnecter" as UC4
+  usecase "Récupérer le profil" as UC5
+}
+
+' Relations principales
+Utilisateur --> UC1
+Utilisateur --> UC2
+Utilisateur --> UC3
+Utilisateur --> UC4
+Utilisateur --> UC5
+
+' Héritage des acteurs
+Employe --|> Utilisateur
+Manager --|> Utilisateur
+Responsable --|> Utilisateur
+
+' Extensions et inclusions
+UC1 ..> UC5 : <<include>>\nAprès connexion
+UC3 ..> UC1 : <<extend>>\nSi token expiré
+
+note right of UC1
+  L'utilisateur saisit
+  son email et mot de passe.
+  Le système vérifie les
+  identifiants et génère
+  des tokens JWT.
+end note
+
+note right of UC2
+  Création d'un nouveau compte
+  avec validation des données
+  et hashage du mot de passe.
+end note
+
+note right of UC3
+  Permet de renouveler
+  le token d'accès sans
+  se reconnecter.
+end note
+
+@enduml
+

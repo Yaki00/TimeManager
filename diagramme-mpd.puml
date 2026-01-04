@@ -1,0 +1,169 @@
+@startuml MPD - Modèle Physique de Données (PostgreSQL)
+
+skinparam class {
+    FontSize 9
+}
+
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam shadowing false
+
+' ============================================
+' TABLES (Règles MPD : Détails physiques PostgreSQL)
+' ============================================
+
+class "User" as User {
+    * <b><u>id_user</u></b> : SERIAL <<PK, AUTO>>
+    --
+    first_name : VARCHAR(255) <<NOT NULL>>
+    last_name : VARCHAR(255) <<NOT NULL>>
+    <b><u>email</u></b> : VARCHAR(255) <<UNIQUE, NOT NULL>>
+    phone_number : VARCHAR(20) <<NOT NULL>>
+    password : TEXT <<NOT NULL>>
+    role : Role <<NOT NULL>>
+    contract_type : ContractType <<NOT NULL>>
+    avatar_url : VARCHAR(255) <<NULL>>
+    total_warning_points : INTEGER <<NOT NULL, DEFAULT 0>>
+    total_paye_leave : DECIMAL(8,1) <<NOT NULL, DEFAULT 10.0>>
+    total_remote : INTEGER <<NOT NULL, DEFAULT 2>>
+    weekly_leave_limit : INTEGER <<NOT NULL, DEFAULT 2>>
+    last_week_reset : TIMESTAMP <<NULL>>
+    monthly_leave_gain : DECIMAL(3,1) <<NOT NULL, DEFAULT 2.2>>
+    last_monthly_reset : TIMESTAMP <<NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    deleted_at : TIMESTAMP <<NULL>>
+    --
+    <<INDEX>> idx_user_deleted_at (deleted_at)
+    <<INDEX>> idx_user_email (email)
+    <<INDEX>> idx_user_role (role)
+}
+
+class "Team" as Team {
+    * <b><u>id_team</u></b> : SERIAL <<PK, AUTO>>
+    --
+    team_name : VARCHAR(255) <<NOT NULL>>
+    description : TEXT <<NOT NULL>>
+    id_owner : INTEGER <<FK, NOT NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_team_owner (id_owner)
+    <<FK>> FOREIGN KEY (id_owner) REFERENCES User(id_user) ON DELETE CASCADE
+}
+
+class "Belongs" as Belongs {
+    * <b><u>id_team</u></b> : INTEGER <<PK, FK, NOT NULL>>
+    * <b><u>id_user</u></b> : INTEGER <<PK, FK, NOT NULL>>
+    --
+    joined_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    is_lead : BOOLEAN <<NOT NULL, DEFAULT false>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_belongs_team_lead (id_team, is_lead)
+    <<INDEX>> idx_belongs_user (id_user)
+    <<FK>> FOREIGN KEY (id_team) REFERENCES Team(id_team) ON DELETE CASCADE
+    <<FK>> FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE
+}
+
+class "Leave" as Leave {
+    * <b><u>id_leave</u></b> : SERIAL <<PK, AUTO>>
+    --
+    start_date : DATE <<NOT NULL>>
+    end_date : DATE <<NOT NULL>>
+    justification : TEXT <<NOT NULL>>
+    status : LeaveStatus <<NOT NULL, DEFAULT 'Pending'>>
+    days_leave : INTEGER <<NOT NULL>>
+    type : LeaveType <<NOT NULL>>
+    id_user : INTEGER <<FK, NOT NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_leave_user_dates (id_user, start_date, end_date)
+    <<FK>> FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE
+}
+
+class "Clocking" as Clocking {
+    * <b><u>id_clocking</u></b> : SERIAL <<PK, AUTO>>
+    --
+    first_arrival : TIME(6) <<NULL>>
+    last_departure : TIME(6) <<NULL>>
+    work_time : INTEGER <<NOT NULL, DEFAULT 0>>
+    break_time : INTEGER <<NOT NULL, DEFAULT 0>>
+    clocking_date : DATE <<NOT NULL>>
+    total_hours : DECIMAL(8,2) <<NOT NULL, DEFAULT 0.00>>
+    week_day : WeekDay <<NOT NULL>>
+    id_user : INTEGER <<FK, NOT NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_clocking_user_date (id_user, clocking_date)
+    <<INDEX>> idx_clocking_user (id_user)
+    <<FK>> FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE
+}
+
+class "Warning" as Warning {
+    * <b><u>id_warning</u></b> : SERIAL <<PK, AUTO>>
+    --
+    status : WarningStatus <<NOT NULL>>
+    description : TEXT <<NOT NULL>>
+    date : DATE <<NOT NULL>>
+    id_user : INTEGER <<FK, NOT NULL>>
+    created_by_id : INTEGER <<FK, NOT NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_warning_user (id_user)
+    <<INDEX>> idx_warning_user_date (id_user, date)
+    <<FK>> FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE
+    <<FK>> FOREIGN KEY (created_by_id) REFERENCES User(id_user)
+}
+
+class "Notification" as Notification {
+    * <b><u>id_notification</u></b> : SERIAL <<PK, AUTO>>
+    --
+    message : TEXT <<NOT NULL>>
+    title : VARCHAR(255) <<NOT NULL>>
+    status : NotificationStatus <<NOT NULL>>
+    date : DATE <<NOT NULL>>
+    is_read : BOOLEAN <<NOT NULL, DEFAULT false>>
+    id_user : INTEGER <<FK, NOT NULL>>
+    created_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    updated_at : TIMESTAMP <<NOT NULL, DEFAULT now()>>
+    --
+    <<INDEX>> idx_notification_user (id_user)
+    <<FK>> FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE
+}
+
+
+' ============================================
+' RELATIONS (Règles MPD : Clés étrangères avec contraintes)
+' ============================================
+
+' TEAM -> USER (owner)
+Team }o--|| User : "id_owner\nON DELETE CASCADE"
+
+' BELONGS (jointure USER <-> TEAM)
+Belongs }o--|| User : "id_user\nON DELETE CASCADE"
+Belongs }o--|| Team : "id_team\nON DELETE CASCADE"
+
+' LEAVE -> USER
+Leave }o--|| User : "id_user\nON DELETE CASCADE"
+
+' CLOCKING -> USER
+Clocking }o--|| User : "id_user\nON DELETE CASCADE"
+
+' WARNING -> USER (reçoit)
+Warning }o--|| User : "id_user\nON DELETE CASCADE"
+
+' WARNING -> USER (crée)
+Warning }o--|| User : "created_by_id"
+
+' NOTIFICATION -> USER (notification personnelle)
+Notification }o--|| User : "id_user\nON DELETE CASCADE"
+
+
+
+@enduml
+

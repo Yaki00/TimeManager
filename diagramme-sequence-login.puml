@@ -1,0 +1,68 @@
+@startuml Diagramme de Séquence - Connexion
+!theme plain
+
+actor Utilisateur
+participant "Page Login" as Frontend
+participant "API Client" as API
+participant "Express Server" as Server
+participant "Auth Controller" as Controller
+participant "Auth Service" as Service
+participant "JWT Service" as JWT
+database "PostgreSQL" as DB
+
+Utilisateur -> Frontend: 1. Saisit email et mot de passe
+Utilisateur -> Frontend: 2. Clique sur "Se connecter"
+
+Frontend -> API: 3. POST /auth/login\n{email, password}
+
+API -> Server: 4. Requête HTTP POST\navec credentials
+
+Server -> Controller: 5. Appelle login(req, res)
+
+Controller -> Controller: 6. Valide les données\navec loginSchema
+
+Controller -> Service: 7. findUserByEmail(email)\nRecherche utilisateur
+
+Service -> DB: 8. SELECT * FROM user\nWHERE email = ?
+DB --> Service: 9. Retourne User\nou null si inexistant
+
+alt Utilisateur trouvé
+    Service --> Controller: 10. User trouvé\navec password hashé
+    
+    Controller -> Service: 11. verifyPassword(password, hash)\nVérifie le mot de passe
+    Service -> Service: 12. bcrypt.compare()\nCompare les hash
+    Service --> Controller: 13. Retourne true\nsi mot de passe valide
+    
+    alt Mot de passe correct
+        Controller -> JWT: 14. signAccessToken(user)\nGénère token d'accès
+        JWT --> Controller: 15. Retourne accessToken\n(JWT signé)
+        
+        Controller -> JWT: 16. signRefreshToken(user)\nGénère token de rafraîchissement
+        JWT --> Controller: 17. Retourne refreshToken\n(JWT signé)
+        
+        Controller --> Server: 18. Réponse 200 OK\n{user, tokens}
+        Server --> API: 19. JSON Response\navec données utilisateur
+        API --> Frontend: 20. Données utilisateur + tokens\n{id, email, role, tokens}
+        
+        Frontend -> Frontend: 21. Stocke tokens\nlocalStorage.setItem()
+        Frontend --> Utilisateur: 22. Redirection vers Dashboard\nConnexion réussie
+    else Mot de passe incorrect
+        Controller -> Service: 14a. dummyVerifyPassword()\nProtection timing attack
+        Service --> Controller: 15a. Hash factice\n(même temps d'exécution)
+        Controller --> Server: 16a. Erreur 401 Unauthorized\n"Identifiants invalides"
+        Server --> API: 17a. JSON Error Response
+        API --> Frontend: 18a. Erreur d'authentification
+        Frontend --> Utilisateur: 19a. Affiche message d'erreur\n"Identifiants invalides"
+    end
+else Utilisateur non trouvé
+    Service --> Controller: 10b. Retourne null\nUtilisateur inexistant
+    Controller -> Service: 11b. dummyVerifyPassword()\nProtection timing attack
+    Service --> Controller: 12b. Hash factice\n(même temps d'exécution)
+    Controller --> Server: 13b. Erreur 401 Unauthorized\n"Identifiants invalides"
+    Server --> API: 14b. JSON Error Response
+    API --> Frontend: 15b. Erreur d'authentification
+    Frontend --> Utilisateur: 16b. Affiche message d'erreur\n"Identifiants invalides"
+end
+
+@enduml
+
