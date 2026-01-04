@@ -8,7 +8,6 @@ import { load } from "js-yaml";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-
 import authRoutes from "./modules/auth/routes.js";
 import userRoutes from "./modules/user/routes.js";
 import leaveRoutes from "./modules/leave/routes.js";
@@ -21,6 +20,8 @@ import prisma from "./db.js";
 import { errorHandler } from "./core/errorHandler.js";
 import { requestId } from "./core/requestId.js";
 import { logger } from "./core/logger.js";
+import { securityMiddleware } from "./core/security.js";
+import { generalRateLimiter } from "./core/rateLimit.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,6 +49,14 @@ export function createApp() {
     })
   );
   app.use(express.json());
+
+  // Rate limiting général - protection contre les attaques de force brute
+  app.use(generalRateLimiter);
+
+  // Middleware de sécurité unique (Helmet + HPP + XSS Clean)
+  // Appliqué après express.json() pour que XSS puisse nettoyer req.body
+  app.use(securityMiddleware(allowedOrigins));
+
   app.use(requestId());
 
   // Configuration Swagger
